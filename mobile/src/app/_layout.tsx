@@ -25,6 +25,10 @@ export default function RootLayout() {
         <Stack.Screen name="order/[id]" options={{ title: "Order details" }} />
         <Stack.Screen name="admin-order/[id]" options={{ title: "Admin — order" }} />
         <Stack.Screen name="admin-more" options={{ title: "More admin tools" }} />
+        <Stack.Screen name="admin-stages" options={{ title: "Admin — stage queues" }} />
+        <Stack.Screen name="admin-vouchers" options={{ title: "Admin — gift vouchers" }} />
+        <Stack.Screen name="admin-employees" options={{ title: "Admin — employees" }} />
+        <Stack.Screen name="admin-branches" options={{ title: "Admin — branches" }} />
       </Stack>
     </AuthProvider>
   );

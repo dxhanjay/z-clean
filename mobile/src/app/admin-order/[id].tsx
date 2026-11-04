@@ -1,6 +1,7 @@
 import { useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { Alert, Text, View } from "react-native";
+import HandoverPanel from "../../components/HandoverPanel";
 import {
   Badge,
   Card,
@@ -19,14 +20,16 @@ import { nextStatuses, statusLabel } from "../../lib/order-flow";
 import type { AdminOrderDetail } from "../../lib/types";
 
 /**
- * Admin order detail (Mobile Phase 1) — full order plus the two
- * actions the mobile admin supports in this phase, reusing the
- * Phase 4 web API unchanged:
+ * Admin order detail — full order plus the actions the mobile admin
+ * supports, reusing the web APIs unchanged:
+ *   - the Phase 8 handover chain (Mobile Phase 2): complete the next
+ *     point with OTP/QR verification via HandoverPanel,
  *   - move to a valid next status (only the moves
  *     src/lib/order-flow allows are offered; the server re-checks),
  *   - Mark COD collected on a cod_pending Pay-on-Delivery order.
- * Handovers (QR/OTP) and finance actions arrive in Mobile
- * Phases 2/3 — see "More admin tools".
+ * The plain status actions coexist with handovers, exactly as on the
+ * web. Finance actions arrive in Mobile Phase 3 — see "More admin
+ * tools".
  */
 export default function AdminOrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -34,6 +37,7 @@ export default function AdminOrderDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [handoverFeedback, setHandoverFeedback] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -173,6 +177,14 @@ export default function AdminOrderDetailScreen() {
         </View>
       </Card>
 
+      <HandoverPanel
+        key={`${order.id}:${order.next_point?.id ?? "done"}:${order.status}:${order.handovers.length}`}
+        order={order}
+        onChanged={() => void load()}
+        feedback={handoverFeedback}
+        setFeedback={setHandoverFeedback}
+      />
+
       <Card>
         <Text style={styles.label}>Actions</Text>
         {actionError ? <Text style={styles.errorText}>{actionError}</Text> : null}
@@ -199,8 +211,7 @@ export default function AdminOrderDetailScreen() {
           />
         )}
         <Text style={styles.muted}>
-          Handover verification (QR/OTP), payments ledger and refunds are in the web admin for now —
-          see More admin tools.
+          The payments ledger and refunds are in the web admin for now — see More admin tools.
         </Text>
       </Card>
 

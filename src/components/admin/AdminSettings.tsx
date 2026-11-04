@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Skeleton, SkeletonText } from "@/components/Skeleton";
 import {
   listDemoSettings,
   saveDemoSettings,
@@ -169,7 +170,22 @@ export default function AdminSettings({ mode }: { mode: "live" | "demo" }) {
     }
   }
 
-  if (loading) return <p className="mt-8 text-sm text-ink-500">Loading settings…</p>;
+  if (loading) {
+    return (
+      <div className="mt-8 max-w-2xl" aria-label="Loading settings">
+        <div className="grid gap-5">
+          {[0, 1, 2, 3, 4, 5].map((row) => (
+            <div key={row} className="grid gap-1.5">
+              <Skeleton className="h-4 w-36" />
+              <Skeleton className="h-11 w-full rounded-xl" />
+              <Skeleton className="h-3 w-56 max-w-full" />
+            </div>
+          ))}
+        </div>
+        <Skeleton className="mt-6 h-11 w-44 rounded-full" />
+      </div>
+    );
+  }
   if (loadError) {
     return (
       <p role="alert" className="mt-8 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-800">
@@ -225,7 +241,7 @@ export default function AdminSettings({ mode }: { mode: "live" | "demo" }) {
       <button
         type="submit"
         disabled={busy || changed.length === 0}
-        className="mt-6 min-h-[44px] rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-60"
+        className="btn-press mt-6 min-h-[44px] rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-60"
       >
         {busy ? "Saving…" : changed.length > 0 ? `Save ${changed.length} change${changed.length > 1 ? "s" : ""}` : "No changes"}
       </button>

@@ -9,9 +9,10 @@ import {
   regenerateOtp,
 } from "../lib/api";
 import { formatPaise, formatWhen } from "../lib/format";
-import { handoverFlagLabel, receivingRoles } from "../lib/handovers";
+import { HANDOVER_CHAIN, handoverFlagLabel, receivingRoles } from "../lib/handovers";
+import { successTap } from "../lib/haptics";
 import { staffRoleLabel } from "../lib/org";
-import type { AdminOrderDetail, Employee } from "../lib/types";
+import type { AdminOrderDetail, Employee, HandoverView } from "../lib/types";
 import { Field, StepperRow, ToggleRow } from "./forms";
 import QrScanner from "./QrScanner";
 import { Badge, Card, GhostButton, PrimaryButton, styles } from "./ui";
@@ -55,6 +56,15 @@ export default function HandoverPanel({
   const [formError, setFormError] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | undefined>(undefined);
   const [regenBusy, setRegenBusy] = useState<"pickup" | "delivery" | null>(null);
+  /* Optimistic completion (polish): the panel doesn't own the order —
+   * the parent reloads it via onChanged and remounts this panel keyed
+   * by handover count, which clears this state. Until then, the
+   * locally appended entry + advanced next point are what render.
+   * On failure the entry is removed and the form comes back. */
+  const [optimistic, setOptimistic] = useState<{
+    handover: HandoverView;
+    nextLabel: string | null;
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -90,9 +100,13 @@ export default function HandoverPanel({
     order.payment_method === "cod" &&
     order.payment_status === "cod_pending";
   const outstandingPaise = Math.max(0, order.total_paise - order.voucher_redeemed_paise);
+  const displayedHandovers = useMemo(
+    () => (optimistic ? [...order.handovers, optimistic.handover] : order.handovers),
+    [order.handovers, optimistic],
+  );
   const completedIds = useMemo(
-    () => new Set(order.handovers.map((h) => h.pointId)),
-    [order.handovers],
+    () => new Set(displayedHandovers.map((h) => h.pointId)),
+    [displayedHandovers],
   );
 
   const regenerate = useCallback(
@@ -122,6 +136,34 @@ export default function HandoverPanel({
     setFeedback(null);
     setFormError(null);
     setErrorCode(undefined);
+    // Optimistically append this handover and advance the next point
+    // (the chain order is static data in src/lib/handovers.ts).
+    const receiver = employees.find((e) => e.id === effectiveEmployeeId);
+    const optimisticFlags: string[] = [];
+    if (missingItem) optimisticFlags.push("missing_item");
+    if (quantity !== order.item_count) optimisticFlags.push("quantity_mismatch");
+    const chainIdx = HANDOVER_CHAIN.findIndex((p) => p.id === nextPoint.id);
+    const nextDef = chainIdx >= 0 ? (HANDOVER_CHAIN[chainIdx + 1] ?? null) : null;
+    setOptimistic({
+      handover: {
+        id: `optimistic-${nextPoint.id}`,
+        pointId: nextPoint.id,
+        pointLabel: nextPoint.label,
+        fromStage: nextPoint.fromLabel,
+        toStage: nextPoint.toLabel,
+        method: nextPoint.method,
+        fromEmployeeId: null,
+        fromEmployeeName: null,
+        toEmployeeId: effectiveEmployeeId || null,
+        toEmployeeName: receiver?.fullName ?? null,
+        quantity,
+        expectedQuantity: order.item_count,
+        flags: optimisticFlags,
+        note: note.trim() || null,
+        at: new Date().toISOString(),
+      },
+      nextLabel: nextDef?.label ?? null,
+    });
     try {
       const res = await completeHandover(order.id, {
         pointId: nextPoint.id,
@@ -134,12 +176,17 @@ export default function HandoverPanel({
         missingItem: missingItem || undefined,
         note: note.trim() || undefined,
       });
+      successTap();
       setFeedback(
         `Handover recorded — ${nextPoint.label}.` +
           (res.nextPoint ? ` Next: ${res.nextPoint.label}.` : " The chain is complete."),
       );
+      // Keep the optimistic entry on screen — the parent's reload
+      // remounts this panel with the server's real chain.
       onChanged();
     } catch (e) {
+      // Roll back the optimistic entry; the form returns as it was.
+      setOptimistic(null);
       if (e instanceof ApiError) {
         setFormError(e.message);
         setErrorCode(e.code);
@@ -256,9 +303,9 @@ export default function HandoverPanel({
       </View>
 
       {/* Completed chain */}
-      {order.handovers.length > 0 ? (
+      {displayedHandovers.length > 0 ? (
         <View style={{ gap: 8 }}>
-          {order.handovers.map((h) => (
+          {displayedHandovers.map((h) => (
             <View
               key={h.id}
               style={{
@@ -292,8 +339,26 @@ export default function HandoverPanel({
         <Text style={styles.muted}>No handovers recorded yet.</Text>
       )}
 
+      {/* Optimistic next point — shown between submit and the
+          parent's reload remounting this panel with real data. */}
+      {optimistic ? (
+        <View
+          style={{
+            borderWidth: 2,
+            borderColor: brand.teal,
+            borderRadius: 12,
+            padding: 12,
+            gap: 10,
+          }}
+        >
+          <Text style={{ fontWeight: "800", fontSize: 15 }}>
+            {optimistic.nextLabel ? `Next: ${optimistic.nextLabel}` : "The chain is complete."}
+          </Text>
+        </View>
+      ) : null}
+
       {/* Next point card */}
-      {nextPoint ? (
+      {nextPoint && !optimistic ? (
         <View
           style={{
             borderWidth: 2,
@@ -412,7 +477,7 @@ export default function HandoverPanel({
             onPress={() => void submit()}
           />
         </View>
-      ) : (
+      ) : optimistic ? null : (
         <Text style={styles.muted}>
           {order.status === "DELIVERED"
             ? order.handovers.length >= 11

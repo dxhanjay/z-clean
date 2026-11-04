@@ -16,7 +16,7 @@ export default async function AdminPage() {
   const mode = gate.kind === "demo" ? "demo" : "live";
 
   return (
-    <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-14">
+    <section className="mx-auto max-w-6xl px-4 py-8 pb-24 sm:px-6 sm:py-14">
       <h1 className="text-2xl font-extrabold tracking-tight text-ink-900 sm:text-3xl">
         Order queue
       </h1>

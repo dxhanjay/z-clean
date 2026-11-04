@@ -1,6 +1,6 @@
 import { useFocusEffect } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
-import { Alert, ScrollView, Text, View } from "react-native";
+import { memo, useCallback, useMemo, useState } from "react";
+import { Alert, FlatList, RefreshControl, ScrollView, Text, View } from "react-native";
 import { Field, MultiChips, SelectChips, StepperRow, fieldErrorText } from "../components/forms";
 import {
   Badge,
@@ -9,9 +9,9 @@ import {
   EmptyBlock,
   ErrorBlock,
   GhostButton,
-  LoadingBlock,
   PrimaryButton,
   Screen,
+  SkeletonRows,
   Title,
   styles,
 } from "../components/ui";
@@ -25,6 +25,7 @@ import {
   fetchVouchers,
   patchVoucher,
 } from "../lib/api";
+import { brand } from "../lib/config";
 import { formatPaise, formatWhen } from "../lib/format";
 import { SERVICE_OPTIONS } from "../lib/org";
 import type { Branch, Employee, GiftVoucher, VoucherTransaction } from "../lib/types";
@@ -71,6 +72,7 @@ export default function AdminVouchersScreen() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     setError(null);
@@ -94,6 +96,19 @@ export default function AdminVouchersScreen() {
     }, [isAdmin, load]),
   );
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await load();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [load]);
+
+  const handleChanged = useCallback(() => {
+    void load();
+  }, [load]);
+
   const visible = useMemo(() => {
     if (!vouchers) return [];
     return vouchers.filter((v) => {
@@ -112,8 +127,8 @@ export default function AdminVouchersScreen() {
     );
   }
 
-  return (
-    <Screen>
+  const header = (
+    <>
       <Title>Gift vouchers</Title>
       <PrimaryButton
         label={showCreate ? "Close the create form" : "＋ Create vouchers"}
@@ -143,23 +158,47 @@ export default function AdminVouchersScreen() {
           ))}
         </View>
       </ScrollView>
+    </>
+  );
 
-      {error ? (
-        <ErrorBlock message={error} onRetry={() => void load()} />
-      ) : !vouchers ? (
-        <LoadingBlock label="Loading vouchers…" />
-      ) : visible.length === 0 ? (
-        <EmptyBlock message="No vouchers match. Create a campaign above." />
-      ) : (
-        visible.map((v) => (
-          <VoucherCard key={v.id} voucher={v} employees={employees} onChanged={() => void load()} />
-        ))
-      )}
+  if (!vouchers && !error) {
+    return (
+      <Screen>
+        {header}
+        <SkeletonRows />
+      </Screen>
+    );
+  }
+
+  return (
+    <Screen scroll={false}>
+      <FlatList
+        data={visible}
+        keyExtractor={(v) => v.id}
+        renderItem={({ item }) => (
+          <VoucherCard voucher={item} employees={employees} onChanged={handleChanged} />
+        )}
+        ListHeaderComponent={header}
+        ListEmptyComponent={
+          error ? (
+            <ErrorBlock message={error} onRetry={() => void load()} />
+          ) : (
+            <EmptyBlock message="No vouchers match. Create a campaign above." />
+          )
+        }
+        contentContainerStyle={styles.screenContent}
+        initialNumToRender={10}
+        windowSize={11}
+        removeClippedSubviews
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} tintColor={brand.teal} colors={[brand.teal]} />
+        }
+      />
     </Screen>
   );
 }
 
-function VoucherCard({
+const VoucherCard = memo(function VoucherCard({
   voucher: v,
   employees,
   onChanged,
@@ -305,7 +344,7 @@ function VoucherCard({
       ) : null}
     </Card>
   );
-}
+});
 
 function CreateVoucherForm({
   branches,

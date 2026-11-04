@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { formatPaise } from "@/lib/pricing";
+import { Skeleton, SkeletonText } from "@/components/Skeleton";
 import { EXPENSE_CATEGORY_LABELS, type ExpenseCategory } from "@/lib/finance";
 import { buildReports, type Reports } from "@/lib/reports";
 import { listDemoOrders } from "@/lib/demo-store";
@@ -138,7 +139,35 @@ export default function AdminReports({ mode }: { mode: "live" | "demo" }) {
     );
   }
   if (!reports) {
-    return <p className="mt-8 text-sm text-ink-500">Loading reports…</p>;
+    return (
+      <div className="mt-8 grid gap-6" aria-label="Loading reports">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[0, 1, 2, 3].map((card) => (
+            <div key={card} className="rounded-2xl bg-brand-50 p-4">
+              <Skeleton className="h-3.5 w-24 max-w-full" />
+              <Skeleton className="mt-2 h-6 w-20" />
+            </div>
+          ))}
+        </div>
+        <div className="grid gap-2.5">
+          {[0, 1, 2, 3, 4].map((row) => (
+            <div key={row} className="grid grid-cols-[92px_1fr_auto] items-center gap-3">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-2.5 w-full rounded-full" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+          ))}
+        </div>
+        <div className="grid gap-6 lg:grid-cols-2">
+          {[0, 1].map((panel) => (
+            <div key={panel} className="rounded-2xl border border-brand-100 p-5">
+              <Skeleton className="h-5 w-36 max-w-full" />
+              <SkeletonText lines={3} className="mt-3" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   const r = reports;

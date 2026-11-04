@@ -15,7 +15,7 @@ export default async function AdminStagesPage() {
   const mode = gate.kind === "demo" ? "demo" : "live";
 
   return (
-    <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-14">
+    <section className="mx-auto max-w-6xl px-4 py-8 pb-24 sm:px-6 sm:py-14">
       <AdminStages mode={mode} />
     </section>
   );

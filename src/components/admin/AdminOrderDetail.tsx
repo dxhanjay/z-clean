@@ -14,6 +14,7 @@ import AdminHandovers, {
   type OtpStateView,
 } from "@/components/admin/AdminHandovers";
 import AdminOrderPayments from "@/components/admin/AdminOrderPayments";
+import { Skeleton, SkeletonText } from "@/components/Skeleton";
 import {
   completedPointIds,
   nextHandoverPoint,
@@ -363,7 +364,36 @@ export default function AdminOrderDetail({
   }
 
   if (state === "loading") {
-    return <p className="text-sm text-ink-500">Loading order…</p>;
+    return (
+      <div aria-label="Loading order">
+        <Skeleton className="h-4 w-28" />
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+          <Skeleton className="h-8 w-56 max-w-[60%]" />
+          <div className="flex flex-wrap gap-2">
+            <Skeleton className="h-6 w-24 rounded-full" />
+            <Skeleton className="h-6 w-28 rounded-full" />
+          </div>
+        </div>
+        <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">
+          <div className="grid min-w-0 content-start gap-6">
+            {[0, 1].map((card) => (
+              <div key={card} className="rounded-2xl border border-brand-100 p-4 sm:p-6">
+                <Skeleton className="h-5 w-36 max-w-full" />
+                <SkeletonText lines={3} className="mt-3" />
+              </div>
+            ))}
+          </div>
+          <div className="grid min-w-0 content-start gap-6">
+            {[0, 1].map((card) => (
+              <div key={card} className="rounded-2xl border border-brand-100 p-4 sm:p-6">
+                <Skeleton className="h-5 w-32 max-w-full" />
+                <SkeletonText lines={2} className="mt-3" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
   if (state === "missing") {
     return (
@@ -374,7 +404,7 @@ export default function AdminOrderDetail({
             ? "No demo order with this id exists in this browser."
             : "This order does not exist."}
         </p>
-        <Link href="/admin" className="mt-5 inline-flex min-h-[44px] items-center rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white hover:bg-brand-700">
+        <Link href="/admin" className="btn-press mt-5 inline-flex min-h-[44px] items-center rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white hover:bg-brand-700">
           Back to the queue
         </Link>
       </div>
@@ -539,7 +569,7 @@ export default function AdminOrderDetail({
                 <button
                   type="submit"
                   disabled={busy || !newStatus}
-                  className="min-h-[44px] w-full rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-60 sm:w-auto"
+                  className="btn-press min-h-[44px] w-full rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-60 sm:w-auto"
                 >
                   {busy ? "Saving…" : "Save status update"}
                 </button>
@@ -646,7 +676,7 @@ export default function AdminOrderDetail({
                   <button
                     type="submit"
                     disabled={redeemBusy || redeemCode.trim().length < 4}
-                    className="min-h-[44px] w-full rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-60 sm:w-auto"
+                    className="btn-press min-h-[44px] w-full rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-60 sm:w-auto"
                   >
                     {redeemBusy ? "Redeeming…" : "Redeem gift card"}
                   </button>

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { formatPaise } from "@/lib/pricing";
+import { Skeleton, SkeletonText } from "@/components/Skeleton";
 import {
   decidePaymentStatus,
   paymentMethodLabel,
@@ -427,9 +428,16 @@ export default function AdminOrderPayments({
   }
   if (!view) {
     return (
-      <div className="rounded-2xl border border-brand-100 p-4 sm:p-6">
+      <div className="rounded-2xl border border-brand-100 p-4 sm:p-6" aria-label="Loading payments">
         <h2 className="font-bold text-ink-900">Payments</h2>
-        <p className="mt-3 text-sm text-ink-500">Loading payments…</p>
+        <div className="mt-4 grid gap-2">
+          {[0, 1, 2].map((row) => (
+            <div key={row} className="flex items-center justify-between gap-4">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-4 w-20" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -544,7 +552,7 @@ export default function AdminOrderPayments({
             <input value={payNote} onChange={(e) => setPayNote(e.target.value)} maxLength={500} className={inputCls} />
           </label>
           {payError && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-800">{payError}</p>}
-          <button type="submit" disabled={payBusy} className="min-h-[44px] w-full rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-60 sm:w-auto">
+          <button type="submit" disabled={payBusy} className="btn-press min-h-[44px] w-full rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-60 sm:w-auto">
             {payBusy ? "Recording…" : "Record payment"}
           </button>
         </form>
@@ -575,7 +583,7 @@ export default function AdminOrderPayments({
                   <div className="mt-2.5 flex flex-wrap gap-2">
                     {r.status === "requested" && (
                       <>
-                        <button type="button" disabled={actionBusy !== null} onClick={() => void refundAction(r, "approve")} className="min-h-[44px] rounded-full bg-brand-600 px-4 py-2 text-xs font-bold text-white hover:bg-brand-700 disabled:opacity-60">
+                        <button type="button" disabled={actionBusy !== null} onClick={() => void refundAction(r, "approve")} className="btn-press min-h-[44px] rounded-full bg-brand-600 px-4 py-2 text-xs font-bold text-white hover:bg-brand-700 disabled:opacity-60">
                           Approve
                         </button>
                         <button type="button" disabled={actionBusy !== null} onClick={() => void refundAction(r, "reject")} className="min-h-[44px] rounded-full border border-red-200 px-4 py-2 text-xs font-bold text-red-700 hover:bg-red-50 disabled:opacity-60">
@@ -584,7 +592,7 @@ export default function AdminOrderPayments({
                       </>
                     )}
                     {r.status === "approved" && (
-                      <button type="button" disabled={actionBusy !== null} onClick={() => void refundAction(r, "process")} className="min-h-[44px] rounded-full bg-brand-600 px-4 py-2 text-xs font-bold text-white hover:bg-brand-700 disabled:opacity-60">
+                      <button type="button" disabled={actionBusy !== null} onClick={() => void refundAction(r, "process")} className="btn-press min-h-[44px] rounded-full bg-brand-600 px-4 py-2 text-xs font-bold text-white hover:bg-brand-700 disabled:opacity-60">
                         {actionBusy === r.id + "process" ? "Processing…" : "Process — money returned"}
                       </button>
                     )}

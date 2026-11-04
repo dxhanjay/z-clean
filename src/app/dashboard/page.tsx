@@ -64,7 +64,7 @@ export default async function DashboardPage() {
           </p>
           <Link
             href="/schedule-pickup"
-            className="mt-4 inline-block rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700"
+            className="btn-press mt-4 inline-block rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700"
           >
             Schedule pickup
           </Link>
@@ -88,7 +88,7 @@ export default async function DashboardPage() {
           </p>
           <Link
             href="/order"
-            className="mt-4 inline-block rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700"
+            className="btn-press mt-4 inline-block rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700"
           >
             Order now
           </Link>

@@ -20,6 +20,7 @@
 
 html {
   scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -58,6 +59,54 @@ body {
   to {
     opacity: 1;
   }
+}
+
+/* ---- Smoothness pass: skeletons, page-enter, press feedback ---- */
+
+@keyframes zc-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes zc-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading placeholder: brand-tinted block with a soft shimmer sweep. */
+.skeleton {
+  background-color: var(--color-brand-100);
+  background-image: linear-gradient(
+    100deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 80%
+  );
+  background-size: 200% 100%;
+  animation: zc-shimmer 1.4s linear infinite;
+}
+
+/* Route-change enter transition (no fill-mode, so no transform persists). */
+.page-enter {
+  animation: zc-page-enter 180ms ease-out;
+}
+
+/* Primary-button press feedback. */
+.btn-press {
+  transition: transform 120ms ease;
+}
+.btn-press:active {
+  transform: scale(0.98);
 }
 
 /* Hero slider: slow zoom on the active slide. */
@@ -112,8 +161,16 @@ body {
   }
   .kenburns,
   .marquee-track,
-  .reveal {
+  .reveal,
+  .skeleton,
+  .page-enter {
     animation: none;
+  }
+  .btn-press {
+    transition: none;
+  }
+  .btn-press:active {
+    transform: none;
   }
   .reveal-init {
     opacity: 1;

@@ -159,7 +159,7 @@ export default function SchedulePickupPage() {
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
               href="/order"
-              className="rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white hover:bg-brand-700"
+              className="btn-press rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white hover:bg-brand-700"
             >
               Add items &amp; place your order
             </Link>
@@ -314,7 +314,7 @@ export default function SchedulePickupPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-brand-700 disabled:opacity-60"
+            className="btn-press rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-brand-700 disabled:opacity-60"
           >
             {submitting ? "Scheduling…" : "Schedule pickup"}
           </button>

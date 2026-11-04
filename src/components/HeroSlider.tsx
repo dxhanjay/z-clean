@@ -53,6 +53,7 @@ export default function HeroSlider() {
           src={image.src}
           alt={image.alt}
           loading={i === 0 ? "eager" : "lazy"}
+          fetchPriority={i === 0 ? "high" : undefined}
           aria-hidden={i !== index}
           className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ${
             i === index ? "kenburns opacity-100" : "opacity-0"

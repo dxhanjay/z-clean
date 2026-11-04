@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatPaise } from "@/lib/pricing";
+import { Skeleton, SkeletonText } from "@/components/Skeleton";
 import { services } from "@/lib/services";
 import type { Branch, Employee } from "@/lib/org";
 import {
@@ -466,7 +467,36 @@ export default function AdminVouchers({ mode }: { mode: "live" | "demo" }) {
     }
   }
 
-  if (loading) return <p className="mt-8 text-sm text-ink-500">Loading vouchers…</p>;
+  if (loading) {
+    return (
+      <div className="mt-8 grid items-start gap-8 lg:grid-cols-[380px_1fr]" aria-label="Loading vouchers">
+        <div className="rounded-2xl border border-brand-100 p-4 sm:p-6">
+          <Skeleton className="h-5 w-36" />
+          <SkeletonText lines={2} className="mt-3" />
+          <div className="mt-4 grid gap-4">
+            {[0, 1, 2].map((field) => (
+              <div key={field}>
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="mt-1.5 h-11 w-full rounded-xl" />
+              </div>
+            ))}
+          </div>
+          <Skeleton className="mt-5 h-11 w-full rounded-full" />
+        </div>
+        <ul className="grid gap-4">
+          {[0, 1, 2, 3].map((row) => (
+            <li key={row} className="rounded-2xl border border-brand-100 p-4 sm:p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <Skeleton className="h-5 w-44 max-w-[60%]" />
+                <Skeleton className="h-6 w-20 rounded-full" />
+              </div>
+              <SkeletonText lines={2} className="mt-3" />
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
   if (loadError) {
     return (
       <p role="alert" className="mt-8 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-800">
@@ -670,7 +700,7 @@ export default function AdminVouchers({ mode }: { mode: "live" | "demo" }) {
         <button
           type="submit"
           disabled={busy}
-          className="mt-5 min-h-[44px] w-full rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-60"
+          className="btn-press mt-5 min-h-[44px] w-full rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-60"
         >
           {busy ? "Creating…" : "Create voucher(s)"}
         </button>
@@ -732,7 +762,7 @@ export default function AdminVouchers({ mode }: { mode: "live" | "demo" }) {
                     <button
                       type="button"
                       onClick={() => { setIssueFor(issueFor === v.id ? null : v.id); setFormError(null); }}
-                      className="min-h-[44px] rounded-full bg-brand-600 px-4 py-2 text-sm font-bold text-white hover:bg-brand-700"
+                      className="btn-press min-h-[44px] rounded-full bg-brand-600 px-4 py-2 text-sm font-bold text-white hover:bg-brand-700"
                     >
                       Issue…
                     </button>
@@ -831,7 +861,7 @@ export default function AdminVouchers({ mode }: { mode: "live" | "demo" }) {
                       <button
                         type="submit"
                         disabled={busy}
-                        className="min-h-[44px] rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-60"
+                        className="btn-press min-h-[44px] rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-60"
                       >
                         {busy ? "Issuing…" : "Issue voucher"}
                       </button>

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { formatPaise } from "@/lib/pricing";
+import { Skeleton, SkeletonText } from "@/components/Skeleton";
 import {
   listDemoPricing,
   saveDemoPricing,
@@ -201,7 +202,27 @@ export default function AdminPricing({ mode }: { mode: "live" | "demo" }) {
     }
   }
 
-  if (loading) return <p className="mt-8 text-sm text-ink-500">Loading pricing…</p>;
+  if (loading) {
+    return (
+      <div className="mt-8 grid gap-10" aria-label="Loading pricing">
+        {[0, 1].map((group) => (
+          <section key={group}>
+            <Skeleton className="h-6 w-48 max-w-full" />
+            <Skeleton className="mt-2 h-3.5 w-32" />
+            <ul className="mt-3 divide-y divide-brand-50 rounded-2xl border border-brand-100">
+              {[0, 1, 2, 3].map((row) => (
+                <li key={row} className="flex flex-wrap items-center justify-between gap-3 p-4">
+                  <Skeleton className="h-4 w-40 max-w-[50%]" />
+                  <Skeleton className="h-11 w-28 rounded-xl" />
+                  <Skeleton className="h-11 w-24 rounded-full" />
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
+    );
+  }
   if (loadError) {
     return (
       <p role="alert" className="mt-8 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-800">
@@ -274,7 +295,7 @@ export default function AdminPricing({ mode }: { mode: "live" | "demo" }) {
                       type="button"
                       disabled={!dirty || savingId === item.id}
                       onClick={() => void saveRow(item)}
-                      className="min-h-[44px] rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-50"
+                      className="btn-press min-h-[44px] rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-50"
                     >
                       {savingId === item.id ? "Saving…" : "Save"}
                     </button>

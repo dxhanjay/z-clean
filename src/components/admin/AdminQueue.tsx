@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { formatPaise } from "@/lib/pricing";
+import { Skeleton, SkeletonText } from "@/components/Skeleton";
 import { ALL_ORDER_STATUSES, statusLabel } from "@/lib/order-flow";
 import {
   listDemoOrders,
@@ -244,7 +245,21 @@ export default function AdminQueue({ mode }: { mode: "live" | "demo" }) {
         Orders {loading ? "" : `(${filtered.length}${filtered.length !== orders.length ? ` of ${orders.length}` : ""})`}
       </h2>
       {loading ? (
-        <p className="mt-3 text-sm text-ink-500">Loading orders…</p>
+        <ul className="mt-4 grid gap-3" aria-label="Loading orders">
+          {[0, 1, 2, 3].map((row) => (
+            <li key={row} className="rounded-2xl border border-brand-100 p-4 sm:p-5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Skeleton className="h-5 w-44 max-w-[55%]" />
+                <div className="flex flex-wrap gap-2">
+                  <Skeleton className="h-6 w-24 rounded-full" />
+                  <Skeleton className="h-6 w-28 rounded-full" />
+                </div>
+              </div>
+              <SkeletonText lines={2} className="mt-3" />
+              <Skeleton className="mt-2 h-4 w-20" />
+            </li>
+          ))}
+        </ul>
       ) : filtered.length === 0 ? (
         <p className="mt-3 text-sm leading-relaxed text-ink-500">
           {orders.length === 0

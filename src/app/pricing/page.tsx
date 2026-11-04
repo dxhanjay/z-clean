@@ -125,7 +125,7 @@ export default async function PricingPage() {
         <div className="mt-10 flex flex-wrap gap-3">
           <Link
             href="/order"
-            className="inline-block rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white hover:bg-brand-700"
+            className="btn-press inline-block rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white hover:bg-brand-700"
           >
             Place an order
           </Link>

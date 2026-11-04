@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
-import { Alert, Pressable, Text, View } from "react-native";
+import { useCallback, useState, type ReactNode } from "react";
+import { Alert, FlatList, Pressable, RefreshControl, Text, View } from "react-native";
 import { Field } from "../components/forms";
 import {
   Badge,
@@ -8,9 +8,9 @@ import {
   EmptyBlock,
   ErrorBlock,
   GhostButton,
-  LoadingBlock,
   PrimaryButton,
   Screen,
+  SkeletonRows,
   Subtitle,
   Title,
   styles,
@@ -24,6 +24,7 @@ import {
   fetchRefundQueue,
   patchRefund,
 } from "../lib/api";
+import { brand } from "../lib/config";
 import { istToday, paymentMethodLabel, rupeesToPaise, shiftDate } from "../lib/finance";
 import { formatPaise, prettyDate } from "../lib/format";
 import type { CashClosing, FinanceOverview, OutstandingRow, RefundView } from "../lib/types";
@@ -42,6 +43,7 @@ export default function AdminFinanceScreen() {
   const [refunds, setRefunds] = useState<RefundView[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [countedCash, setCountedCash] = useState("");
   const [closeNote, setCloseNote] = useState("");
@@ -72,6 +74,15 @@ export default function AdminFinanceScreen() {
       void load();
     }, [load]),
   );
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await load();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [load]);
 
   async function submitClose() {
     if (!overview) return;
@@ -146,8 +157,8 @@ export default function AdminFinanceScreen() {
 
   const outstandingTotal = outstanding.reduce((s, o) => s + o.outstandingPaise, 0);
 
-  return (
-    <Screen>
+  const header = (
+    <>
       <Title>Finance</Title>
       <Subtitle>The day in money: collections, the cash closing, who still owes, and the refund queue.</Subtitle>
       {feedback ? (
@@ -155,191 +166,239 @@ export default function AdminFinanceScreen() {
           <Text style={{ color: "#15803d", fontWeight: "700", fontSize: 14 }}>{feedback}</Text>
         </Card>
       ) : null}
+    </>
+  );
 
-      {/* Date stepper */}
-      <Card>
-        <View style={styles.rowBetween}>
-          <Pressable onPress={() => setDate((d) => shiftDate(d, -1))} style={styles.chip}>
-            <Text style={styles.chipText}>‹ Prev day</Text>
-          </Pressable>
-          <View style={{ alignItems: "center" }}>
-            <Text style={styles.label}>{prettyDate(date)}</Text>
-            <Text style={styles.muted}>{date} (IST)</Text>
-          </View>
-          <Pressable onPress={() => setDate((d) => shiftDate(d, 1))} style={styles.chip}>
-            <Text style={styles.chipText}>Next day ›</Text>
-          </Pressable>
-        </View>
-        {date !== istToday() ? (
-          <GhostButton label="Jump to today" onPress={() => setDate(istToday())} />
-        ) : null}
-      </Card>
-
-      {/* Day summary */}
-      <Card>
-        <Text style={styles.label}>Day summary</Text>
-        {!overview ? (
-          <LoadingBlock label="Loading the day…" />
-        ) : (
-          <>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Collected</Text>
-              <Text style={styles.totalValue}>{formatPaise(overview.totalCollectedPaise)}</Text>
-            </View>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Refunds processed ({overview.refundsProcessedCount})</Text>
-              <Text style={styles.totalValue}>−{formatPaise(overview.refundsProcessedPaise)}</Text>
-            </View>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Net collected</Text>
-              <Text style={styles.totalValue}>{formatPaise(overview.netCollectedPaise)}</Text>
-            </View>
-            <View style={styles.totalRow}>
-              <Text style={styles.grandLabel}>Expected cash in drawer</Text>
-              <Text style={styles.grandValue}>{formatPaise(overview.expectedCashPaise)}</Text>
-            </View>
-            {overview.collections.length === 0 ? (
-              <Text style={styles.muted}>No collections recorded on this date yet.</Text>
-            ) : (
-              overview.collections.map((c) => (
-                <View key={c.method} style={styles.totalRow}>
-                  <Text style={styles.totalLabel}>
-                    {paymentMethodLabel(c.method)}
-                    {c.gatewayPaise > 0 ? ` · online ${formatPaise(c.gatewayPaise)}` : ""}
-                    {c.entriesPaise > 0 ? ` · desk ${formatPaise(c.entriesPaise)}` : ""}
-                  </Text>
-                  <Text style={styles.totalValue}>{formatPaise(c.totalPaise)}</Text>
-                </View>
-              ))
-            )}
-            <Text style={styles.muted}>
-              Expenses on this date: {formatPaise(overview.expensesTotalPaise)}. Expected cash counts
-              ledger cash only — online and gift-card money never sits in the drawer.
-            </Text>
-
-            {overview.closing ? (
-              <Text style={styles.muted}>
-                <Text style={{ fontWeight: "700", color: "#1f2937" }}>{overview.date} is closed.</Text>{" "}
-                Expected {formatPaise(overview.closing.expectedCashPaise)} · counted{" "}
-                {formatPaise(overview.closing.countedCashPaise)} · difference{" "}
-                {formatPaise(overview.closing.differencePaise)}
-                {overview.closing.closedByLabel ? ` · by ${overview.closing.closedByLabel}` : ""}
-                {overview.closing.note ? ` · ${overview.closing.note}` : ""}
-              </Text>
-            ) : (
-              <>
-                <Field
-                  label="Counted cash (₹)"
-                  keyboardType="decimal-pad"
-                  value={countedCash}
-                  onChangeText={setCountedCash}
-                  placeholder={(overview.expectedCashPaise / 100).toFixed(2)}
-                />
-                <Field label="Note (optional)" value={closeNote} onChangeText={setCloseNote} maxLength={500} />
-                {closeError ? <Text style={styles.errorText}>{closeError}</Text> : null}
-                <PrimaryButton label="Close the day" busy={closeBusy} onPress={() => void submitClose()} />
-              </>
-            )}
-          </>
-        )}
-      </Card>
-
-      {/* Closing history */}
-      {closings.length > 0 ? (
+  /* The screen is a set of section cards; the FlatList's items are
+   * those sections (same order, same visuals), and the outstanding
+   * balances — the one long list — are a FlatList inside their card. */
+  const sections: { id: string; node: ReactNode }[] = [
+    {
+      id: "date",
+      node: (
         <Card>
-          <Text style={styles.label}>Closing history</Text>
-          {closings.slice(0, 14).map((c) => (
-            <View key={c.id} style={styles.totalRow}>
-              <Text style={styles.totalLabel}>
-                {c.date} · exp {formatPaise(c.expectedCashPaise)} · counted {formatPaise(c.countedCashPaise)}
-                {c.closedByLabel ? ` · ${c.closedByLabel}` : ""}
-              </Text>
-              <Text
-                style={[
-                  styles.totalValue,
-                  { color: c.differencePaise === 0 ? "#15803d" : "#92400e" },
-                ]}
-              >
-                {formatPaise(c.differencePaise)}
-              </Text>
-            </View>
-          ))}
-        </Card>
-      ) : null}
-
-      {/* Outstanding balances */}
-      <Card>
-        <Text style={styles.label}>
-          Outstanding balances ({outstanding.length} · {formatPaise(outstandingTotal)})
-        </Text>
-        {outstanding.length === 0 ? (
-          <EmptyBlock message="Nothing outstanding — every non-cancelled order is settled." />
-        ) : (
-          outstanding.map((o) => (
-            <Pressable
-              key={o.orderId}
-              onPress={() => router.push(`/admin-order/${o.orderId}`)}
-              style={{ gap: 2, paddingVertical: 6 }}
-            >
-              <View style={styles.rowBetween}>
-                <Text style={{ fontWeight: "700", fontSize: 14 }}>{o.customer}</Text>
-                <Text style={{ fontWeight: "800", color: "#92400e" }}>{formatPaise(o.outstandingPaise)}</Text>
-              </View>
-              <Text style={styles.muted}>
-                {o.area ?? ""}
-                {o.phone ? ` · ${o.phone}` : ""} · {o.status.replaceAll("_", " ")} · total{" "}
-                {formatPaise(o.totalPaise)} · paid {formatPaise(o.paidPaise)} · {o.ageDays}d old
-              </Text>
+          <View style={styles.rowBetween}>
+            <Pressable onPress={() => setDate((d) => shiftDate(d, -1))} style={styles.chip}>
+              <Text style={styles.chipText}>‹ Prev day</Text>
             </Pressable>
-          ))
-        )}
-      </Card>
-
-      {/* Refund queue */}
-      <Card>
-        <Text style={styles.label}>Refund queue</Text>
-        {refunds.length === 0 ? (
-          <EmptyBlock message="No refunds are waiting. Requests are created on the page of an order." />
-        ) : (
-          refunds.map((r) => (
-            <View key={r.id} style={{ gap: 4, paddingVertical: 6 }}>
-              <View style={styles.rowBetween}>
-                <Text style={{ fontWeight: "700", fontSize: 14 }}>
-                  {formatPaise(r.amountPaise)} · {paymentMethodLabel(r.method)}
-                </Text>
-                <Badge label={r.status} tone={r.status === "approved" ? "amber" : "teal"} />
-              </View>
-              {r.customer ? (
-                <Text style={styles.muted}>
-                  {r.customer}
-                  {r.orderTotalPaise ? ` · order total ${formatPaise(r.orderTotalPaise)}` : ""}
-                </Text>
-              ) : null}
-              <Text style={styles.muted}>{r.reason}</Text>
-              <Text style={styles.muted}>
-                Requested {new Date(r.createdAt).toLocaleString("en-IN")}
-                {r.requestedByLabel ? ` by ${r.requestedByLabel}` : ""}
-              </Text>
-              <View style={styles.rowWrap}>
-                {r.status === "requested" ? (
-                  <>
-                    <GhostButton label="Approve" disabled={refundBusy} onPress={() => void refundAction(r, "approve")} />
-                    <GhostButton label="Reject" disabled={refundBusy} onPress={() => void refundAction(r, "reject")} />
-                  </>
-                ) : null}
-                {r.status === "approved" ? (
-                  <PrimaryButton
-                    label="Process — money returned"
-                    disabled={refundBusy}
-                    onPress={() => void refundAction(r, "process")}
-                  />
-                ) : null}
-                <GhostButton label="Open order" onPress={() => router.push(`/admin-order/${r.orderId}`)} />
-              </View>
+            <View style={{ alignItems: "center" }}>
+              <Text style={styles.label}>{prettyDate(date)}</Text>
+              <Text style={styles.muted}>{date} (IST)</Text>
             </View>
-          ))
-        )}
-      </Card>
+            <Pressable onPress={() => setDate((d) => shiftDate(d, 1))} style={styles.chip}>
+              <Text style={styles.chipText}>Next day ›</Text>
+            </Pressable>
+          </View>
+          {date !== istToday() ? (
+            <GhostButton label="Jump to today" onPress={() => setDate(istToday())} />
+          ) : null}
+        </Card>
+      ),
+    },
+    {
+      id: "summary",
+      node: (
+        <Card>
+          <Text style={styles.label}>Day summary</Text>
+          {!overview ? (
+            <SkeletonRows count={3} />
+          ) : (
+            <>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Collected</Text>
+                <Text style={styles.totalValue}>{formatPaise(overview.totalCollectedPaise)}</Text>
+              </View>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Refunds processed ({overview.refundsProcessedCount})</Text>
+                <Text style={styles.totalValue}>−{formatPaise(overview.refundsProcessedPaise)}</Text>
+              </View>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Net collected</Text>
+                <Text style={styles.totalValue}>{formatPaise(overview.netCollectedPaise)}</Text>
+              </View>
+              <View style={styles.totalRow}>
+                <Text style={styles.grandLabel}>Expected cash in drawer</Text>
+                <Text style={styles.grandValue}>{formatPaise(overview.expectedCashPaise)}</Text>
+              </View>
+              {overview.collections.length === 0 ? (
+                <Text style={styles.muted}>No collections recorded on this date yet.</Text>
+              ) : (
+                overview.collections.map((c) => (
+                  <View key={c.method} style={styles.totalRow}>
+                    <Text style={styles.totalLabel}>
+                      {paymentMethodLabel(c.method)}
+                      {c.gatewayPaise > 0 ? ` · online ${formatPaise(c.gatewayPaise)}` : ""}
+                      {c.entriesPaise > 0 ? ` · desk ${formatPaise(c.entriesPaise)}` : ""}
+                    </Text>
+                    <Text style={styles.totalValue}>{formatPaise(c.totalPaise)}</Text>
+                  </View>
+                ))
+              )}
+              <Text style={styles.muted}>
+                Expenses on this date: {formatPaise(overview.expensesTotalPaise)}. Expected cash counts
+                ledger cash only — online and gift-card money never sits in the drawer.
+              </Text>
+
+              {overview.closing ? (
+                <Text style={styles.muted}>
+                  <Text style={{ fontWeight: "700", color: "#1f2937" }}>{overview.date} is closed.</Text>{" "}
+                  Expected {formatPaise(overview.closing.expectedCashPaise)} · counted{" "}
+                  {formatPaise(overview.closing.countedCashPaise)} · difference{" "}
+                  {formatPaise(overview.closing.differencePaise)}
+                  {overview.closing.closedByLabel ? ` · by ${overview.closing.closedByLabel}` : ""}
+                  {overview.closing.note ? ` · ${overview.closing.note}` : ""}
+                </Text>
+              ) : (
+                <>
+                  <Field
+                    label="Counted cash (₹)"
+                    keyboardType="decimal-pad"
+                    value={countedCash}
+                    onChangeText={setCountedCash}
+                    placeholder={(overview.expectedCashPaise / 100).toFixed(2)}
+                  />
+                  <Field label="Note (optional)" value={closeNote} onChangeText={setCloseNote} maxLength={500} />
+                  {closeError ? <Text style={styles.errorText}>{closeError}</Text> : null}
+                  <PrimaryButton label="Close the day" busy={closeBusy} onPress={() => void submitClose()} />
+                </>
+              )}
+            </>
+          )}
+        </Card>
+      ),
+    },
+    ...(closings.length > 0
+      ? [
+          {
+            id: "closings",
+            node: (
+              <Card>
+                <Text style={styles.label}>Closing history</Text>
+                {closings.slice(0, 14).map((c) => (
+                  <View key={c.id} style={styles.totalRow}>
+                    <Text style={styles.totalLabel}>
+                      {c.date} · exp {formatPaise(c.expectedCashPaise)} · counted {formatPaise(c.countedCashPaise)}
+                      {c.closedByLabel ? ` · ${c.closedByLabel}` : ""}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.totalValue,
+                        { color: c.differencePaise === 0 ? "#15803d" : "#92400e" },
+                      ]}
+                    >
+                      {formatPaise(c.differencePaise)}
+                    </Text>
+                  </View>
+                ))}
+              </Card>
+            ),
+          },
+        ]
+      : []),
+    {
+      id: "outstanding",
+      node: (
+        <Card>
+          <Text style={styles.label}>
+            Outstanding balances ({outstanding.length} · {formatPaise(outstandingTotal)})
+          </Text>
+          {outstanding.length === 0 ? (
+            <EmptyBlock message="Nothing outstanding — every non-cancelled order is settled." />
+          ) : (
+            <FlatList
+              data={outstanding}
+              keyExtractor={(o) => o.orderId}
+              scrollEnabled={false}
+              initialNumToRender={10}
+              windowSize={11}
+              removeClippedSubviews
+              renderItem={({ item: o }) => (
+                <Pressable
+                  onPress={() => router.push(`/admin-order/${o.orderId}`)}
+                  style={{ gap: 2, paddingVertical: 6 }}
+                >
+                  <View style={styles.rowBetween}>
+                    <Text style={{ fontWeight: "700", fontSize: 14 }}>{o.customer}</Text>
+                    <Text style={{ fontWeight: "800", color: "#92400e" }}>{formatPaise(o.outstandingPaise)}</Text>
+                  </View>
+                  <Text style={styles.muted}>
+                    {o.area ?? ""}
+                    {o.phone ? ` · ${o.phone}` : ""} · {o.status.replaceAll("_", " ")} · total{" "}
+                    {formatPaise(o.totalPaise)} · paid {formatPaise(o.paidPaise)} · {o.ageDays}d old
+                  </Text>
+                </Pressable>
+              )}
+            />
+          )}
+        </Card>
+      ),
+    },
+    {
+      id: "refunds",
+      node: (
+        <Card>
+          <Text style={styles.label}>Refund queue</Text>
+          {refunds.length === 0 ? (
+            <EmptyBlock message="No refunds are waiting. Requests are created on the page of an order." />
+          ) : (
+            refunds.map((r) => (
+              <View key={r.id} style={{ gap: 4, paddingVertical: 6 }}>
+                <View style={styles.rowBetween}>
+                  <Text style={{ fontWeight: "700", fontSize: 14 }}>
+                    {formatPaise(r.amountPaise)} · {paymentMethodLabel(r.method)}
+                  </Text>
+                  <Badge label={r.status} tone={r.status === "approved" ? "amber" : "teal"} />
+                </View>
+                {r.customer ? (
+                  <Text style={styles.muted}>
+                    {r.customer}
+                    {r.orderTotalPaise ? ` · order total ${formatPaise(r.orderTotalPaise)}` : ""}
+                  </Text>
+                ) : null}
+                <Text style={styles.muted}>{r.reason}</Text>
+                <Text style={styles.muted}>
+                  Requested {new Date(r.createdAt).toLocaleString("en-IN")}
+                  {r.requestedByLabel ? ` by ${r.requestedByLabel}` : ""}
+                </Text>
+                <View style={styles.rowWrap}>
+                  {r.status === "requested" ? (
+                    <>
+                      <GhostButton label="Approve" disabled={refundBusy} onPress={() => void refundAction(r, "approve")} />
+                      <GhostButton label="Reject" disabled={refundBusy} onPress={() => void refundAction(r, "reject")} />
+                    </>
+                  ) : null}
+                  {r.status === "approved" ? (
+                    <PrimaryButton
+                      label="Process — money returned"
+                      disabled={refundBusy}
+                      onPress={() => void refundAction(r, "process")}
+                    />
+                  ) : null}
+                  <GhostButton label="Open order" onPress={() => router.push(`/admin-order/${r.orderId}`)} />
+                </View>
+              </View>
+            ))
+          )}
+        </Card>
+      ),
+    },
+  ];
+
+  return (
+    <Screen scroll={false}>
+      <FlatList
+        data={sections}
+        keyExtractor={(s) => s.id}
+        renderItem={({ item }) => item.node}
+        ListHeaderComponent={header}
+        contentContainerStyle={styles.screenContent}
+        initialNumToRender={10}
+        windowSize={11}
+        removeClippedSubviews
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} tintColor={brand.teal} colors={[brand.teal]} />
+        }
+      />
     </Screen>
   );
 }

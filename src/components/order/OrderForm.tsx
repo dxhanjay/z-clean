@@ -362,7 +362,7 @@ export default function OrderForm({
                   <button
                     type="button"
                     onClick={() => simulatePayment(outcome.order, true)}
-                    className="rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white hover:bg-brand-700"
+                    className="btn-press rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white hover:bg-brand-700"
                   >
                     Simulate payment success (demo)
                   </button>
@@ -389,7 +389,7 @@ export default function OrderForm({
                     <button
                       type="button"
                       onClick={() => simulatePayment(outcome.order, true)}
-                      className="rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white hover:bg-brand-700"
+                      className="btn-press rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white hover:bg-brand-700"
                     >
                       Simulate payment success instead (demo)
                     </button>
@@ -762,7 +762,7 @@ export default function OrderForm({
           <button
             type="submit"
             disabled={submitting || !preview?.ok}
-            className="mt-5 w-full rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-brand-700 disabled:opacity-60"
+            className="btn-press mt-5 w-full rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-brand-700 disabled:opacity-60"
           >
             {submitting ? "Placing order…" : demoMode ? "Place order (demo)" : "Place order"}
           </button>
@@ -790,7 +790,7 @@ function PaymentLinkCta() {
           href={businessSettings.razorpayPaymentLink}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-block rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white hover:bg-brand-700"
+          className="btn-press inline-block rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white hover:bg-brand-700"
         >
           Pay online with Razorpay
         </a>
@@ -820,7 +820,7 @@ function OrderLinks({ demoId, liveId }: { demoId?: string; liveId?: string }) {
     <div className="mt-6 flex flex-wrap gap-3">
       <Link
         href={`/orders/${id}`}
-        className="rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white hover:bg-brand-700"
+        className="btn-press rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white hover:bg-brand-700"
       >
         View this order
       </Link>

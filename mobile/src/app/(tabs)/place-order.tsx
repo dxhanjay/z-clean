@@ -22,6 +22,7 @@ import {
 } from "../../lib/catalogue";
 import { brand } from "../../lib/config";
 import { formatPaise, prettyDate, toDateStr } from "../../lib/format";
+import { successTap } from "../../lib/haptics";
 import { PICKUP_SLOTS } from "../../lib/order-flow";
 import {
   catalogueKey,
@@ -149,6 +150,7 @@ export default function PlaceOrderScreen() {
         voucherCode: voucherCode.trim() || undefined,
         expectedTotalPaise: totals.totalPaise,
       });
+      successTap();
       router.replace(`/order/${result.orderId}`);
     } catch (e) {
       if (e instanceof ApiError) {

@@ -19,6 +19,7 @@ import {
 import { ApiError, fetchAdminOrderDetail, patchAdminOrderStatus } from "../../lib/api";
 import { API_BASE_URL } from "../../lib/config";
 import { formatPaise, formatWhen } from "../../lib/format";
+import { successTap } from "../../lib/haptics";
 import { nextStatuses, statusLabel } from "../../lib/order-flow";
 import type { AdminOrderDetail } from "../../lib/types";
 
@@ -75,12 +76,23 @@ export default function AdminOrderDetailScreen() {
       {
         text: "Yes, do it",
         onPress: async () => {
+          // Optimistic: show the new status / paid state immediately;
+          // roll back to the exact previous order if the server says no.
+          const previous = order;
           setBusy(true);
           setActionError(null);
+          if (body.status) {
+            setOrder((prev) => (prev ? { ...prev, status: body.status as string } : prev));
+          }
+          if (body.codCollected) {
+            setOrder((prev) => (prev ? { ...prev, payment_status: "paid" } : prev));
+          }
           try {
             await patchAdminOrderStatus(id, body);
+            successTap();
             await load();
           } catch (e) {
+            setOrder(previous);
             setActionError(e instanceof ApiError ? e.message : "The action failed. Try again.");
           } finally {
             setBusy(false);

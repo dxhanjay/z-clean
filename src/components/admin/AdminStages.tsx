@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { Skeleton, SkeletonText } from "@/components/Skeleton";
 import { STAFF_ROLES, staffRoleLabel, type Employee } from "@/lib/org";
 import {
   HANDOVER_CHAIN,
@@ -267,7 +268,17 @@ export default function AdminStages({ mode }: { mode: "live" | "demo" }) {
       </div>
 
       {state === "loading" ? (
-        <p className="mt-6 text-sm text-ink-500">Loading queues…</p>
+        <div className="mt-4 grid gap-4 lg:grid-cols-2" aria-label="Loading queues">
+          {[0, 1, 2].map((card) => (
+            <div key={card} className="rounded-2xl border border-brand-100 p-4 sm:p-5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Skeleton className="h-5 w-40 max-w-[55%]" />
+                <Skeleton className="h-6 w-24 rounded-full" />
+              </div>
+              <SkeletonText lines={2} className="mt-3" />
+            </div>
+          ))}
+        </div>
       ) : !selected ? (
         <p className="mt-6 text-sm text-ink-500">
           Add an employee on the Employees screen to see stage queues.

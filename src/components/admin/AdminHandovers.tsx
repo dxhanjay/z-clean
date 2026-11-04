@@ -556,7 +556,7 @@ export default function AdminHandovers({
             <button
               type="submit"
               disabled={busy || !employeeId}
-              className="min-h-[44px] w-full rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-60 sm:w-auto"
+              className="btn-press min-h-[44px] w-full rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-60 sm:w-auto"
             >
               {busy ? "Recording…" : "Complete handover"}
             </button>

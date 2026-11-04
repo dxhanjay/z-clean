@@ -17,6 +17,7 @@ import {
   rupeesToPaise,
 } from "../lib/finance";
 import { formatPaise, formatWhen } from "../lib/format";
+import { successTap } from "../lib/haptics";
 import type { OrderPaymentsView, RefundView } from "../lib/types";
 
 /**
@@ -86,6 +87,7 @@ export default function OrderPaymentsPanel({
         reference: payReference.trim() || undefined,
         note: payNote.trim() || undefined,
       });
+      successTap();
       setFeedback("Payment recorded.");
       setPayAmount("");
       setPayReference("");

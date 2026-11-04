@@ -7,6 +7,7 @@ import { businessSettings, hasRazorpayPaymentLink } from "@/lib/config";
 import { isPaymentRetryEligible } from "@/lib/payment-retry";
 import { loadRazorpayScript } from "@/lib/razorpay-checkout";
 import OrderTimeline, { type TimelineEvent } from "@/components/OrderTimeline";
+import { Skeleton, SkeletonText } from "@/components/Skeleton";
 import {
   getDemoOrder,
   updateDemoOrder,
@@ -270,8 +271,40 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
   if (state === "loading") {
     return (
-      <section className="mx-auto max-w-4xl px-4 py-14 sm:px-6">
-        <p className="text-sm text-ink-500">Loading your order…</p>
+      <section className="mx-auto max-w-4xl px-4 py-14 sm:px-6" aria-label="Loading your order">
+        <Skeleton className="h-4 w-28" />
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+          <Skeleton className="h-8 w-56 max-w-[60%]" />
+          <div className="flex flex-wrap gap-2">
+            <Skeleton className="h-6 w-24 rounded-full" />
+            <Skeleton className="h-6 w-28 rounded-full" />
+          </div>
+        </div>
+        <div className="mt-8 rounded-2xl border border-brand-100 p-6">
+          <Skeleton className="h-5 w-32" />
+          <div className="mt-5 grid gap-4">
+            {[0, 1, 2].map((step) => (
+              <div key={step} className="flex items-center gap-3">
+                <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
+                <Skeleton className="h-4 w-48 max-w-[70%]" />
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px]">
+          <div className="rounded-2xl border border-brand-100 p-6">
+            <Skeleton className="h-5 w-20" />
+            <SkeletonText lines={3} className="mt-4" />
+          </div>
+          <div className="grid content-start gap-6">
+            {[0, 1].map((card) => (
+              <div key={card} className="rounded-2xl border border-brand-100 p-6">
+                <Skeleton className="h-5 w-24" />
+                <SkeletonText lines={3} className="mt-3" />
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
     );
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Skeleton, SkeletonText } from "@/components/Skeleton";
 import {
   BRANCH_TYPES,
   branchTypeLabel,
@@ -261,7 +262,7 @@ export default function AdminBranches({ mode }: { mode: "live" | "demo" }) {
         <button
           type="button"
           onClick={openCreate}
-          className="min-h-[44px] w-full rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 sm:w-auto"
+          className="btn-press min-h-[44px] w-full rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 sm:w-auto"
         >
           Add a unit
         </button>
@@ -381,7 +382,7 @@ export default function AdminBranches({ mode }: { mode: "live" | "demo" }) {
             <button
               type="submit"
               disabled={busy}
-              className="min-h-[44px] w-full rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-60 sm:w-auto"
+              className="btn-press min-h-[44px] w-full rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-60 sm:w-auto"
             >
               {busy ? "Saving…" : editingId === "new" ? "Add unit" : "Save changes"}
             </button>
@@ -397,7 +398,17 @@ export default function AdminBranches({ mode }: { mode: "live" | "demo" }) {
       )}
 
       {loading ? (
-        <p className="mt-6 text-sm text-ink-500">Loading units…</p>
+        <ul className="mt-6 grid gap-3" aria-label="Loading units">
+          {[0, 1, 2, 3].map((row) => (
+            <li key={row} className="rounded-2xl border border-brand-100 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Skeleton className="h-5 w-40 max-w-[55%]" />
+                <Skeleton className="h-6 w-20 rounded-full" />
+              </div>
+              <SkeletonText lines={2} className="mt-3" />
+            </li>
+          ))}
+        </ul>
       ) : branches.length === 0 ? (
         <p className="mt-6 text-sm leading-relaxed text-ink-500">
           No units yet. Add the laundry plant and your first collection

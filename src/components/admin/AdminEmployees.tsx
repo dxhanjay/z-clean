@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Skeleton, SkeletonText } from "@/components/Skeleton";
 import {
   STAFF_ROLES,
   staffRoleLabel,
@@ -368,7 +369,7 @@ export default function AdminEmployees({ mode }: { mode: "live" | "demo" }) {
         <button
           type="button"
           onClick={openCreate}
-          className="min-h-[44px] w-full rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 sm:col-span-2 lg:w-auto"
+          className="btn-press min-h-[44px] w-full rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 sm:col-span-2 lg:w-auto"
         >
           Add employee
         </button>
@@ -537,7 +538,7 @@ export default function AdminEmployees({ mode }: { mode: "live" | "demo" }) {
             <button
               type="submit"
               disabled={busy}
-              className="min-h-[44px] w-full rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-60 sm:w-auto"
+              className="btn-press min-h-[44px] w-full rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-60 sm:w-auto"
             >
               {busy ? "Saving…" : editingId === "new" ? "Add employee" : "Save changes"}
             </button>
@@ -556,7 +557,17 @@ export default function AdminEmployees({ mode }: { mode: "live" | "demo" }) {
         Staff {loading ? "" : `(${filtered.length}${filtered.length !== employees.length ? ` of ${employees.length}` : ""})`}
       </h2>
       {loading ? (
-        <p className="mt-3 text-sm text-ink-500">Loading employees…</p>
+        <ul className="mt-4 grid gap-3" aria-label="Loading employees">
+          {[0, 1, 2, 3].map((row) => (
+            <li key={row} className="rounded-2xl border border-brand-100 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Skeleton className="h-5 w-40 max-w-[55%]" />
+                <Skeleton className="h-6 w-20 rounded-full" />
+              </div>
+              <SkeletonText lines={2} className="mt-3" />
+            </li>
+          ))}
+        </ul>
       ) : filtered.length === 0 ? (
         <p className="mt-3 text-sm leading-relaxed text-ink-500">
           {employees.length === 0

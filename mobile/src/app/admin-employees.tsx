@@ -1,6 +1,6 @@
 import { useFocusEffect } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { memo, useCallback, useMemo, useState } from "react";
+import { FlatList, RefreshControl, ScrollView, Text, View } from "react-native";
 import { Field, MultiChips, SelectChips, fieldErrorText } from "../components/forms";
 import {
   Badge,
@@ -9,9 +9,9 @@ import {
   EmptyBlock,
   ErrorBlock,
   GhostButton,
-  LoadingBlock,
   PrimaryButton,
   Screen,
+  SkeletonRows,
   Title,
   styles,
 } from "../components/ui";
@@ -24,6 +24,7 @@ import {
   updateEmployee,
   type EmployeeBody,
 } from "../lib/api";
+import { brand } from "../lib/config";
 import { STAFF_ROLES, staffRoleLabel } from "../lib/org";
 import type { Branch, Employee } from "../lib/types";
 
@@ -34,6 +35,46 @@ import type { Branch, Employee } from "../lib/types";
  * (src/lib/org.ts). Employees are operational records; a linked
  * login is optional and never grants staff access by itself.
  */
+const EmployeeRow = memo(function EmployeeRow({
+  employee: e,
+  onEdit,
+  onToggleStatus,
+}: {
+  employee: Employee;
+  onEdit: (employee: Employee) => void;
+  onToggleStatus: (employee: Employee) => void;
+}) {
+  return (
+    <Card>
+      <View style={styles.rowBetween}>
+        <Text style={{ fontWeight: "800", fontSize: 15 }}>{e.fullName}</Text>
+        <Badge label={e.employmentStatus} tone={e.employmentStatus === "active" ? "green" : "red"} />
+      </View>
+      <Text style={styles.muted}>
+        {e.employeeCode} · {e.phone}
+        {e.email ? ` · ${e.email}` : ""}
+      </Text>
+      <View style={styles.rowWrap}>
+        {e.roles.map((r) => (
+          <Badge key={r} label={staffRoleLabel(r)} tone="grey" />
+        ))}
+      </View>
+      <Text style={styles.muted}>
+        {e.branchName ? `Branch: ${e.branchName} · ` : ""}
+        {e.managerName ? `Manager: ${e.managerName} · ` : ""}
+        {e.joiningDate ? `Joined ${e.joiningDate}` : "Joining date not set"}
+      </Text>
+      <View style={styles.rowWrap}>
+        <GhostButton label="Edit" onPress={() => onEdit(e)} />
+        <GhostButton
+          label={e.employmentStatus === "active" ? "Deactivate" : "Reactivate"}
+          onPress={() => onToggleStatus(e)}
+        />
+      </View>
+    </Card>
+  );
+});
+
 export default function AdminEmployeesScreen() {
   const { isAdmin } = useAuth();
   const [employees, setEmployees] = useState<Employee[] | null>(null);
@@ -42,6 +83,7 @@ export default function AdminEmployeesScreen() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [editing, setEditing] = useState<Employee | "new" | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     setError(null);
@@ -63,6 +105,31 @@ export default function AdminEmployeesScreen() {
     }, [isAdmin, load]),
   );
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await load();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [load]);
+
+  const toggleStatus = useCallback(
+    (e: Employee) => {
+      void (async () => {
+        try {
+          await updateEmployee(e.id, {
+            employmentStatus: e.employmentStatus === "active" ? "inactive" : "active",
+          });
+          void load();
+        } catch {
+          setError("Could not change the employment status. Try again.");
+        }
+      })();
+    },
+    [load],
+  );
+
   const visible = useMemo(() => {
     if (!employees) return [];
     return employees.filter((e) => {
@@ -81,8 +148,8 @@ export default function AdminEmployeesScreen() {
     );
   }
 
-  return (
-    <Screen>
+  const header = (
+    <>
       <Title>Employees</Title>
       <PrimaryButton
         label={editing === "new" ? "Close the form" : "＋ Add employee"}
@@ -122,58 +189,42 @@ export default function AdminEmployeesScreen() {
           ))}
         </View>
       </ScrollView>
+    </>
+  );
 
-      {error ? (
-        <ErrorBlock message={error} onRetry={() => void load()} />
-      ) : !employees ? (
-        <LoadingBlock label="Loading employees…" />
-      ) : visible.length === 0 ? (
-        <EmptyBlock message="No employees match these filters." />
-      ) : (
-        visible.map((e) => (
-          <Card key={e.id}>
-            <View style={styles.rowBetween}>
-              <Text style={{ fontWeight: "800", fontSize: 15 }}>{e.fullName}</Text>
-              <Badge
-                label={e.employmentStatus}
-                tone={e.employmentStatus === "active" ? "green" : "red"}
-              />
-            </View>
-            <Text style={styles.muted}>
-              {e.employeeCode} · {e.phone}
-              {e.email ? ` · ${e.email}` : ""}
-            </Text>
-            <View style={styles.rowWrap}>
-              {e.roles.map((r) => (
-                <Badge key={r} label={staffRoleLabel(r)} tone="grey" />
-              ))}
-            </View>
-            <Text style={styles.muted}>
-              {e.branchName ? `Branch: ${e.branchName} · ` : ""}
-              {e.managerName ? `Manager: ${e.managerName} · ` : ""}
-              {e.joiningDate ? `Joined ${e.joiningDate}` : "Joining date not set"}
-            </Text>
-            <View style={styles.rowWrap}>
-              <GhostButton label="Edit" onPress={() => setEditing(e)} />
-              <GhostButton
-                label={e.employmentStatus === "active" ? "Deactivate" : "Reactivate"}
-                onPress={() => {
-                  void (async () => {
-                    try {
-                      await updateEmployee(e.id, {
-                        employmentStatus: e.employmentStatus === "active" ? "inactive" : "active",
-                      });
-                      void load();
-                    } catch {
-                      setError("Could not change the employment status. Try again.");
-                    }
-                  })();
-                }}
-              />
-            </View>
-          </Card>
-        ))
-      )}
+  if (!employees && !error) {
+    return (
+      <Screen>
+        {header}
+        <SkeletonRows />
+      </Screen>
+    );
+  }
+
+  return (
+    <Screen scroll={false}>
+      <FlatList
+        data={visible}
+        keyExtractor={(e) => e.id}
+        renderItem={({ item }) => (
+          <EmployeeRow employee={item} onEdit={setEditing} onToggleStatus={toggleStatus} />
+        )}
+        ListHeaderComponent={header}
+        ListEmptyComponent={
+          error ? (
+            <ErrorBlock message={error} onRetry={() => void load()} />
+          ) : (
+            <EmptyBlock message="No employees match these filters." />
+          )
+        }
+        contentContainerStyle={styles.screenContent}
+        initialNumToRender={10}
+        windowSize={11}
+        removeClippedSubviews
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} tintColor={brand.teal} colors={[brand.teal]} />
+        }
+      />
     </Screen>
   );
 }

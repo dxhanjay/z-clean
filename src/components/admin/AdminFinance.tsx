@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { formatPaise } from "@/lib/pricing";
+import { Skeleton, SkeletonText } from "@/components/Skeleton";
 import {
   collectionsByMethod,
   expectedCashPaise,
@@ -406,7 +407,14 @@ export default function AdminFinance({ mode }: { mode: "live" | "demo" }) {
           </label>
         </div>
         {!overview ? (
-          <p className="mt-4 text-sm text-ink-500">Loading…</p>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Loading day summary">
+            {[0, 1, 2, 3].map((card) => (
+              <div key={card} className="rounded-2xl bg-brand-50 p-4">
+                <Skeleton className="h-3.5 w-24 max-w-full" />
+                <Skeleton className="mt-2 h-6 w-20" />
+              </div>
+            ))}
+          </div>
         ) : (
           <>
             <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -474,7 +482,7 @@ export default function AdminFinance({ mode }: { mode: "live" | "demo" }) {
                     <span className={labelTextCls}>Note (optional)</span>
                     <input value={closeNote} onChange={(e) => setCloseNote(e.target.value)} maxLength={500} className={inputCls} />
                   </label>
-                  <button type="submit" disabled={closeBusy} className="min-h-[44px] rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-60">
+                  <button type="submit" disabled={closeBusy} className="btn-press min-h-[44px] rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-60">
                     {closeBusy ? "Closing…" : "Close the day"}
                   </button>
                   {closeError && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-800 sm:col-span-3">{closeError}</p>}
@@ -588,12 +596,12 @@ export default function AdminFinance({ mode }: { mode: "live" | "demo" }) {
                 <div className="mt-2.5 flex flex-wrap gap-2">
                   {r.status === "requested" && (
                     <>
-                      <button type="button" disabled={refundBusy !== null} onClick={() => void refundAction(r, "approve")} className="min-h-[44px] rounded-full bg-brand-600 px-4 py-2 text-xs font-bold text-white hover:bg-brand-700 disabled:opacity-60">Approve</button>
+                      <button type="button" disabled={refundBusy !== null} onClick={() => void refundAction(r, "approve")} className="btn-press min-h-[44px] rounded-full bg-brand-600 px-4 py-2 text-xs font-bold text-white hover:bg-brand-700 disabled:opacity-60">Approve</button>
                       <button type="button" disabled={refundBusy !== null} onClick={() => void refundAction(r, "reject")} className="min-h-[44px] rounded-full border border-red-200 px-4 py-2 text-xs font-bold text-red-700 hover:bg-red-50 disabled:opacity-60">Reject</button>
                     </>
                   )}
                   {r.status === "approved" && (
-                    <button type="button" disabled={refundBusy !== null} onClick={() => void refundAction(r, "process")} className="min-h-[44px] rounded-full bg-brand-600 px-4 py-2 text-xs font-bold text-white hover:bg-brand-700 disabled:opacity-60">
+                    <button type="button" disabled={refundBusy !== null} onClick={() => void refundAction(r, "process")} className="btn-press min-h-[44px] rounded-full bg-brand-600 px-4 py-2 text-xs font-bold text-white hover:bg-brand-700 disabled:opacity-60">
                       {refundBusy === r.id + "process" ? "Processing…" : "Process — money returned"}
                     </button>
                   )}
@@ -638,7 +646,7 @@ export default function AdminFinance({ mode }: { mode: "live" | "demo" }) {
             </select>
           </label>
           <div className="flex items-end">
-            <button type="submit" disabled={expBusy} className="min-h-[44px] w-full rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-60">
+            <button type="submit" disabled={expBusy} className="btn-press min-h-[44px] w-full rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-60">
               {expBusy ? "Saving…" : "Add expense"}
             </button>
           </div>

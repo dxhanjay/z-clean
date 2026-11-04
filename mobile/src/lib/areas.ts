@@ -32,7 +32,7 @@ export const FALLBACK_AREAS: ServiceArea[] = [
   { area: "Jaina More", city: "Bokaro Steel City", pincode: "829301" },
 ];
 
-export async function loadServiceAreas(): Promise<ServiceArea[]> {
+async function fetchServiceAreas(): Promise<ServiceArea[]> {
   try {
     const { data, error } = await supabase
       .from("service_areas")
@@ -46,4 +46,38 @@ export async function loadServiceAreas(): Promise<ServiceArea[]> {
   } catch {
     return FALLBACK_AREAS;
   }
+}
+
+/* ---------------- Tiny SWR cache (polish) ----------------
+ * Areas ARE fetched async (Supabase, above — only the fallback is a
+ * static bundled list), so the same 60s cache as the catalogue
+ * applies: fresh → cached; stale but present → stale immediately
+ * plus one background refresh; absent → fetch. Signature unchanged. */
+const AREAS_TTL_MS = 60_000;
+let areasCache: { data: ServiceArea[]; at: number } | null = null;
+let areasRefresh: Promise<void> | null = null;
+
+function refreshAreasInBackground(): void {
+  if (areasRefresh) return;
+  areasRefresh = fetchServiceAreas()
+    .then((data) => {
+      areasCache = { data, at: Date.now() };
+    })
+    .catch(() => {
+      // Keep the stale copy; the next stale read retries.
+    })
+    .finally(() => {
+      areasRefresh = null;
+    });
+}
+
+export async function loadServiceAreas(): Promise<ServiceArea[]> {
+  if (areasCache) {
+    if (Date.now() - areasCache.at < AREAS_TTL_MS) return areasCache.data;
+    refreshAreasInBackground();
+    return areasCache.data;
+  }
+  const data = await fetchServiceAreas();
+  areasCache = { data, at: Date.now() };
+  return data;
 }

@@ -1,6 +1,6 @@
 import { useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
-import { Text, View } from "react-native";
+import { memo, useCallback, useState } from "react";
+import { FlatList, RefreshControl, Text, View } from "react-native";
 import { Field, SelectChips, ToggleRow, fieldErrorText } from "../components/forms";
 import {
   Badge,
@@ -8,9 +8,9 @@ import {
   EmptyBlock,
   ErrorBlock,
   GhostButton,
-  LoadingBlock,
   PrimaryButton,
   Screen,
+  SkeletonRows,
   Title,
   styles,
 } from "../components/ui";
@@ -23,6 +23,7 @@ import {
   updateBranch,
   type BranchBody,
 } from "../lib/api";
+import { brand } from "../lib/config";
 import { BRANCH_TYPES, branchTypeLabel } from "../lib/org";
 import type { Branch, Employee } from "../lib/types";
 
@@ -32,12 +33,43 @@ import type { Branch, Employee } from "../lib/types";
  * manager link and the active toggle. Mirrors the web admin's fields
  * exactly (name, type, address, area, pincode, manager, active).
  */
+const BranchRow = memo(function BranchRow({
+  branch: b,
+  onEdit,
+  onToggleActive,
+}: {
+  branch: Branch;
+  onEdit: (branch: Branch) => void;
+  onToggleActive: (branch: Branch) => void;
+}) {
+  return (
+    <Card>
+      <View style={styles.rowBetween}>
+        <Text style={{ fontWeight: "800", fontSize: 15, flex: 1 }}>{b.name}</Text>
+        <Badge label={b.active ? "Active" : "Inactive"} tone={b.active ? "green" : "red"} />
+      </View>
+      <Text style={styles.muted}>
+        {branchTypeLabel(b.type)}
+        {b.area ? ` · ${b.area}` : ""}
+        {b.pincode ? ` · ${b.pincode}` : ""}
+      </Text>
+      {b.address ? <Text style={styles.muted}>{b.address}</Text> : null}
+      <Text style={styles.muted}>Manager: {b.managerName ?? "—"}</Text>
+      <View style={styles.rowWrap}>
+        <GhostButton label="Edit" onPress={() => onEdit(b)} />
+        <GhostButton label={b.active ? "Deactivate" : "Reactivate"} onPress={() => onToggleActive(b)} />
+      </View>
+    </Card>
+  );
+});
+
 export default function AdminBranchesScreen() {
   const { isAdmin } = useAuth();
   const [branches, setBranches] = useState<Branch[] | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Branch | "new" | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     setError(null);
@@ -59,6 +91,29 @@ export default function AdminBranchesScreen() {
     }, [isAdmin, load]),
   );
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await load();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [load]);
+
+  const toggleActive = useCallback(
+    (b: Branch) => {
+      void (async () => {
+        try {
+          await updateBranch(b.id, { active: !b.active });
+          void load();
+        } catch {
+          setError("Could not change the branch status. Try again.");
+        }
+      })();
+    },
+    [load],
+  );
+
   if (!isAdmin) {
     return (
       <Screen>
@@ -68,8 +123,8 @@ export default function AdminBranchesScreen() {
     );
   }
 
-  return (
-    <Screen>
+  const header = (
+    <>
       <Title>Branches & plants</Title>
       <PrimaryButton
         label={editing === "new" ? "Close the form" : "＋ Add branch / plant / center"}
@@ -87,48 +142,42 @@ export default function AdminBranchesScreen() {
           onCancel={() => setEditing(null)}
         />
       ) : null}
+    </>
+  );
 
-      {error ? (
-        <ErrorBlock message={error} onRetry={() => void load()} />
-      ) : !branches ? (
-        <LoadingBlock label="Loading branches…" />
-      ) : branches.length === 0 ? (
-        <EmptyBlock message="No branches yet. Add the plant and collection centers above." />
-      ) : (
-        branches.map((b) => (
-          <Card key={b.id}>
-            <View style={styles.rowBetween}>
-              <Text style={{ fontWeight: "800", fontSize: 15, flex: 1 }}>{b.name}</Text>
-              <Badge label={b.active ? "Active" : "Inactive"} tone={b.active ? "green" : "red"} />
-            </View>
-            <Text style={styles.muted}>
-              {branchTypeLabel(b.type)}
-              {b.area ? ` · ${b.area}` : ""}
-              {b.pincode ? ` · ${b.pincode}` : ""}
-            </Text>
-            {b.address ? <Text style={styles.muted}>{b.address}</Text> : null}
-            <Text style={styles.muted}>
-              Manager: {b.managerName ?? "—"}
-            </Text>
-            <View style={styles.rowWrap}>
-              <GhostButton label="Edit" onPress={() => setEditing(b)} />
-              <GhostButton
-                label={b.active ? "Deactivate" : "Reactivate"}
-                onPress={() => {
-                  void (async () => {
-                    try {
-                      await updateBranch(b.id, { active: !b.active });
-                      void load();
-                    } catch {
-                      setError("Could not change the branch status. Try again.");
-                    }
-                  })();
-                }}
-              />
-            </View>
-          </Card>
-        ))
-      )}
+  if (!branches && !error) {
+    return (
+      <Screen>
+        {header}
+        <SkeletonRows />
+      </Screen>
+    );
+  }
+
+  return (
+    <Screen scroll={false}>
+      <FlatList
+        data={branches ?? []}
+        keyExtractor={(b) => b.id}
+        renderItem={({ item }) => (
+          <BranchRow branch={item} onEdit={setEditing} onToggleActive={toggleActive} />
+        )}
+        ListHeaderComponent={header}
+        ListEmptyComponent={
+          error ? (
+            <ErrorBlock message={error} onRetry={() => void load()} />
+          ) : (
+            <EmptyBlock message="No branches yet. Add the plant and collection centers above." />
+          )
+        }
+        contentContainerStyle={styles.screenContent}
+        initialNumToRender={10}
+        windowSize={11}
+        removeClippedSubviews
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} tintColor={brand.teal} colors={[brand.teal]} />
+        }
+      />
     </Screen>
   );
 }

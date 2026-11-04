@@ -21,7 +21,7 @@ export default function CtaBand({
         <div className="flex flex-wrap gap-3">
           <Link
             href="/schedule-pickup"
-            className="rounded-full bg-white px-6 py-3 text-sm font-bold text-brand-800 shadow-sm transition-colors hover:bg-brand-50"
+            className="btn-press rounded-full bg-white px-6 py-3 text-sm font-bold text-brand-800 shadow-sm transition-colors hover:bg-brand-50"
           >
             Schedule a Pickup
           </Link>

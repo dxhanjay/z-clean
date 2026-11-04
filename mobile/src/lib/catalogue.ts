@@ -185,7 +185,7 @@ interface DbPriceItem {
  * join the bundled group of their service; DB-only services get
  * their own group.
  */
-export async function loadCatalogue(): Promise<StorefrontCatalogue> {
+async function fetchCatalogue(): Promise<StorefrontCatalogue> {
   try {
     const [svcRes, itemRes] = await Promise.all([
       supabase.from("services").select("id, slug, name, pricing_unit").eq("active", true),
@@ -271,6 +271,41 @@ export async function loadCatalogue(): Promise<StorefrontCatalogue> {
   } catch {
     return bundledResult();
   }
+}
+
+/* ---------------- Tiny SWR cache (polish) ----------------
+ * The catalogue is read on Home and on Place-order; a 60s module
+ * cache keeps repeat opens instant. Fresh → cached. Stale but
+ * present → stale is returned immediately and one background
+ * refresh updates the cache for the next caller. Absent → fetch.
+ * The public signature is unchanged: `await loadCatalogue()`. */
+const CATALOGUE_TTL_MS = 60_000;
+let catalogueCache: { data: StorefrontCatalogue; at: number } | null = null;
+let catalogueRefresh: Promise<void> | null = null;
+
+function refreshCatalogueInBackground(): void {
+  if (catalogueRefresh) return;
+  catalogueRefresh = fetchCatalogue()
+    .then((data) => {
+      catalogueCache = { data, at: Date.now() };
+    })
+    .catch(() => {
+      // Keep the stale copy; the next stale read retries.
+    })
+    .finally(() => {
+      catalogueRefresh = null;
+    });
+}
+
+export async function loadCatalogue(): Promise<StorefrontCatalogue> {
+  if (catalogueCache) {
+    if (Date.now() - catalogueCache.at < CATALOGUE_TTL_MS) return catalogueCache.data;
+    refreshCatalogueInBackground();
+    return catalogueCache.data;
+  }
+  const data = await fetchCatalogue();
+  catalogueCache = { data, at: Date.now() };
+  return data;
 }
 
 /** Quantity step for an item — mirrors the web order form (0.5 for weighed/measured units, else 1). */

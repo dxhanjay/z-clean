@@ -1,6 +1,7 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
+  Animated,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,7 +14,25 @@ import { brand } from "../lib/config";
 
 /** Shared building blocks — one visual language with the web app (brand teal). */
 
-export function Screen({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
+/**
+ * Page wrapper. By default a ScrollView (the original behaviour).
+ * Pass `scroll={false}` on FlatList screens: the list provides the
+ * scrolling, so Screen renders a plain full-height container with
+ * the same background and the FlatList owns padding via its own
+ * contentContainerStyle.
+ */
+export function Screen({
+  children,
+  style,
+  scroll = true,
+}: {
+  children: ReactNode;
+  style?: StyleProp<ViewStyle>;
+  scroll?: boolean;
+}) {
+  if (!scroll) {
+    return <View style={[styles.screen, style]}>{children}</View>;
+  }
   return (
     <ScrollView style={styles.screen} contentContainerStyle={[styles.screenContent, style]}>
       {children}
@@ -99,7 +118,11 @@ export function Chip({
   return (
     <Pressable
       onPress={onPress}
-      style={[styles.chip, selected && styles.chipSelected]}
+      style={({ pressed }) => [
+        styles.chip,
+        selected && styles.chipSelected,
+        pressed && styles.btnPressed,
+      ]}
     >
       <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{label}</Text>
     </Pressable>
@@ -134,6 +157,46 @@ export function LoadingBlock({ label = "Loading…" }: { label?: string }) {
     <View style={styles.centerBlock}>
       <ActivityIndicator color={brand.teal} size="large" />
       <Text style={styles.muted}>{label}</Text>
+    </View>
+  );
+}
+
+/**
+ * Placeholder rows for list screens while their first load runs —
+ * same card outline as a real row (title bar + two text bars) with a
+ * subtle opacity pulse, so the layout doesn't jump when data lands.
+ */
+export function SkeletonRows({ count = 5 }: { count?: number }) {
+  // Stable Animated.Value for the component's lifetime (held in state,
+  // never re-set — the react-hooks/refs-safe idiom for this pattern).
+  const [pulse] = useState(() => new Animated.Value(0.55));
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 550, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0.55, duration: 550, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulse]);
+
+  return (
+    <View style={{ gap: 12 }} accessibilityLabel="Loading">
+      {Array.from({ length: count }, (_, i) => (
+        <Animated.View key={i} style={[styles.card, { opacity: pulse }]}>
+          <View
+            style={{ height: 14, width: "55%", borderRadius: 7, backgroundColor: brand.tealBorder }}
+          />
+          <View
+            style={{ height: 10, width: "90%", borderRadius: 5, backgroundColor: brand.tealSoft }}
+          />
+          <View
+            style={{ height: 10, width: "70%", borderRadius: 5, backgroundColor: brand.tealSoft }}
+          />
+        </Animated.View>
+      ))}
     </View>
   );
 }

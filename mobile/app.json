@@ -46,7 +46,11 @@
     "extra": {
       "apiBaseUrl": "https://z-clean-iota.vercel.app",
       "supabaseUrl": "https://hvoqfcwtrlaszqsajlho.supabase.co",
-      "supabasePublishableKey": "sb_publishable_HpBnkz1IqUNgsL_hPpbHKQ_5vE9TI-s"
-    }
+      "supabasePublishableKey": "sb_publishable_HpBnkz1IqUNgsL_hPpbHKQ_5vE9TI-s",
+      "eas": {
+        "projectId": "85208a2e-65ea-4083-85d9-3259029db67b"
+      }
+    },
+    "owner": "dhananjaydev81"
   }
 }

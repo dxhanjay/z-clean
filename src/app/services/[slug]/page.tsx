@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import CtaBand from "@/components/CtaBand";
 import { getService, services } from "@/lib/services";
+import { serviceImages } from "@/lib/media";
 
 export function generateStaticParams() {
   return services.map((s) => ({ slug: s.slug }));
@@ -30,6 +31,7 @@ export default async function ServiceDetailPage({
   const { slug } = await params;
   const service = getService(slug);
   if (!service) notFound();
+  const image = serviceImages[service.slug];
 
   return (
     <>
@@ -37,7 +39,16 @@ export default async function ServiceDetailPage({
         <Link href="/services" className="text-sm font-semibold text-brand-700 hover:text-brand-800">
           ← All services
         </Link>
-        <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">
+        {image ? (
+          <div className="group mt-6 overflow-hidden rounded-3xl">
+            <img
+              src={image.src}
+              alt={image.alt}
+              className="h-64 w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 sm:h-80"
+            />
+          </div>
+        ) : null}
+        <h1 className="mt-6 text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">
           {service.name}
         </h1>
         <p className="mt-5 text-base leading-relaxed text-ink-700">

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import ServiceCard from "@/components/ServiceCard";
 import CtaBand from "@/components/CtaBand";
+import Reveal from "@/components/Reveal";
 import { services } from "@/lib/services";
 
 export const metadata: Metadata = {
@@ -22,8 +23,10 @@ export default function ServicesPage() {
           pickup and delivery from your door.
         </p>
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {services.map((service) => (
-            <ServiceCard key={service.slug} service={service} />
+          {services.map((service, i) => (
+            <Reveal key={service.slug} delay={(i % 3) * 90} className="h-full">
+              <ServiceCard service={service} />
+            </Reveal>
           ))}
         </div>
       </section>

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { BRANCH_TYPES, STAFF_ROLES } from "./org";
+import { services } from "./services";
 
 export const loginSchema = z.object({
   email: z.string().email("Enter a valid email address"),
@@ -111,6 +112,19 @@ export const orderSchema = z.object({
     .optional()
     .or(z.literal("")),
   /**
+   * Gift voucher / prepaid card code (Phase 7b). A voucher and a coupon
+   * may NOT stack — the route rejects both-together with 422
+   * VOUCHER_COUPON_CONFLICT. The voucher is validated and applied
+   * entirely on the server AFTER the base-total integrity check, so it
+   * never enters the client-computed expectedTotalPaise.
+   */
+  voucherCode: z
+    .string()
+    .trim()
+    .max(30)
+    .optional()
+    .or(z.literal("")),
+  /**
    * The total the client computed with the shared totals engine. The server
    * re-calculates from catalogue data and REJECTS the order when this does
    * not match — client totals are never trusted.
@@ -215,6 +229,110 @@ export const employeeUpdateSchema = employeeCreateSchema.partial().extend({
 
 export type EmployeeCreateInput = z.infer<typeof employeeCreateSchema>;
 export type EmployeeUpdateInput = z.infer<typeof employeeUpdateSchema>;
+
+/* ------------------------------------------------------------------ */
+/* Phase 7b — gift vouchers, pricing editor, settings editor.          */
+/* Money crosses the API in integer paise (the UI converts ₹ → paise). */
+/* ------------------------------------------------------------------ */
+
+const serviceSlugEnum = z.enum(
+  services.map((s) => s.slug) as [string, ...string[]],
+);
+const optionalDate = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Use a valid date (YYYY-MM-DD)")
+  .nullable()
+  .optional();
+
+export const voucherCreateSchema = z
+  .object({
+    kind: z.enum(["prepaid_card", "promo"]),
+    /** Campaign batch size: this many codes with identical terms. */
+    quantity: z.number().int().min(1).max(50).optional(),
+    // Prepaid card terms.
+    faceValuePaise: z.number().int().positive().max(100_000_00).optional(),
+    // Promo terms.
+    discountType: z.enum(["fixed", "percent"]).optional(),
+    /** Paise when fixed; whole percent (1–100) when percent. */
+    discountValue: z.number().int().positive().max(100_000_00).optional(),
+    maxDiscountPaise: z.number().int().nonnegative().max(100_000_00).nullable().optional(),
+    // Shared rules.
+    minOrderPaise: z.number().int().nonnegative().max(100_000_00).optional(),
+    eligibleServices: z.array(serviceSlugEnum).max(services.length).optional(),
+    branchId: optionalUuid,
+    usageLimit: z.number().int().min(1).max(1000).optional(),
+    validFrom: optionalDate,
+    validUntil: optionalDate,
+  })
+  .refine(
+    (v) => v.kind !== "prepaid_card" || (v.faceValuePaise ?? 0) > 0,
+    { message: "A gift card needs a face value.", path: ["faceValuePaise"] },
+  )
+  .refine(
+    (v) =>
+      v.kind !== "promo" ||
+      (v.discountType !== undefined && (v.discountValue ?? 0) > 0),
+    { message: "A promo voucher needs a discount type and value.", path: ["discountValue"] },
+  )
+  .refine(
+    (v) =>
+      v.kind !== "promo" ||
+      v.discountType !== "percent" ||
+      (v.discountValue ?? 0) <= 100,
+    { message: "A percent discount cannot exceed 100%.", path: ["discountValue"] },
+  )
+  .refine(
+    (v) =>
+      !v.validFrom || !v.validUntil || v.validFrom <= v.validUntil,
+    { message: "The validity start must be on or before the end date.", path: ["validUntil"] },
+  );
+
+export type VoucherCreateInput = z.infer<typeof voucherCreateSchema>;
+
+export const voucherActionSchema = z.object({
+  action: z.enum(["issue", "cancel", "expire"]),
+  issuedToName: z.string().trim().min(2).max(120).optional(),
+  issuedToPhone: indianPhone.optional().or(z.literal("")),
+  issuedToEmployeeId: optionalUuid,
+});
+
+export type VoucherActionInput = z.infer<typeof voucherActionSchema>;
+
+/** Cashier redemption at the admin order desk (prepaid cards only). */
+export const redeemVoucherSchema = z.object({
+  code: z.string().trim().min(4, "Enter the gift card code").max(30),
+});
+
+export type RedeemVoucherInput = z.infer<typeof redeemVoucherSchema>;
+
+export const pricingUpdateSchema = z
+  .object({
+    pricePaise: z.number().int().min(0).max(100_000_00).optional(),
+    expressMultiplier: z.number().min(1).max(5).optional(),
+    active: z.boolean().optional(),
+  })
+  .refine(
+    (v) =>
+      v.pricePaise !== undefined ||
+      v.expressMultiplier !== undefined ||
+      v.active !== undefined,
+    { message: "Nothing to update." },
+  );
+
+export type PricingUpdateInput = z.infer<typeof pricingUpdateSchema>;
+
+/**
+ * Settings editor: a map of EXISTING settings keys to new text values
+ * (null clears a value). The route rejects keys that do not already
+ * exist in the settings table, so the editor can never invent keys.
+ */
+export const settingsUpdateSchema = z.object({
+  values: z
+    .record(z.string().min(1).max(80), z.string().max(500).nullable())
+    .refine((v) => Object.keys(v).length > 0, { message: "Nothing to update." }),
+});
+
+export type SettingsUpdateInput = z.infer<typeof settingsUpdateSchema>;
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;

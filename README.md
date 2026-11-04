@@ -240,6 +240,142 @@ log. Gift vouchers (Phase 7b), QR/OTP handovers (Phase 8) and finance
 - **What's next:** Phase 7b — gift vouchers (prepaid card vs promo)
   plus pricing/settings editors.
 
+## Phase 7b — gift vouchers + pricing & settings editors (Requirements v2)
+
+The commercial instruments and the owner-editable catalogue/settings,
+per `../REQUIREMENTS_V2.md` §3/§4. Prepaid gift cards and promo
+vouchers are different instruments and are never treated as the same
+thing anywhere in the system.
+
+- **Migration `supabase/schema_v3.sql`** (additive, idempotent-guarded —
+  run it in the SQL editor AFTER `schema_v2.sql`; it never alters the
+  v1/v2 tables beyond the noted order columns):
+  - `gift_vouchers` — unique `code`, `kind` (`prepaid_card` | `promo`),
+    prepaid face/balance in integer paise (CHECK `balance <= face`),
+    promo `discount_type` (`fixed` | `percent`) + `discount_value` +
+    optional `max_discount_paise` cap, `min_order_paise`,
+    `eligible_services` (empty = all services), optional `branch_id`,
+    `usage_limit`/`times_used`, `status` (`created` | `issued` |
+    `partially_redeemed` | `redeemed` | `expired` | `cancelled`),
+    issued-to name/phone/employee, validity dates. A coherence CHECK
+    keeps the two kinds' shapes separate in the database itself. RLS
+    is **admin-only** — codes are bearer instruments and are never
+    exposed to customer/anon clients.
+  - `voucher_transactions` — the append-only voucher ledger (`issue` |
+    `redeem` | `adjust` | `cancel` | `expire`, amount, balance-after,
+    order link, actor), RLS like `audit_logs`: insert for self, select
+    admin, no update/delete.
+  - `orders` gains `voucher_code`, `voucher_discount_paise`,
+    `voucher_redeemed_paise` — so the identity
+    `total = subtotal − coupon discount − voucher discount + delivery fee`
+    holds exactly; a prepaid card is a **payment**, never a discount,
+    and never enters that identity.
+  - `payments` needed no change: the table has no `method` column or
+    CHECK — the gateway is a free `gateway text` column, so card
+    payments are recorded as `gateway = 'voucher'`, `status = 'paid'`.
+
+- **Prepaid vs promo semantics** (`src/lib/vouchers.ts`, pure +
+  unit-tested):
+  - **Promo** reduces the order total at checkout (fixed ₹ off, or %
+    off the subtotal, rounded to the nearest paise and capped by
+    `max_discount_paise` when set; never more than the subtotal). It
+    consumes one of its `usage_limit` uses and flips to `redeemed`
+    when the limit is reached. Promos are **checkout-only** — the
+    cashier route rejects them with a plain explanation.
+  - **Prepaid card** pays `min(balance, amount due)`. The balance
+    drops, a `payments` row is written, and the card becomes
+    `partially_redeemed` or `redeemed`. Whatever it doesn't cover
+    stays outstanding (COD stays `cod_pending`; finance/balances are
+    Phase 9). Usage limits do not apply to cards — balance governs.
+  - Both kinds honour: status must be `issued`/`partially_redeemed`,
+    the validity window, the minimum order, eligible services (an
+    order containing ANY ineligible service is rejected), and a
+    branch restriction whenever the redemption has a branch context.
+  - **No stacking: a voucher and a coupon can never be used on the
+    same order.** Sending both to `POST /api/orders` is a `422
+    VOUCHER_COUPON_CONFLICT`, and the rule is unit-tested at the
+    helper + schema level.
+
+- **Checkout integration** (`POST /api/orders`): the client sends an
+  optional `voucherCode` but never computes its effect — the existing
+  `expectedTotalPaise` integrity check still runs against the **base**
+  total first. Only then is the voucher resolved server-side through
+  the service-role client and validated against the server-computed
+  totals. Promo → `total_paise` is reduced and `voucher_discount_paise`
+  recorded. Prepaid → applied as a payment (`voucher_redeemed_paise` +
+  payments row); if it covers everything, the order is placed already
+  `paid` (either payment method); with Razorpay and a part-covering
+  card, the gateway order is created for the **remainder** only. The
+  /order form has a voucher field next to the coupon field with an
+  honest note — there is deliberately **no client-side voucher
+  discount preview**, because only the server can verify a bearer
+  code. Both order-detail views (customer and admin) show the voucher
+  code, the discount taken, the gift-card amount paid, and the amount
+  still outstanding; COD copy asks only for the uncovered remainder.
+
+- **Cashier redemption rule** (admin order detail → "Redeem gift
+  card", `POST /api/admin/orders/[id]/redeem-voucher`): prepaid cards
+  only. Outstanding is defined precisely from the order row — if
+  `payment_status = 'paid'` there is nothing outstanding (422);
+  otherwise `outstanding = total_paise − voucher_redeemed_paise`. The
+  card pays `min(balance, outstanding)`; `voucher_redeemed_paise`
+  grows by that amount and, when the outstanding reaches 0, the
+  order's `payment_status` becomes `paid`. The redemption is ledgered
+  in `voucher_transactions`, noted on the order timeline, and
+  audit-logged.
+
+- **Admin UI** (`/admin/vouchers`, `/admin/pricing`,
+  `/admin/settings`; nav gains Vouchers · Pricing · Settings):
+  - *Vouchers:* batch create (1–50 codes sharing terms; prepaid face
+    value, or promo fixed/% + cap + usage limit; min order, eligible
+    services multi-select, branch restriction, validity dates), status
+    filter, issue to a named person or an employee, cancel (a
+    cancelled card's balance is voided), mark expired, expandable
+    per-voucher transaction history, and a QR code of the code (the
+    `qrcode` package; the code text is always shown as fallback).
+  - *Pricing:* every `price_items` row editable (price ₹, express
+    multiplier, active toggle), grouped by service, inactive rows
+    included.
+  - *Settings:* every seeded settings key editable (`business_phone`,
+    `business_whatsapp`, `business_email`, `business_address`,
+    `opening_hours`, `first_order_offer_note`, and the two paise
+    thresholds edited in ₹). The API rejects unknown keys with 422 —
+    the editor can only change configuration that exists.
+  - All mutations are admin-gated, zod-validated and **audit-logged**
+    (`voucher.create/issue/cancel/expire/redeem`, `pricing.update`,
+    `settings.update`). Demo mode runs all three screens on the
+    browser demo store under the DEMO MODE banner; cashier redemption
+    is live-only (it moves a real balance) and says so in demo mode.
+
+- **DB-first catalogue (the editors are real):** `POST /api/orders`
+  already re-priced from the database; the storefront did not — it
+  rendered the static mirror in `src/lib/pricing.ts`, so an admin
+  price edit would have desynced the pricing page and broken the
+  order form's total check. `src/lib/catalogue-server.ts` now loads
+  the catalogue DB-first (services + price_items are the truth; the
+  static groups provide only presentation — titles, unit notes, item
+  order), with the approved static list as fallback when Supabase is
+  unconfigured, errors, or is empty. `/pricing` and `/order` are
+  `force-dynamic` and consume it; the totals engine's API is unchanged
+  and all suites stay green. Known scope note: the two paise settings
+  (`free_delivery_threshold_paise`, `minimum_order_paise`) are
+  editable in the settings table, but the totals engine still reads
+  the approved constants from `src/lib/pricing.ts` — wiring settings
+  into the engine is a deliberate later step, flagged here rather
+  than hidden.
+- **Settings-backed contact details:** `getBusinessSettings()`
+  (`src/lib/business-settings.ts`) reads `business_phone` /
+  `business_whatsapp` from the settings table with the `config.ts`
+  constants as fallback, and is used by exactly the site footer and
+  the contact page — so a settings edit changes the site immediately.
+- Test the voucher rules with `npm run test:vouchers` (69 checks:
+  code format/uniqueness, status + validity + min-order + cap +
+  eligible-services + branch + usage-limit matrix, prepaid partial /
+  full math, coupon-conflict, checkout/create/redeem schemas).
+- **What's next:** Phase 8 — QR/OTP handovers at every stage transfer
+  + employee stage queues; Phase 9 — finance (partial payments,
+  balances, refunds, daily closing, reconciliation) and reports.
+
 ## Setup
 
 ```bash
@@ -253,7 +389,9 @@ cp .env.example .env.local   # fill in your Supabase + Razorpay (test) keys
    `supabase/seed_demo.sql` (demo prices, areas, settings, coupon).
    For the Phase 7a organisation tables (branches, employees,
    employee_roles, audit_logs), run `supabase/schema_v2.sql` afterwards —
-   it is additive and safe to re-run.
+   it is additive and safe to re-run. Then, for Phase 7b (gift_vouchers,
+   voucher_transactions, the orders voucher columns), run
+   `supabase/schema_v3.sql` — also additive and safe to re-run.
 2. In Supabase Auth settings, set the Site URL to your app URL
    (e.g. `http://localhost:3000` in development).
 3. To make a user an admin, update their row:

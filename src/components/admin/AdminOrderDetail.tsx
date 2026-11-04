@@ -47,6 +47,9 @@ interface Detail {
   discountPaise: number;
   deliveryFeePaise: number;
   totalPaise: number;
+  voucherCode: string | null;
+  voucherDiscountPaise: number;
+  voucherRedeemedPaise: number;
   paymentMethod: string;
   paymentStatus: string;
   status: string;
@@ -65,6 +68,9 @@ interface LiveDetailOrder {
   discount_paise: number;
   delivery_fee_paise: number;
   total_paise: number;
+  voucher_code: string | null;
+  voucher_discount_paise: number;
+  voucher_redeemed_paise: number;
   created_at: string;
   profiles: { name: string | null; phone: string | null } | { name: string | null; phone: string | null }[] | null;
   addresses: { line: string; area: string | null; city: string; pincode: string } | { line: string; area: string | null; city: string; pincode: string }[] | null;
@@ -95,6 +101,12 @@ export default function AdminOrderDetail({
   const [feedback, setFeedback] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
+  // Cashier gift-card redemption (Phase 7b) — live mode only.
+  const [redeemCode, setRedeemCode] = useState("");
+  const [redeemBusy, setRedeemBusy] = useState(false);
+  const [redeemFeedback, setRedeemFeedback] = useState<string | null>(null);
+  const [redeemError, setRedeemError] = useState<string | null>(null);
+
   const loadDemo = useCallback(() => {
     const o = getDemoOrder(id);
     if (!o) {
@@ -120,6 +132,9 @@ export default function AdminOrderDetail({
       discountPaise: o.discountPaise,
       deliveryFeePaise: o.deliveryFeePaise,
       totalPaise: o.totalPaise,
+      voucherCode: null,
+      voucherDiscountPaise: 0,
+      voucherRedeemedPaise: 0,
       paymentMethod: o.paymentMethod,
       paymentStatus: o.paymentStatus,
       status: o.status,
@@ -166,6 +181,9 @@ export default function AdminOrderDetail({
         discountPaise: o.discount_paise,
         deliveryFeePaise: o.delivery_fee_paise,
         totalPaise: o.total_paise,
+        voucherCode: o.voucher_code,
+        voucherDiscountPaise: o.voucher_discount_paise ?? 0,
+        voucherRedeemedPaise: o.voucher_redeemed_paise ?? 0,
         paymentMethod: o.payment_method,
         paymentStatus: o.payment_status,
         status: o.status,
@@ -247,6 +265,37 @@ export default function AdminOrderDetail({
       setFormError("Could not update the order. Please try again.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function submitRedeem() {
+    if (!detail) return;
+    setRedeemBusy(true);
+    setRedeemFeedback(null);
+    setRedeemError(null);
+    try {
+      const res = await fetch(`/api/admin/orders/${detail.id}/redeem-voucher`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: redeemCode.trim() }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        setRedeemError(json?.error ?? "The gift card could not be redeemed.");
+        return;
+      }
+      setRedeemFeedback(
+        `Redeemed ${formatPaise(json.redeemedPaise)} from the gift card. ` +
+          (json.outstandingPaise > 0
+            ? `${formatPaise(json.outstandingPaise)} is still outstanding on this order.`
+            : "The order is now paid in full."),
+      );
+      setRedeemCode("");
+      await loadLive();
+    } catch {
+      setRedeemError("The gift card could not be redeemed. Please try again.");
+    } finally {
+      setRedeemBusy(false);
     }
   }
 
@@ -335,8 +384,17 @@ export default function AdminOrderDetail({
               {detail.discountPaise > 0 && (
                 <div className="flex justify-between"><dt className="text-green-700">Discount</dt><dd className="font-semibold text-green-700">−{formatPaise(detail.discountPaise)}</dd></div>
               )}
+              {detail.voucherDiscountPaise > 0 && (
+                <div className="flex justify-between"><dt className="text-green-700">Voucher discount{detail.voucherCode ? ` (${detail.voucherCode})` : ""}</dt><dd className="font-semibold text-green-700">−{formatPaise(detail.voucherDiscountPaise)}</dd></div>
+              )}
               <div className="flex justify-between"><dt className="text-ink-500">Pickup &amp; delivery</dt><dd className="font-semibold text-ink-900">{detail.deliveryFeePaise === 0 ? "Free" : formatPaise(detail.deliveryFeePaise)}</dd></div>
               <div className="flex justify-between border-t border-brand-50 pt-2 text-base"><dt className="font-bold text-ink-900">Total</dt><dd className="font-extrabold text-ink-900">{formatPaise(detail.totalPaise)}</dd></div>
+              {detail.voucherRedeemedPaise > 0 && (
+                <div className="flex justify-between"><dt className="text-ink-500">Paid with gift card{detail.voucherCode ? ` ${detail.voucherCode}` : ""}</dt><dd className="font-semibold text-green-700">{formatPaise(detail.voucherRedeemedPaise)}</dd></div>
+              )}
+              {detail.paymentStatus !== "paid" && detail.voucherRedeemedPaise > 0 && (
+                <div className="flex justify-between"><dt className="text-ink-500">Still outstanding</dt><dd className="font-semibold text-ink-900">{formatPaise(Math.max(0, detail.totalPaise - detail.voucherRedeemedPaise))}</dd></div>
+              )}
               <div className="flex justify-between"><dt className="text-ink-500">Payment</dt><dd className="font-semibold text-ink-900">{detail.paymentMethod === "cod" ? "Pay on Delivery" : "Online (Razorpay)"} — {detail.paymentStatus.replaceAll("_", " ")}</dd></div>
             </dl>
           </div>
@@ -406,7 +464,7 @@ export default function AdminOrderDetail({
                     />
                     <span>
                       Also record the Pay-on-Delivery collection (
-                      {formatPaise(detail.totalPaise)}) with this update —
+                      {formatPaise(Math.max(0, detail.totalPaise - detail.voucherRedeemedPaise))}) with this update —
                       the usual choice when marking the order Delivered.
                     </span>
                   </label>
@@ -431,7 +489,7 @@ export default function AdminOrderDetail({
               <div className="mt-6 border-t border-brand-50 pt-4">
                 <h3 className="text-sm font-bold text-ink-900">Pay on Delivery</h3>
                 <p className="mt-1.5 text-sm leading-relaxed text-ink-500">
-                  {formatPaise(detail.totalPaise)} is still to collect from
+                  {formatPaise(Math.max(0, detail.totalPaise - detail.voucherRedeemedPaise))} is still to collect from
                   the customer. Record it here the moment the cash / UPI is
                   in hand — no status change needed.
                 </p>
@@ -446,6 +504,61 @@ export default function AdminOrderDetail({
               </div>
             )}
           </div>
+
+          {detail.paymentStatus !== "paid" && (
+            <div className="rounded-2xl border border-brand-100 p-4 sm:p-6">
+              <h2 className="font-bold text-ink-900">Redeem gift card</h2>
+              <p className="mt-1.5 text-sm leading-relaxed text-ink-500">
+                The customer can pay part or all of the{" "}
+                {formatPaise(Math.max(0, detail.totalPaise - detail.voucherRedeemedPaise))}{" "}
+                outstanding with a prepaid Z-clean gift card. The card pays
+                up to its remaining balance; if that clears the balance, the
+                order is marked paid. Promo vouchers are checkout-only and
+                cannot be redeemed here.
+              </p>
+              {mode === "demo" ? (
+                <p role="status" className="mt-3 rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-900">
+                  DEMO MODE — redemption moves a real card balance, so it is
+                  available in live mode only. Nothing is redeemed here.
+                </p>
+              ) : (
+                <form
+                  className="mt-4 grid gap-3"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void submitRedeem();
+                  }}
+                >
+                  <label className="grid gap-1.5 text-sm">
+                    <span className="font-semibold text-ink-900">Gift card code</span>
+                    <input
+                      value={redeemCode}
+                      onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
+                      placeholder="ZCGIFT-XXXXXXXX"
+                      className="min-h-[44px] rounded-xl border border-brand-200 px-3 py-2.5 text-sm uppercase text-ink-900 placeholder:text-ink-500/70 focus:border-brand-500 focus:outline-none"
+                    />
+                  </label>
+                  {redeemFeedback && (
+                    <p role="status" className="rounded-xl bg-green-50 p-3 text-sm font-semibold text-green-800">
+                      {redeemFeedback}
+                    </p>
+                  )}
+                  {redeemError && (
+                    <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-800">
+                      {redeemError}
+                    </p>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={redeemBusy || redeemCode.trim().length < 4}
+                    className="min-h-[44px] w-full rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-60 sm:w-auto"
+                  >
+                    {redeemBusy ? "Redeeming…" : "Redeem gift card"}
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
 
           <div className="rounded-2xl border border-brand-100 p-4 sm:p-6">
             <h2 className="font-bold text-ink-900">Activity log</h2>

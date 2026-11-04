@@ -1,8 +1,12 @@
 import Link from "next/link";
-import { businessSettings, hasPhone } from "@/lib/config";
+import { businessSettings } from "@/lib/config";
+import { getBusinessSettings } from "@/lib/business-settings";
 import { services } from "@/lib/services";
 
-export default function Footer() {
+export default async function Footer() {
+  // Phone comes from the owner-editable settings table when configured
+  // (Phase 7b), falling back to the config constants.
+  const contact = await getBusinessSettings();
   return (
     <footer className="border-t border-brand-100 bg-brand-50">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
@@ -49,10 +53,10 @@ export default function Footer() {
             Get in touch
           </p>
           <ul className="mt-3 space-y-2 text-sm text-ink-700">
-            {hasPhone ? (
+            {contact.hasPhone ? (
               <li>
-                <a href={`tel:${businessSettings.phone.replace(/\s/g, "")}`} className="hover:text-brand-700">
-                  {businessSettings.phone}
+                <a href={`tel:${contact.phone.replace(/\s/g, "")}`} className="hover:text-brand-700">
+                  {contact.phone}
                 </a>
               </li>
             ) : (

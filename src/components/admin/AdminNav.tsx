@@ -12,6 +12,9 @@ const LINKS = [
   { href: "/admin", label: "Order queue", exact: true },
   { href: "/admin/branches", label: "Branches", exact: false },
   { href: "/admin/employees", label: "Employees", exact: false },
+  { href: "/admin/vouchers", label: "Vouchers", exact: false },
+  { href: "/admin/pricing", label: "Pricing", exact: false },
+  { href: "/admin/settings", label: "Settings", exact: false },
 ];
 
 export default function AdminNav() {

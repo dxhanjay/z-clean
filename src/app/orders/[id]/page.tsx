@@ -44,6 +44,9 @@ interface LiveOrder {
   discount_paise: number;
   delivery_fee_paise: number;
   total_paise: number;
+  voucher_code: string | null;
+  voucher_discount_paise: number;
+  voucher_redeemed_paise: number;
   created_at: string;
   addresses: { line: string; area: string | null; city: string; pincode: string } | null;
   items: LiveOrderItem[];
@@ -242,6 +245,9 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const fee = isDemo ? demoOrder!.deliveryFeePaise : liveOrder!.delivery_fee_paise;
   const total = isDemo ? demoOrder!.totalPaise : liveOrder!.total_paise;
   const coupon = isDemo ? demoOrder!.couponCode : undefined;
+  const voucherCode = isDemo ? null : liveOrder!.voucher_code;
+  const voucherDiscount = isDemo ? 0 : (liveOrder!.voucher_discount_paise ?? 0);
+  const voucherRedeemed = isDemo ? 0 : (liveOrder!.voucher_redeemed_paise ?? 0);
   const items = isDemo
     ? demoOrder!.items.map((i) => ({
         itemName: i.itemName,
@@ -326,6 +332,9 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             {discount > 0 && (
               <div className="flex justify-between"><dt className="text-green-700">Discount{coupon ? ` (${coupon})` : ""}</dt><dd className="font-semibold text-green-700">−{formatPaise(discount)}</dd></div>
             )}
+            {voucherDiscount > 0 && (
+              <div className="flex justify-between"><dt className="text-green-700">Voucher discount{voucherCode ? ` (${voucherCode})` : ""}</dt><dd className="font-semibold text-green-700">−{formatPaise(voucherDiscount)}</dd></div>
+            )}
             <div className="flex justify-between"><dt className="text-ink-500">Pickup &amp; delivery</dt><dd className="font-semibold text-ink-900">{fee === 0 ? "Free" : formatPaise(fee)}</dd></div>
             <div className="flex justify-between border-t border-brand-50 pt-2 text-base"><dt className="font-bold text-ink-900">Total</dt><dd className="font-extrabold text-ink-900">{formatPaise(total)}</dd></div>
           </dl>
@@ -349,11 +358,17 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             <dl className="mt-3 grid gap-2 text-sm">
               <div><dt className="text-ink-500">Method</dt><dd className="font-semibold text-ink-900">{paymentMethod === "cod" ? "Pay on Delivery" : "Online (Razorpay)"}</dd></div>
               <div><dt className="text-ink-500">Status</dt><dd className="font-semibold text-ink-900">{paymentStatus.replaceAll("_", " ")}</dd></div>
+              {voucherRedeemed > 0 && (
+                <div><dt className="text-ink-500">Paid with gift card{voucherCode ? ` ${voucherCode}` : ""}</dt><dd className="font-semibold text-green-700">{formatPaise(voucherRedeemed)}</dd></div>
+              )}
             </dl>
             {paymentMethod === "cod" && paymentStatus === "cod_pending" && (
               <p className="mt-3 text-sm leading-relaxed text-ink-500">
-                Please keep {formatPaise(total)} ready — you pay when your
+                Please keep {formatPaise(Math.max(0, total - voucherRedeemed))} ready — you pay when your
                 laundry is delivered back.
+                {voucherRedeemed > 0
+                  ? ` (${formatPaise(voucherRedeemed)} was already covered by your gift card.)`
+                  : ""}
               </p>
             )}
             {isDemo && paymentMethod === "razorpay" && paymentStatus !== "paid" && (

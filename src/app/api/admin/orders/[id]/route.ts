@@ -28,7 +28,7 @@ export async function GET(
   const { data: order, error } = await supabase
     .from("orders")
     .select(
-      "id, user_id, status, payment_status, payment_method, delivery_type, pickup_slot, subtotal_paise, discount_paise, total_paise, created_at, profiles ( name, phone ), addresses ( line, area, city, pincode )",
+      "id, user_id, status, payment_status, payment_method, delivery_type, pickup_slot, subtotal_paise, discount_paise, total_paise, created_at, voucher_code, voucher_discount_paise, voucher_redeemed_paise, profiles ( name, phone ), addresses ( line, area, city, pincode )",
     )
     .eq("id", id)
     .maybeSingle();
@@ -47,8 +47,10 @@ export async function GET(
     .eq("order_id", id)
     .order("created_at", { ascending: true });
 
+  // total = subtotal − coupon discount − voucher (promo) discount + fee.
   const deliveryFeePaise =
-    order.total_paise - (order.subtotal_paise - order.discount_paise);
+    order.total_paise -
+    (order.subtotal_paise - order.discount_paise - (order.voucher_discount_paise ?? 0));
 
   return NextResponse.json({
     mode: "live",

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { orderSchema } from "@/lib/validation";
 import { isPincodeServiceable } from "@/lib/pricing";
 import { computeOrderTotals } from "@/lib/totals";
@@ -9,6 +11,17 @@ import {
   loadCatalogue,
   resolveCoupon,
 } from "@/lib/orders-server";
+import {
+  hasVoucherCouponConflict,
+  validateVoucher,
+  type GiftVoucher,
+} from "@/lib/vouchers";
+import {
+  applyPrepaidRedemption,
+  applyPromoRedemption,
+  loadVoucherByCode,
+} from "@/lib/vouchers-server";
+import { logAudit } from "@/lib/audit";
 import { pickupSlotIso } from "@/lib/slot-time";
 
 /**
@@ -73,15 +86,32 @@ export async function POST(request: Request) {
     );
   }
 
+  // Voucher + coupon never stack (Phase 7b) — checked before any totals
+  // work so the customer gets one clear answer.
+  const couponCodeInput = data.couponCode?.trim().toUpperCase() || "";
+  const voucherCodeInput = data.voucherCode?.trim().toUpperCase() || "";
+  if (hasVoucherCouponConflict(couponCodeInput, voucherCodeInput)) {
+    return NextResponse.json(
+      {
+        error:
+          "A gift voucher and a coupon cannot be used on the same order. Please use one or the other.",
+        code: "VOUCHER_COUPON_CONFLICT",
+      },
+      { status: 422 },
+    );
+  }
+
   const supabase = await createClient();
 
   // Who is ordering? Live orders need an account (orders.user_id NOT NULL).
   let userId: string | null = null;
+  let userEmail: string | null = null;
   if (supabase) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
     userId = user?.id ?? null;
+    userEmail = user?.email ?? null;
     if (!userId) {
       return NextResponse.json(
         { error: "Please sign in to place an order.", code: "AUTH_REQUIRED" },
@@ -142,6 +172,74 @@ export async function POST(request: Request) {
     );
   }
 
+  // --- Gift voucher (Phase 7b), live mode only. The base-total integrity
+  // check above has already passed: the client never computes voucher
+  // effects. The voucher is resolved through the service-role client
+  // (codes are bearer instruments; the table is admin-only under RLS)
+  // and validated against the server-computed totals. A promo reduces
+  // the final total; a prepaid card pays part/all of it as a payment.
+  let adminClient: SupabaseClient | null = null;
+  let voucherPlan: {
+    voucher: GiftVoucher;
+    discountPaise: number;
+    redeemPaise: number;
+  } | null = null;
+  if (voucherCodeInput) {
+    adminClient = createAdminClient();
+    if (!adminClient) {
+      return NextResponse.json(
+        {
+          error: "Gift vouchers cannot be verified right now. Please place the order without the voucher, or contact us.",
+          code: "VOUCHER_UNAVAILABLE",
+        },
+        { status: 422 },
+      );
+    }
+    const voucher = await loadVoucherByCode(adminClient, voucherCodeInput);
+    if (!voucher) {
+      return NextResponse.json(
+        {
+          error: `Voucher "${voucherCodeInput}" was not recognised. Check the code and try again.`,
+          code: "VOUCHER_INVALID",
+          reasons: ["Code not recognised."],
+        },
+        { status: 422 },
+      );
+    }
+    const validation = validateVoucher(voucher, {
+      subtotalPaise: totals.subtotalPaise,
+      amountDuePaise: totals.totalPaise,
+      serviceSlugs: [...new Set(data.items.map((i) => i.serviceSlug))],
+    });
+    if (!validation.ok) {
+      return NextResponse.json(
+        {
+          error: validation.reasons[0] ?? "This voucher cannot be used on this order.",
+          code: "VOUCHER_INVALID",
+          reasons: validation.reasons,
+        },
+        { status: 422 },
+      );
+    }
+    voucherPlan = {
+      voucher,
+      discountPaise: validation.discountPaise,
+      redeemPaise: validation.redeemablePaise,
+    };
+  }
+  const finalTotalPaise = totals.totalPaise - (voucherPlan?.discountPaise ?? 0);
+  const amountDuePaise = finalTotalPaise - (voucherPlan?.redeemPaise ?? 0);
+  const nothingDue = amountDuePaise <= 0;
+  const voucherSummary = voucherPlan
+    ? {
+        code: voucherPlan.voucher.code,
+        kind: voucherPlan.voucher.kind,
+        discountPaise: voucherPlan.discountPaise,
+        redeemedPaise: voucherPlan.redeemPaise,
+        amountDuePaise,
+      }
+    : null;
+
   // --- Live mode: persist address, order, items, first history row. ---
   const { data: address, error: addressError } = await supabase
     .from("addresses")
@@ -163,8 +261,8 @@ export async function POST(request: Request) {
   }
 
   const isCod = data.paymentMethod === "cod";
-  const initialStatus = isCod ? "PICKUP_SCHEDULED" : "PAYMENT_PENDING";
-  const initialPaymentStatus = isCod ? "cod_pending" : "pending";
+  const initialStatus = nothingDue || isCod ? "PICKUP_SCHEDULED" : "PAYMENT_PENDING";
+  const initialPaymentStatus = nothingDue ? "paid" : isCod ? "cod_pending" : "pending";
 
   const { data: order, error: orderError } = await supabase
     .from("orders")
@@ -178,8 +276,11 @@ export async function POST(request: Request) {
       pickup_slot: pickupSlotIso(data.pickupDate, data.pickupSlot),
       subtotal_paise: totals.subtotalPaise,
       discount_paise: totals.discountPaise,
-      total_paise: totals.totalPaise,
+      total_paise: finalTotalPaise,
       coupon_id: totals.couponApplied ? resolved.couponId : null,
+      voucher_code: voucherPlan ? voucherPlan.voucher.code : null,
+      voucher_discount_paise: voucherPlan?.discountPaise ?? 0,
+      voucher_redeemed_paise: voucherPlan?.redeemPaise ?? 0,
     })
     .select("id, status, payment_status, created_at")
     .single();
@@ -210,14 +311,74 @@ export async function POST(request: Request) {
   await supabase.from("order_status_history").insert({
     order_id: order.id,
     status: initialStatus,
-    note: isCod
-      ? "Order placed — pay on delivery."
-      : "Order placed — awaiting online payment.",
+    note: nothingDue
+      ? voucherPlan && voucherPlan.redeemPaise > 0
+        ? `Order placed — paid in full with gift card ${voucherPlan.voucher.code}.`
+        : `Order placed — fully covered by voucher ${voucherPlan?.voucher.code ?? ""}.`
+      : isCod
+        ? voucherPlan && voucherPlan.redeemPaise > 0
+          ? `Order placed — part-paid with gift card ${voucherPlan.voucher.code}; the rest is payable on delivery.`
+          : "Order placed — pay on delivery."
+        : "Order placed — awaiting online payment.",
     actor_id: userId,
   });
 
-  // COD: done — pickup is scheduled, payment happens at delivery.
-  if (isCod) {
+  // Apply the voucher now that the order exists: consume the promo use
+  // or move the card balance + write the voucher payment row, and ledger
+  // the redemption. If this fails the order stands (it references the
+  // voucher), and support can reconcile from the voucher ledger — the
+  // customer is told plainly rather than shown a fake success.
+  if (voucherPlan && adminClient) {
+    const actor = { userId, label: userEmail };
+    try {
+      if (voucherPlan.voucher.kind === "promo") {
+        await applyPromoRedemption(
+          adminClient,
+          voucherPlan.voucher,
+          voucherPlan.discountPaise,
+          order.id,
+          actor,
+        );
+      } else {
+        await applyPrepaidRedemption(
+          adminClient,
+          voucherPlan.voucher,
+          voucherPlan.redeemPaise,
+          order.id,
+          actor,
+          "Gift card applied at checkout",
+        );
+      }
+      await logAudit(supabase, {
+        actorUserId: userId,
+        actorLabel: userEmail,
+        action: "voucher.redeem",
+        entity: "gift_vouchers",
+        entityId: voucherPlan.voucher.id,
+        details: {
+          orderId: order.id,
+          code: voucherPlan.voucher.code,
+          kind: voucherPlan.voucher.kind,
+          discountPaise: voucherPlan.discountPaise,
+          redeemedPaise: voucherPlan.redeemPaise,
+        },
+      });
+    } catch {
+      return NextResponse.json(
+        {
+          error:
+            "Your order was placed, but the voucher could not be applied. Please contact us with your order reference and we will sort it out — do not place a second order.",
+          orderId: order.id,
+          code: "VOUCHER_APPLY_FAILED",
+        },
+        { status: 500 },
+      );
+    }
+  }
+
+  // COD (or fully voucher-covered): done — pickup is scheduled. With
+  // COD, any amount not covered by a gift card is collected at delivery.
+  if (isCod || nothingDue) {
     return NextResponse.json(
       {
         mode: "live",
@@ -225,12 +386,15 @@ export async function POST(request: Request) {
         status: order.status,
         paymentStatus: order.payment_status,
         totals,
+        voucher: voucherSummary,
+        finalTotalPaise,
       },
       { status: 201 },
     );
   }
 
-  // Razorpay: create the gateway order server-side (test mode keys).
+  // Razorpay: create the gateway order server-side (test mode keys) for
+  // the amount still due after any gift-card part-payment.
   if (!isRazorpayConfigured()) {
     return NextResponse.json(
       {
@@ -239,6 +403,8 @@ export async function POST(request: Request) {
         status: order.status,
         paymentStatus: order.payment_status,
         totals,
+        voucher: voucherSummary,
+        finalTotalPaise,
         payment: { gateway: "razorpay", gatewayConfigured: false },
       },
       { status: 201 },
@@ -246,7 +412,7 @@ export async function POST(request: Request) {
   }
 
   const gatewayOrder = await createRazorpayOrder({
-    amountPaise: totals.totalPaise,
+    amountPaise: amountDuePaise,
     receipt: order.id,
   });
   if (!gatewayOrder) {
@@ -264,7 +430,7 @@ export async function POST(request: Request) {
     order_id: order.id,
     gateway: "razorpay",
     gateway_order_id: gatewayOrder.id,
-    amount_paise: totals.totalPaise,
+    amount_paise: amountDuePaise,
     status: "created",
   });
 
@@ -275,11 +441,13 @@ export async function POST(request: Request) {
       status: order.status,
       paymentStatus: order.payment_status,
       totals,
+      voucher: voucherSummary,
+      finalTotalPaise,
       payment: {
         gateway: "razorpay",
         gatewayConfigured: true,
         gatewayOrderId: gatewayOrder.id,
-        amountPaise: totals.totalPaise,
+        amountPaise: amountDuePaise,
         keyId: process.env.RAZORPAY_KEY_ID,
       },
     },

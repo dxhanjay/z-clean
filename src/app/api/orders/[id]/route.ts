@@ -29,7 +29,7 @@ export async function GET(
   const { data: order, error } = await supabase
     .from("orders")
     .select(
-      "id, status, payment_status, payment_method, delivery_type, pickup_slot, subtotal_paise, discount_paise, total_paise, created_at, coupon_id, addresses ( line, area, city, pincode )",
+      "id, status, payment_status, payment_method, delivery_type, pickup_slot, subtotal_paise, discount_paise, total_paise, created_at, coupon_id, voucher_code, voucher_discount_paise, voucher_redeemed_paise, addresses ( line, area, city, pincode )",
     )
     .eq("id", id)
     .maybeSingle();
@@ -48,8 +48,12 @@ export async function GET(
     .eq("order_id", id)
     .order("created_at", { ascending: true });
 
+  // total = subtotal − coupon discount − voucher (promo) discount + fee.
+  // A prepaid gift card is a payment, not a discount: it never enters
+  // this identity.
   const deliveryFeePaise =
-    order.total_paise - (order.subtotal_paise - order.discount_paise);
+    order.total_paise -
+    (order.subtotal_paise - order.discount_paise - (order.voucher_discount_paise ?? 0));
 
   return NextResponse.json({
     mode: "live",

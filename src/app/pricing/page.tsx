@@ -4,9 +4,13 @@ import CtaBand from "@/components/CtaBand";
 import {
   DEMO_CITY,
   formatInr,
-  priceGroups,
   pricingTerms,
 } from "@/lib/pricing";
+import { loadStorefrontCatalogue } from "@/lib/catalogue-server";
+
+// Prices must reflect admin edits immediately — never bake them at
+// build time.
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Pricing",
@@ -14,7 +18,15 @@ export const metadata: Metadata = {
     "Z-clean's approved Bokaro Steel City price list: per-kg laundry, per-piece dry cleaning, shoe and leather care — final total confirmed at pickup.",
 };
 
-export default function PricingPage() {
+/**
+ * Prices are read DB-first (Phase 7b): in live mode the services /
+ * price_items tables are the truth — the same rows checkout re-prices
+ * from — so an admin edit at /admin/pricing shows here immediately.
+ * The approved static list is the fallback when Supabase is not
+ * configured or the read fails.
+ */
+export default async function PricingPage() {
+  const { groups: priceGroups } = await loadStorefrontCatalogue();
   return (
     <>
       <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6">

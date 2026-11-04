@@ -24,6 +24,8 @@ import {
 import { logAudit } from "@/lib/audit";
 import { pickupSlotIso } from "@/lib/slot-time";
 import { generateOtp } from "@/lib/handovers";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { notConfiguredResponse } from "@/lib/api-errors";
 
 /**
  * POST /api/orders — place an order (Phase 3).
@@ -108,6 +110,9 @@ export async function POST(request: Request) {
   // resolved client carries the caller's identity, so every insert
   // below runs under that user's RLS either way.
   const auth = await resolveRequestAuth();
+  if (auth.kind === "misconfigured") {
+    return notConfiguredResponse();
+  }
   const supabase = auth.kind === "unconfigured" ? null : auth.supabase;
   let userId: string | null = null;
   let userEmail: string | null = null;
@@ -120,6 +125,17 @@ export async function POST(request: Request) {
     }
     userId = auth.user.id;
     userEmail = auth.user.email ?? null;
+  }
+
+  // Rate limit (P0): order placement is capped per signed-in user
+  // (20/hour), falling back to the client IP when there is no user
+  // (demo mode). The limiter fails open — a counter outage never
+  // blocks a genuine order.
+  const rateKey = userId
+    ? `orders:user:${userId}`
+    : `orders:ip:${getClientIp(request)}`;
+  if (!(await checkRateLimit(rateKey, 20, 3600))) {
+    return NextResponse.json({ error: "RATE_LIMITED" }, { status: 429 });
   }
 
   // First-order check for first-order-only coupons.
@@ -466,6 +482,9 @@ export async function POST(request: Request) {
 /** GET /api/orders — the signed-in customer's orders (live mode only). */
 export async function GET() {
   const auth = await resolveRequestAuth();
+  if (auth.kind === "misconfigured") {
+    return notConfiguredResponse();
+  }
   if (auth.kind === "unconfigured") {
     return NextResponse.json({ mode: "demo", orders: [] }, { status: 503 });
   }

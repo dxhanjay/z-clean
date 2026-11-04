@@ -14,6 +14,12 @@ import { expenseCreateSchema } from "@/lib/validation";
  */
 export async function GET(request: Request) {
   const gate = await getAdminGate();
+  if (gate.kind === "misconfigured") {
+    return NextResponse.json(
+      { error: "NOT_CONFIGURED", message: "Server configuration error." },
+      { status: 503 },
+    );
+  }
   if (gate.kind === "demo") {
     return NextResponse.json({ mode: "demo" }, { status: 503 });
   }
@@ -72,6 +78,12 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const gate = await getAdminGate();
+  if (gate.kind === "misconfigured") {
+    return NextResponse.json(
+      { error: "NOT_CONFIGURED", message: "Server configuration error." },
+      { status: 503 },
+    );
+  }
   if (gate.kind === "demo") {
     return NextResponse.json(
       { mode: "demo", message: "Supabase not configured — demo mode." },

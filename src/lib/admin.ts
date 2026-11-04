@@ -6,8 +6,13 @@ import { resolveRequestAuth } from "@/lib/supabase/request-auth";
  *
  * One place that decides whether the caller may use the admin panel /
  * admin APIs in LIVE mode:
- *   - "demo"           Supabase is not configured at all. Callers fall
- *                      back to the clearly-badged demo mode.
+ *   - "demo"           Supabase is not configured and demo mode is
+ *                      legitimately active (src/lib/data-mode.ts).
+ *                      Callers fall back to the clearly-badged demo mode.
+ *   - "misconfigured"  Production build without Supabase env vars and
+ *                      without the demo flag (P0 hardening): APIs
+ *                      answer 503 NOT_CONFIGURED, pages render a
+ *                      configuration-error screen — never demo data.
  *   - "unauthenticated" No signed-in user (API: 401; pages: redirect
  *                      to /login).
  *   - "forbidden"      Signed in, but profiles.role is not 'admin'
@@ -22,6 +27,7 @@ import { resolveRequestAuth } from "@/lib/supabase/request-auth";
  */
 export type AdminGate =
   | { kind: "demo" }
+  | { kind: "misconfigured" }
   | { kind: "unauthenticated" }
   | { kind: "forbidden"; user: User }
   | { kind: "ok"; user: User; supabase: SupabaseClient };
@@ -32,6 +38,7 @@ export async function getAdminGate(): Promise<AdminGate> {
   // src/lib/supabase/request-auth.ts. Web callers are unaffected.
   const auth = await resolveRequestAuth();
   if (auth.kind === "unconfigured") return { kind: "demo" };
+  if (auth.kind === "misconfigured") return { kind: "misconfigured" };
   if (auth.kind !== "user") return { kind: "unauthenticated" };
 
   const { supabase, user } = auth;

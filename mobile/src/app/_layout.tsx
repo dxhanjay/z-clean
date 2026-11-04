@@ -53,6 +53,7 @@ function RootNavigator() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="login" options={{ title: "Sign in" }} />
       <Stack.Screen name="register" options={{ title: "Create account" }} />
+      <Stack.Screen name="mfa" options={{ title: "Two-factor check" }} />
       <Stack.Screen name="order/[id]" options={{ title: "Order details" }} />
       <Stack.Screen name="admin-order/[id]" options={{ title: "Admin — order", ...adminHeader }} />
       <Stack.Screen name="admin-more" options={{ title: "Admin dashboard", ...adminHeader }} />

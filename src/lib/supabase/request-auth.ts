@@ -5,6 +5,7 @@ import {
 } from "@supabase/supabase-js";
 import { headers } from "next/headers";
 import { createClient } from "./server";
+import { getDataMode } from "@/lib/data-mode";
 
 /**
  * Request auth resolution (Mobile Phase 1) — SERVER ONLY.
@@ -25,12 +26,18 @@ import { createClient } from "./server";
  *
  * Returns a discriminated result so callers keep their existing
  * demo / 401 / 403 behaviour:
- *   - "unconfigured" — Supabase env vars are absent (demo mode).
+ *   - "unconfigured" — Supabase env vars are absent AND demo mode is
+ *                      legitimately active (see src/lib/data-mode.ts).
+ *   - "misconfigured" — env vars absent in a production build without
+ *                      the demo flag (P0 hardening, fail-closed):
+ *                      callers must answer 503 NOT_CONFIGURED, never
+ *                      demo data.
  *   - "anonymous"    — configured, but no valid cookie or bearer user.
  *   - "user"         — a verified user + the client to query with.
  */
 export type RequestAuth =
   | { kind: "unconfigured" }
+  | { kind: "misconfigured" }
   | { kind: "anonymous"; supabase: SupabaseClient }
   | { kind: "user"; supabase: SupabaseClient; user: User };
 
@@ -59,7 +66,13 @@ export function createBearerClient(accessToken: string): SupabaseClient | null {
 
 export async function resolveRequestAuth(): Promise<RequestAuth> {
   const cookieClient = await createClient();
-  if (!cookieClient) return { kind: "unconfigured" };
+  if (!cookieClient) {
+    // Env vars absent: demo only when data-mode says demo is
+    // legitimate; a misconfigured production build fails closed.
+    return getDataMode() === "demo"
+      ? { kind: "unconfigured" }
+      : { kind: "misconfigured" };
+  }
 
   // 1 · Cookie session first — the web path, unchanged.
   const {

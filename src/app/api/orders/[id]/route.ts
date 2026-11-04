@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { resolveRequestAuth } from "@/lib/supabase/request-auth";
+import { notConfiguredResponse } from "@/lib/api-errors";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { handoverPoint, qrPayload } from "@/lib/handovers";
 import { computeOrderFinance, paymentMethodLabel } from "@/lib/finance";
@@ -30,6 +31,9 @@ export async function GET(
   // Dual auth (Mobile Phase 1): cookie session or validated Bearer
   // token. RLS scopes the reads below to the owner either way.
   const auth = await resolveRequestAuth();
+  if (auth.kind === "misconfigured") {
+    return notConfiguredResponse();
+  }
   if (auth.kind === "unconfigured") {
     return NextResponse.json({ mode: "demo" }, { status: 503 });
   }

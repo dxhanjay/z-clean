@@ -690,6 +690,79 @@ storefront header/footer no longer wrap admin pages
   tiles and the same grouped menu; the app's admin screens sit on the
   same light panel background with slate stack headers.
 
+## P0 hardening — security, MFA, rate limits, health, CI
+
+A maintenance-pack release (no business-logic changes):
+
+- **Security headers** — every response carries a Content Security
+  Policy, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`,
+  a strict Referrer-Policy and a Permissions-Policy
+  (`next.config.ts`). HSTS comes from Vercel and is not duplicated.
+  The CSP keeps `script-src 'unsafe-inline'` because Next.js injects
+  inline bootstrap scripts and this app does not use nonces.
+- **Health endpoint** — `GET /api/health` (no auth) answers
+  `200 { status: "ok", db: true, time }` when the app is up and the
+  database answers a trivial probe, else
+  `503 { status: "degraded", db: false, time }`. Point uptime
+  monitors at it.
+- **Password reset** — "Forgot password?" on the web login (and in
+  the mobile app) posts to `POST /api/auth/reset`, which ALWAYS
+  returns `200 { ok: true }` so account existence can never be
+  enumerated. The emailed link lands on `/reset-password`, where the
+  browser client picks up the recovery session and the user sets a
+  new password via `auth.updateUser`. The redirect URL is built from
+  `NEXT_PUBLIC_SITE_URL` when set, else from the request's forwarded
+  host headers (`src/lib/site-url.ts`). **Supabase setup:** add
+  `<site-url>/reset-password` to Auth → URL Configuration → Redirect
+  URLs, or the link will bounce to the Site URL instead.
+- **MFA (TOTP) for admins — opt-in rollout, nobody locked out.**
+  Enrol in **Admin → Settings → "Admin security — two-factor
+  authentication (MFA)"**: scan the QR code (or enter the secret) in
+  an authenticator app and confirm with a 6-digit code; the factor
+  can be removed from the same card. Once an admin HAS a verified
+  factor, the web admin layout steps their session up: an AAL1
+  session is redirected to `/auth/mfa` for a code before any admin
+  page renders. Admins with NO factor are let in as before, with a
+  slim, per-session-dismissible banner reminding them to enable it.
+  The mobile app mirrors this at sign-in (code screen after
+  password; cancelling signs out; enrolment stays web-only).
+  **Scoping, deliberately:** API routes keep the role-only
+  `getAdminGate()` in this phase — bearer-token mobile calls do not
+  carry an AAL claim the gate could check — so AAL2 is enforced by
+  the web admin UI and the mobile sign-in flow, not the API gate.
+- **Rate limits** (`src/lib/rate-limit.ts`, counters in
+  `supabase/schema_v6.sql`, written by the service role through the
+  `rate_limit_hit()` SQL function; the limiter FAILS OPEN on any
+  error so it can never block genuine traffic):
+
+  | Endpoint | Key | Limit |
+  | --- | --- | --- |
+  | `POST /api/pickups` | client IP | 10 / hour → `429 { error: "RATE_LIMITED" }` |
+  | `POST /api/orders` | user id (fallback client IP) | 20 / hour → `429` |
+  | `POST /api/auth/reset` | client IP | 5 / hour (silently skipped, still 200) |
+  | `POST /api/auth/reset` | email address | 3 / hour (silently skipped, still 200) |
+
+- **Bearer parity** — `/api/addresses` and
+  `/api/orders/[id]/retry-payment` resolve auth through
+  `resolveRequestAuth()` like the orders routes: web cookie session
+  OR a validated mobile Bearer token, identical behaviour.
+- **Audit completeness** — admin order-status changes now also write
+  an `audit_logs` row (`order.status_change`, `{ from, to }`), in
+  addition to `order_status_history`.
+- **Demo mode is fail-closed** (`src/lib/data-mode.ts`). Demo data
+  activates ONLY when `NEXT_PUBLIC_DEMO_MODE=true`, or when Supabase
+  env vars are missing in a non-production build. A production build
+  with missing env vars and no flag renders a configuration-error
+  screen (admin panel, dashboard) and answers
+  `503 { error: "NOT_CONFIGURED" }` from the APIs — demo data is
+  never presented as real. Local development keeps the old
+  ergonomics automatically.
+- **CI + Dependabot** — `.github/workflows/ci.yml` runs all test
+  suites, `tsc --noEmit`, lint and a production build (with
+  placeholder public env) on every push to `main` and every PR.
+  `.github/dependabot.yml` opens weekly grouped minor/patch npm
+  updates for `/` and `/mobile`, and monthly Actions updates.
+
 ## Setup
 
 ```bash
@@ -711,8 +784,13 @@ cp .env.example .env.local   # fill in your Supabase + Razorpay (test) keys
    Finally, for Phase 9 (the payment ledger, refunds, expenses, cash
    closings and the `partially_paid` status), run
    `supabase/schema_v5.sql` — also additive and safe to re-run.
+   Finally, for P0 hardening (the `rate_limits` table + `rate_limit_hit()`
+   function and the two orders reporting indexes), run
+   `supabase/schema_v6.sql` — also additive and safe to re-run.
 2. In Supabase Auth settings, set the Site URL to your app URL
-   (e.g. `http://localhost:3000` in development).
+   (e.g. `http://localhost:3000` in development), and add
+   `<site-url>/reset-password` to the Redirect URLs allow list so
+   password-reset links land on the reset page.
 3. To make a user an admin, update their row:
    `update profiles set role = 'admin' where id = '<auth-user-id>';`
 
@@ -727,7 +805,10 @@ npm start       # serve the production build
 Without Supabase env vars the public site still renders; the login and
 registration pages show a "being set up" notice, and Phase 2 flows
 (schedule pickup, dashboard) run in clearly labelled DEMO MODE backed by
-browser localStorage.
+browser localStorage — in development. In a PRODUCTION build, missing
+env vars no longer activate demo mode unless `NEXT_PUBLIC_DEMO_MODE=true`
+is set; the app fails closed with a configuration error instead
+(see "Demo mode is fail-closed" above).
 
 ## Pending business input (NOT hardcoded)
 

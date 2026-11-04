@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Skeleton, SkeletonText } from "@/components/Skeleton";
+import { Skeleton } from "@/components/Skeleton";
 import {
   listDemoSettings,
   saveDemoSettings,

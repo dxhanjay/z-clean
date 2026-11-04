@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { resolveRequestAuth } from "@/lib/supabase/request-auth";
 import { paymentRetryEligibility } from "@/lib/payment-retry";
 import { createRazorpayOrder, isRazorpayConfigured } from "@/lib/orders-server";
+import { demoOrNotConfigured, notConfiguredResponse } from "@/lib/api-errors";
 
 /**
  * POST /api/orders/[id]/retry-payment — retry an unpaid online payment
@@ -43,20 +44,24 @@ export async function POST(
 ) {
   const { id } = await params;
 
-  const supabase = await createClient();
-  if (!supabase) {
-    return NextResponse.json(
-      { mode: "demo", message: "Supabase not configured — demo mode." },
-      { status: 503 },
-    );
+  // Auth resolves through resolveRequestAuth (P0 bearer parity): the
+  // web cookie session OR a validated Bearer token from the mobile
+  // app. The resolved client carries the caller's identity, so the
+  // owner-scoped queries below behave identically either way.
+  const auth = await resolveRequestAuth();
+  if (auth.kind === "unconfigured") {
+    return demoOrNotConfigured({
+      mode: "demo",
+      message: "Supabase not configured — demo mode.",
+    });
   }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
+  if (auth.kind === "misconfigured") {
+    return notConfiguredResponse();
+  }
+  if (auth.kind !== "user") {
     return NextResponse.json({ error: "Sign in required." }, { status: 401 });
   }
+  const { supabase, user } = auth;
 
   const { data: order, error: loadError } = await supabase
     .from("orders")

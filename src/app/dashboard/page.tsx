@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getDataMode } from "@/lib/data-mode";
 import DashboardPanels from "@/components/dashboard/DashboardPanels";
 import OrdersSection from "@/components/dashboard/OrdersSection";
 
@@ -19,6 +20,23 @@ export const metadata: Metadata = {
  *   addresses stored in this browser's localStorage, badged as demo.
  */
 export default async function DashboardPage() {
+  // P0 fail-closed: a production build without Supabase configuration
+  // shows a configuration error — never the demo dashboard.
+  if (getDataMode() === "misconfigured") {
+    return (
+      <section className="mx-auto max-w-3xl px-4 py-14 sm:px-6">
+        <h1 className="text-3xl font-extrabold tracking-tight text-ink-900">
+          Service configuration error
+        </h1>
+        <p className="mt-3 text-sm leading-relaxed text-ink-500">
+          This deployment is missing its database configuration, so
+          your dashboard cannot load. No data is shown in this state.
+          Please try again later, or contact us if it persists.
+        </p>
+      </section>
+    );
+  }
+
   const supabase = await createClient();
 
   let user: { email?: string; user_metadata?: { full_name?: string } } | null =

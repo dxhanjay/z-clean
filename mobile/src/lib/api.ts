@@ -75,6 +75,21 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return json;
 }
 
+/* ---------------- Auth ---------------- */
+
+/**
+ * Request a password-reset email (P0). The server ALWAYS answers
+ * 200 { ok: true } — account existence is never revealed — so this
+ * resolves quietly either way. The emailed link opens the WEB
+ * reset page (/reset-password); there is no in-app reset screen.
+ */
+export async function requestPasswordReset(email: string): Promise<void> {
+  await apiFetch<{ ok: boolean }>("/api/auth/reset", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
 /* ---------------- Customer ---------------- */
 
 export interface PlaceOrderBody {

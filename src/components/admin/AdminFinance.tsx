@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { formatPaise } from "@/lib/pricing";
-import { Skeleton, SkeletonText } from "@/components/Skeleton";
+import { Skeleton } from "@/components/Skeleton";
 import {
   collectionsByMethod,
   expectedCashPaise,

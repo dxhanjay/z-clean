@@ -3,6 +3,7 @@ import { getAdminGate } from "@/lib/admin";
 import { adminStatusUpdateSchema } from "@/lib/validation";
 import { canTransition, nextStatuses } from "@/lib/order-flow";
 import { notifyStatusChange } from "@/lib/notify";
+import { logAudit } from "@/lib/audit";
 
 /**
  * PATCH /api/admin/orders/[id]/status — admin status update (Phase 4).
@@ -32,6 +33,12 @@ export async function PATCH(
   const { id } = await params;
 
   const gate = await getAdminGate();
+  if (gate.kind === "misconfigured") {
+    return NextResponse.json(
+      { error: "NOT_CONFIGURED", message: "Server configuration error." },
+      { status: 503 },
+    );
+  }
   if (gate.kind === "demo") {
     return NextResponse.json(
       { mode: "demo", message: "Supabase not configured — demo mode." },
@@ -161,6 +168,20 @@ export async function PATCH(
       },
       { status: 500 },
     );
+  }
+
+  // Audit trail (P0): status changes also land in audit_logs (in
+  // addition to order_status_history above), so the admin activity
+  // feed covers the most common staff action. logAudit never throws.
+  if (wantsStatusChange) {
+    await logAudit(supabase, {
+      actorUserId: user.id,
+      actorLabel: user.email ?? null,
+      action: "order.status_change",
+      entity: "orders",
+      entityId: id,
+      details: { from: order.status, to: nextStatus },
+    });
   }
 
   await notifyStatusChange({

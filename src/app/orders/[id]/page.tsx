@@ -19,7 +19,7 @@ import {
   qrPayload,
 } from "@/lib/handovers";
 import { listDemoHandovers } from "@/lib/demo-handovers";
-import { isSupabaseConfigured } from "@/lib/supabase/client";
+import { getDataMode, isDemoMode } from "@/lib/data-mode";
 
 /**
  * Order detail: items, totals breakdown, payment method/status, pickup
@@ -142,7 +142,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const [retryNote, setRetryNote] = useState<{ kind: "info" | "error"; text: string } | null>(null);
 
   async function load() {
-    if (isSupabaseConfigured()) {
+    if (getDataMode() === "live") {
       try {
         const res = await fetch(`/api/orders/${id}`);
         if (res.ok) {
@@ -154,16 +154,19 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           }
         }
       } catch {
-        // fall through to demo lookup
+        // fall through — demo lookup only when demo is active
       }
     }
-    const local = getDemoOrder(id);
-    if (local) {
-      setDemoOrder(local);
-      setState("demo");
-    } else {
-      setState("missing");
+    // Demo lookup ONLY in legitimate demo mode (P0 fail-closed).
+    if (isDemoMode()) {
+      const local = getDemoOrder(id);
+      if (local) {
+        setDemoOrder(local);
+        setState("demo");
+        return;
+      }
     }
+    setState("missing");
   }
 
   useEffect(() => {

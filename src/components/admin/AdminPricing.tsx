@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { formatPaise } from "@/lib/pricing";
-import { Skeleton, SkeletonText } from "@/components/Skeleton";
+import { Skeleton } from "@/components/Skeleton";
 import {
   listDemoPricing,
   saveDemoPricing,

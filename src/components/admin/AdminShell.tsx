@@ -329,13 +329,39 @@ function SidebarContent({
 
 export default function AdminShell({
   email,
+  mfaWarning = false,
   children,
 }: {
   email: string | null;
+  /** Live admin with NO verified MFA factor (P0): slim banner. */
+  mfaWarning?: boolean;
   children: ReactNode;
 }) {
   const pathname = usePathname() ?? "/admin";
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [mfaBannerDismissed, setMfaBannerDismissed] = useState(true);
+
+  // The MFA warning is dismissible per browser session only — it
+  // returns on the next sign-in until a factor is enrolled.
+  useEffect(() => {
+    if (!mfaWarning) return;
+    try {
+      setMfaBannerDismissed(
+        window.sessionStorage.getItem("zclean-mfa-banner-dismissed") === "1",
+      );
+    } catch {
+      setMfaBannerDismissed(false);
+    }
+  }, [mfaWarning]);
+
+  const dismissMfaBanner = () => {
+    setMfaBannerDismissed(true);
+    try {
+      window.sessionStorage.setItem("zclean-mfa-banner-dismissed", "1");
+    } catch {
+      // Session storage unavailable — dismissal lasts for this render.
+    }
+  };
 
   // Close the mobile drawer on navigation, and lock body scroll
   // while it is open.
@@ -414,6 +440,40 @@ export default function AdminShell({
         </header>
 
         <div className="mx-auto w-full max-w-[1200px] px-4 py-6 pb-20 sm:px-6 sm:py-8 lg:px-8">
+          {mfaWarning && !mfaBannerDismissed && (
+            <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
+              <p role="status" className="flex-1 text-sm text-amber-900">
+                <span className="font-bold">Two-factor authentication is not enabled</span>{" "}
+                on your admin account.{" "}
+                <Link
+                  href="/admin/settings"
+                  className="font-bold underline decoration-amber-700 underline-offset-2 hover:text-amber-950"
+                >
+                  Enable it in Settings
+                </Link>{" "}
+                to protect orders, refunds and finance with a code from
+                your authenticator app.
+              </p>
+              <button
+                type="button"
+                onClick={dismissMfaBanner}
+                aria-label="Dismiss MFA reminder for this session"
+                className="btn-press -mr-1 -mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-amber-800 hover:bg-amber-100"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.2}
+                  strokeLinecap="round"
+                  className="h-4.5 w-4.5"
+                  aria-hidden="true"
+                >
+                  <path d="M6 6l12 12M18 6 6 18" />
+                </svg>
+              </button>
+            </div>
+          )}
           {children}
         </div>
       </div>

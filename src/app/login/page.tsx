@@ -76,6 +76,11 @@ export default function LoginPage() {
           <label htmlFor="password" className={labelClass}>Password</label>
           <input id="password" name="password" type="password" autoComplete="current-password" className={inputClass} aria-invalid={!!errors.password} />
           {errors.password && <p role="alert" className="mt-1 text-sm text-red-600">{errors.password}</p>}
+          <p className="mt-2 text-right text-sm">
+            <Link href="/forgot-password" className="font-semibold text-brand-700 hover:text-brand-800">
+              Forgot password?
+            </Link>
+          </p>
         </div>
         {formError && <p role="alert" className="text-sm text-red-600">{formError}</p>}
         <button

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { resolveRequestAuth } from "@/lib/supabase/request-auth";
 import { addressSchema } from "@/lib/validation";
 import { isPincodeServiceable } from "@/lib/pricing";
+import { demoOrNotConfigured, notConfiguredResponse } from "@/lib/api-errors";
 
 /**
  * /api/addresses — saved customer addresses (Phase 2).
@@ -9,20 +10,25 @@ import { isPincodeServiceable } from "@/lib/pricing";
  * rows to their owner. Without Supabase env vars the route answers
  * 503 { mode: "demo" } and the dashboard falls back to the clearly labelled
  * localStorage demo store.
+ *
+ * Auth resolves through resolveRequestAuth (P0 bearer parity): the web
+ * cookie session OR a validated Bearer token from the mobile app —
+ * the resolved client carries the caller's identity, so RLS applies
+ * identically either way. Cookie-session behaviour is unchanged.
  */
 
 export async function GET() {
-  const supabase = await createClient();
-  if (!supabase) {
-    return NextResponse.json({ mode: "demo", addresses: [] }, { status: 503 });
+  const auth = await resolveRequestAuth();
+  if (auth.kind === "unconfigured") {
+    return demoOrNotConfigured({ mode: "demo", addresses: [] });
   }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
+  if (auth.kind === "misconfigured") {
+    return notConfiguredResponse();
+  }
+  if (auth.kind !== "user") {
     return NextResponse.json({ error: "Sign in required." }, { status: 401 });
   }
+  const { supabase } = auth;
 
   const { data, error } = await supabase
     .from("addresses")
@@ -70,20 +76,20 @@ export async function POST(request: Request) {
     );
   }
 
-  const supabase = await createClient();
-  if (!supabase) {
-    return NextResponse.json(
-      { mode: "demo", message: "Supabase not configured — demo mode." },
-      { status: 503 },
-    );
+  const auth = await resolveRequestAuth();
+  if (auth.kind === "unconfigured") {
+    return demoOrNotConfigured({
+      mode: "demo",
+      message: "Supabase not configured — demo mode.",
+    });
   }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
+  if (auth.kind === "misconfigured") {
+    return notConfiguredResponse();
+  }
+  if (auth.kind !== "user") {
     return NextResponse.json({ error: "Sign in required." }, { status: 401 });
   }
+  const { supabase, user } = auth;
 
   const { data: row, error } = await supabase
     .from("addresses")

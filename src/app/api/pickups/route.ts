@@ -4,6 +4,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { pickupRequestSchema } from "@/lib/validation";
 import { isPincodeServiceable } from "@/lib/pricing";
 import { pickupSlotIso } from "@/lib/slot-time";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { demoOrNotConfigured } from "@/lib/api-errors";
 
 /**
  * POST /api/pickups — schedule a pickup (Phase 2).
@@ -12,8 +14,13 @@ import { pickupSlotIso } from "@/lib/slot-time";
  * re-checked against the serviceable list on the server — the client check
  * is UX only. When Supabase is configured the request is inserted into
  * `pickup_requests` (RLS applies). When it is NOT configured the route
- * answers 503 { mode: "demo" } and the client stores the request locally,
+ * answers 503 { mode: "demo" } (demo mode only — a misconfigured
+ * production build gets 503 { error: "NOT_CONFIGURED" }, see
+ * src/lib/data-mode.ts) and the client stores the request locally,
  * clearly labelled DEMO MODE — a save is never faked.
+ *
+ * P0: guest-reachable, so POST is rate limited per client IP
+ * (10/hour, src/lib/rate-limit.ts, fails open).
  *
  * The slot label ("9 AM – 11 AM") is combined with the pickup date into a
  * local timestamp for the `pickup_slot` timestamptz column.
@@ -25,6 +32,13 @@ export async function POST(request: Request) {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+  }
+
+  // Rate limit (P0): this endpoint is open to guests, so it is capped
+  // per client IP — 10 requests/hour. The limiter fails open, so a
+  // counter outage never blocks a genuine pickup.
+  if (!(await checkRateLimit(`pickups:ip:${getClientIp(request)}`, 10, 3600))) {
+    return NextResponse.json({ error: "RATE_LIMITED" }, { status: 429 });
   }
 
   const parsed = pickupRequestSchema.safeParse(body);
@@ -55,10 +69,10 @@ export async function POST(request: Request) {
 
   const supabase = await createClient();
   if (!supabase) {
-    return NextResponse.json(
-      { mode: "demo", message: "Supabase not configured — demo mode." },
-      { status: 503 },
-    );
+    return demoOrNotConfigured({
+      mode: "demo",
+      message: "Supabase not configured — demo mode.",
+    });
   }
 
   const {
@@ -112,7 +126,7 @@ export async function POST(request: Request) {
 export async function GET() {
   const supabase = await createClient();
   if (!supabase) {
-    return NextResponse.json({ mode: "demo", pickups: [] }, { status: 503 });
+    return demoOrNotConfigured({ mode: "demo", pickups: [] });
   }
 
   const {

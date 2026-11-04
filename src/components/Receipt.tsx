@@ -4,7 +4,8 @@ import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { formatPaise } from "@/lib/pricing";
 import { businessSettings } from "@/lib/config";
-import { isSupabaseConfigured, createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/client";
+import { getDataMode, isDemoMode } from "@/lib/data-mode";
 import { getDemoOrder } from "@/lib/demo-store";
 import { demoOrderFinance, listDemoPaymentEntries } from "@/lib/demo-finance";
 import { paymentMethodLabel } from "@/lib/finance";
@@ -59,7 +60,7 @@ export default function Receipt({ params }: { params: Promise<{ id: string }> })
     let cancelled = false;
     (async () => {
       // Business details from the settings table (public-read).
-      if (isSupabaseConfigured()) {
+      if (getDataMode() === "live") {
         try {
           const supabase = createClient();
           const { data: rows } = await supabase
@@ -80,8 +81,11 @@ export default function Receipt({ params }: { params: Promise<{ id: string }> })
       }
       if (cancelled) return;
 
-      // DEMO MODE.
-      if (!isSupabaseConfigured()) {
+      // DEMO MODE (only when demo is legitimately active — P0
+      // fail-closed: a misconfigured production build never reads
+      // the demo store and falls through to the live fetches, which
+      // answer 503 NOT_CONFIGURED).
+      if (isDemoMode()) {
         const order = getDemoOrder(id);
         if (!order) {
           setState("missing");

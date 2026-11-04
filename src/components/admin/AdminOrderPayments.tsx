@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { formatPaise } from "@/lib/pricing";
-import { Skeleton, SkeletonText } from "@/components/Skeleton";
+import { Skeleton } from "@/components/Skeleton";
 import {
   decidePaymentStatus,
   paymentMethodLabel,
@@ -45,9 +45,9 @@ interface GatewayView {
   createdAt: string;
 }
 
-interface EntryView extends DemoPaymentEntry {}
+type EntryView = DemoPaymentEntry;
 
-interface RefundView extends DemoRefund {}
+type RefundView = DemoRefund;
 
 interface MoneyView {
   paymentStatus: string;

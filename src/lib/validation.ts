@@ -7,6 +7,29 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Enter your password"),
 });
 
+/** POST /api/auth/reset body (P0 password reset). */
+export const passwordResetRequestSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email("Enter a valid email address"),
+});
+
+/** /reset-password form: the new password + confirmation (P0). */
+export const newPasswordSchema = z
+  .object({
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .max(72, "Password must be at most 72 characters"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
 export const registerSchema = z
   .object({
     name: z.string().trim().min(2, "Enter your full name"),

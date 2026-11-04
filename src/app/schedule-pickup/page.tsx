@@ -13,13 +13,15 @@ import {
   serviceAreas,
 } from "@/lib/pricing";
 import { addDemoPickup, type PickupRequest } from "@/lib/demo-store";
-import { isSupabaseConfigured } from "@/lib/supabase/client";
+import { isDemoMode } from "@/lib/data-mode";
 
 const inputClass =
   "w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm text-ink-900 placeholder:text-ink-500/60 focus:border-brand-500 focus:outline-none";
 const labelClass = "block text-sm font-semibold text-ink-900";
 
-const demoModeDefault = !isSupabaseConfigured();
+// Demo only when data-mode says so (P0 fail-closed: a misconfigured
+// production build does NOT fall back to the demo store).
+const demoModeDefault = isDemoMode();
 
 function todayStr(): string {
   const t = new Date();

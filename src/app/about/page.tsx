@@ -42,7 +42,7 @@ export default function AboutPage() {
         <p className="mt-4 text-base leading-relaxed text-ink-700">
           We built Z-clean to remove the gamble. Every order is booked online,
           collected from your door, tagged so it can never mix with another
-          customer's, and moved through a six-stage care process — sorting and
+          customer&apos;s, and moved through a six-stage care process — sorting and
           inspection, stain treatment, processing, finishing, quality check
           and packing. You can watch the status change in your account while
           it happens, pay online or on delivery, and get everything back

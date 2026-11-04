@@ -262,7 +262,7 @@ export default function AdminOrderDetail({
             ? "No demo order with this id exists in this browser."
             : "This order does not exist."}
         </p>
-        <Link href="/admin" className="mt-5 inline-block rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white hover:bg-brand-700">
+        <Link href="/admin" className="mt-5 inline-flex min-h-[44px] items-center rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white hover:bg-brand-700">
           Back to the queue
         </Link>
       </div>
@@ -303,8 +303,8 @@ export default function AdminOrderDetail({
       </p>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">
-        <div className="grid content-start gap-6">
-          <div className="rounded-2xl border border-brand-100 p-6">
+        <div className="grid min-w-0 content-start gap-6">
+          <div className="rounded-2xl border border-brand-100 p-4 sm:p-6">
             <h2 className="font-bold text-ink-900">Customer &amp; pickup</h2>
             <dl className="mt-3 grid gap-2 text-sm">
               <div><dt className="text-ink-500">Customer</dt><dd className="font-semibold text-ink-900">{detail.customer}{detail.phone ? ` · ${detail.phone}` : ""}</dd></div>
@@ -314,7 +314,7 @@ export default function AdminOrderDetail({
             </dl>
           </div>
 
-          <div className="rounded-2xl border border-brand-100 p-6">
+          <div className="rounded-2xl border border-brand-100 p-4 sm:p-6">
             <h2 className="font-bold text-ink-900">Items &amp; totals</h2>
             <ul className="mt-4 divide-y divide-brand-50">
               {detail.items.map((item, idx) => (
@@ -348,8 +348,8 @@ export default function AdminOrderDetail({
           />
         </div>
 
-        <div className="grid content-start gap-6">
-          <div className="rounded-2xl border border-brand-100 p-6">
+        <div className="grid min-w-0 content-start gap-6">
+          <div className="rounded-2xl border border-brand-100 p-4 sm:p-6">
             <h2 className="font-bold text-ink-900">Update status</h2>
             {feedback && (
               <p role="status" className="mt-3 rounded-xl bg-green-50 p-3 text-sm font-semibold text-green-800">
@@ -378,7 +378,7 @@ export default function AdminOrderDetail({
                   <select
                     value={newStatus}
                     onChange={(e) => setNewStatus(e.target.value)}
-                    className="rounded-xl border border-brand-200 px-3 py-2.5 text-sm font-semibold text-ink-900"
+                    className="min-h-[44px] rounded-xl border border-brand-200 px-3 py-2.5 text-sm font-semibold text-ink-900"
                   >
                     {allowed.map((s) => (
                       <option key={s} value={s}>{statusLabel(s)}</option>
@@ -402,7 +402,7 @@ export default function AdminOrderDetail({
                       type="checkbox"
                       checked={collectWithUpdate}
                       onChange={(e) => setCollectWithUpdate(e.target.checked)}
-                      className="mt-0.5 h-4 w-4 accent-brand-600"
+                      className="mt-0.5 h-5 w-5 shrink-0 accent-brand-600"
                     />
                     <span>
                       Also record the Pay-on-Delivery collection (
@@ -414,7 +414,7 @@ export default function AdminOrderDetail({
                 <button
                   type="submit"
                   disabled={busy || !newStatus}
-                  className="rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-60"
+                  className="min-h-[44px] w-full rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-60 sm:w-auto"
                 >
                   {busy ? "Saving…" : "Save status update"}
                 </button>
@@ -439,7 +439,7 @@ export default function AdminOrderDetail({
                   type="button"
                   disabled={busy}
                   onClick={() => void submitChange({ codCollected: true })}
-                  className="mt-3 rounded-full border border-amber-300 bg-amber-50 px-5 py-2.5 text-sm font-bold text-amber-900 hover:bg-amber-100 disabled:opacity-60"
+                  className="mt-3 min-h-[44px] w-full rounded-full border border-amber-300 bg-amber-50 px-5 py-2.5 text-sm font-bold text-amber-900 hover:bg-amber-100 disabled:opacity-60 sm:w-auto"
                 >
                   Mark COD collected
                 </button>
@@ -447,7 +447,7 @@ export default function AdminOrderDetail({
             )}
           </div>
 
-          <div className="rounded-2xl border border-brand-100 p-6">
+          <div className="rounded-2xl border border-brand-100 p-4 sm:p-6">
             <h2 className="font-bold text-ink-900">Activity log</h2>
             {detail.history.length === 0 ? (
               <p className="mt-3 text-sm text-ink-500">No recorded events yet.</p>

@@ -20,7 +20,7 @@ export default async function AdminOrderPage({
   const mode = gate.kind === "demo" ? "demo" : "live";
 
   return (
-    <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
+    <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-14">
       <AdminOrderDetail id={id} mode={mode} />
     </section>
   );

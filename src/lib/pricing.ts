@@ -159,6 +159,11 @@ export const serviceAreas: ServiceArea[] = [
   { area: "Sector 8", city: DEMO_CITY, pincode: "827009" },
   { area: "Sector 9", city: DEMO_CITY, pincode: "827009" },
   { area: "Chas", city: DEMO_CITY, pincode: "827013" },
+  { area: "Balidih", city: DEMO_CITY, pincode: "827010" },
+  { area: "Balidih Industrial Area", city: DEMO_CITY, pincode: "827010" },
+  { area: "Bokaro Station (Marafari)", city: DEMO_CITY, pincode: "827010" },
+  { area: "Tanr Balidih", city: DEMO_CITY, pincode: "827014" },
+  { area: "Jaina More", city: DEMO_CITY, pincode: "829301" },
 ];
 
 export const serviceablePincodes: string[] = Array.from(

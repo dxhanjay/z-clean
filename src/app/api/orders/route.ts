@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Sorry, we are not serviceable at this pincode yet. We currently serve Bokaro Steel City (827001, 827003, 827004, 827006, 827009, 827013).",
+          "Sorry, we are not serviceable at this pincode yet. We currently serve Bokaro Steel City (827001, 827003, 827004, 827006, 827009, 827010, 827013, 827014, 829301).",
         fieldErrors: { pincode: "Not serviceable yet" },
       },
       { status: 422 },

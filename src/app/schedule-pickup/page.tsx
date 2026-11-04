@@ -83,7 +83,7 @@ export default function SchedulePickupPage() {
     if (!isPincodeServiceable(parsed.data.pincode)) {
       setErrors({
         pincode:
-          "Not serviceable yet — we currently serve Bokaro Steel City pincodes 827001, 827003, 827004, 827006, 827009 and 827013.",
+          "Not serviceable yet — we currently serve Bokaro Steel City pincodes 827001, 827003, 827004, 827006, 827009, 827010, 827013, 827014 and 829301.",
       });
       return;
     }
@@ -232,7 +232,7 @@ export default function SchedulePickupPage() {
           {pincodeValid && !pincodeServiceable && (
             <p role="alert" className="mt-1 text-sm font-semibold text-red-600">
               Sorry — this pincode is not serviceable yet. We currently serve
-              827001, 827003, 827004, 827006, 827009 and 827013 in Bokaro Steel City.
+              827001, 827003, 827004, 827006, 827009, 827010, 827013, 827014 and 829301 in Bokaro Steel City.
             </p>
           )}
           {pincodeServiceable && (

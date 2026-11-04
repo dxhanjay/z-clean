@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { pickupRequestSchema } from "@/lib/validation";
 import { isPincodeServiceable } from "@/lib/pricing";
 import { pickupSlotIso } from "@/lib/slot-time";
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Sorry, we are not serviceable at this pincode yet. We currently serve Bokaro Steel City (827001, 827003, 827004, 827006, 827009, 827013).",
+          "Sorry, we are not serviceable at this pincode yet. We currently serve Bokaro Steel City (827001, 827003, 827004, 827006, 827009, 827010, 827013, 827014, 829301).",
         fieldErrors: { pincode: "Not serviceable yet" },
       },
       { status: 422 },
@@ -66,7 +67,18 @@ export async function POST(request: Request) {
 
   const slotIso = pickupSlotIso(data.pickupDate, data.pickupSlot);
 
-  const { data: row, error } = await supabase
+  // Guest requests (user_id NULL) can never pass the "read own or admin"
+  // SELECT policy, so an insert chained with .select() fails its own
+  // read-back under the caller's credentials (RLS 42501) even though the
+  // insert policy allows the row — the guest would get a 500 for a request
+  // that was actually accepted. For guests only, run the insert through
+  // the server-only service-role client; the payload above is already
+  // zod-validated and pincode-gated. Signed-in requests keep the normal
+  // RLS-scoped client. Falls back to the user client when the
+  // service-role client is not configured.
+  const insertClient = user ? supabase : (createAdminClient() ?? supabase);
+
+  const { data: row, error } = await insertClient
     .from("pickup_requests")
     .insert({
       user_id: user?.id ?? null,

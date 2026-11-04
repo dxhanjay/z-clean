@@ -91,7 +91,12 @@ insert into public.service_areas (city, area, pincode) values
   ('Bokaro Steel City', 'Sector 6',            '827006'),
   ('Bokaro Steel City', 'Sector 8',            '827009'),
   ('Bokaro Steel City', 'Sector 9',            '827009'),
-  ('Bokaro Steel City', 'Chas',                '827013')
+  ('Bokaro Steel City', 'Chas',                '827013'),
+  ('Bokaro Steel City', 'Balidih',             '827010'),
+  ('Bokaro Steel City', 'Balidih Industrial Area', '827010'),
+  ('Bokaro Steel City', 'Bokaro Station (Marafari)', '827010'),
+  ('Bokaro Steel City', 'Tanr Balidih',        '827014'),
+  ('Bokaro Steel City', 'Jaina More',          '829301')
 on conflict (city, area) do update set pincode = excluded.pincode;
 
 -- ----------------------------------------------------------------------------

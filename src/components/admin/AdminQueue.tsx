@@ -80,7 +80,7 @@ function first<T>(value: T | T[] | null): T | null {
 }
 
 const selectClass =
-  "rounded-full border border-brand-200 bg-white px-4 py-2.5 text-sm font-semibold text-ink-700";
+  "min-h-[44px] w-full rounded-full border border-brand-200 bg-white px-4 py-2.5 text-sm font-semibold text-ink-700 lg:w-auto";
 
 export default function AdminQueue({ mode }: { mode: "live" | "demo" }) {
   const [orders, setOrders] = useState<QueueOrder[]>([]);
@@ -199,7 +199,7 @@ export default function AdminQueue({ mode }: { mode: "live" | "demo" }) {
 
   return (
     <div className="mt-8">
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center">
         <label className="sr-only" htmlFor="admin-search">Search orders</label>
         <input
           id="admin-search"
@@ -207,7 +207,7 @@ export default function AdminQueue({ mode }: { mode: "live" | "demo" }) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search order id, name or phone…"
-          className="min-w-56 flex-1 rounded-full border border-brand-200 px-4 py-2.5 text-sm text-ink-900 placeholder:text-ink-500/70 focus:border-brand-500 focus:outline-none"
+          className="min-h-[44px] w-full rounded-full border border-brand-200 px-4 py-2.5 text-sm text-ink-900 placeholder:text-ink-500/70 focus:border-brand-500 focus:outline-none sm:col-span-2 lg:w-auto lg:flex-1"
         />
         <label className="sr-only" htmlFor="admin-status">Filter by status</label>
         <select id="admin-status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={selectClass}>
@@ -258,7 +258,7 @@ export default function AdminQueue({ mode }: { mode: "live" | "demo" }) {
             <li key={o.id}>
               <Link
                 href={`/admin/orders/${o.id}`}
-                className="block rounded-2xl border border-brand-100 p-5 transition-colors hover:bg-brand-50"
+                className="block rounded-2xl border border-brand-100 p-4 transition-colors hover:bg-brand-50 sm:p-5"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="font-bold text-ink-900">{o.title}</p>
@@ -294,7 +294,7 @@ export default function AdminQueue({ mode }: { mode: "live" | "demo" }) {
       ) : (
         <ul className="mt-4 grid gap-3 sm:grid-cols-2">
           {pickups.map((p) => (
-            <li key={p.id} className="rounded-2xl border border-brand-100 p-5">
+            <li key={p.id} className="rounded-2xl border border-brand-100 p-4 sm:p-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="font-bold text-ink-900">{p.name}</p>
                 <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-bold text-brand-700">
@@ -302,7 +302,7 @@ export default function AdminQueue({ mode }: { mode: "live" | "demo" }) {
                 </span>
               </div>
               <p className="mt-2 text-sm text-ink-500">{p.phone} · {p.areaLine}</p>
-              <p className="text-sm text-ink-500">
+              <p className="break-words text-sm text-ink-500">
                 {p.services.length ? p.services.join(", ") : "Laundry"} ·{" "}
                 {p.deliveryType === "express" ? "Express" : "Regular"}
               </p>

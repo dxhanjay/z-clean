@@ -172,6 +172,74 @@ Razorpay keys, production deployment) is still to come — see
     setting up soon”** stand-in instead. **Pay on Delivery stays fully
     available either way.**
 
+## Phase 7a — organisation foundation (Requirements v2)
+
+The first slice of the full laundry-management plan in
+`../REQUIREMENTS_V2.md`: the organisation the rest of the system hangs
+off — branches/plants, employees at every workflow stage, and an audit
+log. Gift vouchers (Phase 7b), QR/OTP handovers (Phase 8) and finance
+(Phase 9) build on these tables.
+
+- **Migration `supabase/schema_v2.sql`** (additive — run it in the SQL
+  editor AFTER `schema.sql` and `seed_demo.sql`; it never touches the
+  v1 tables):
+  - `branches` — name, `type` (`plant` | `collection_center` |
+    `branch`), address/area/pincode, `manager_employee_id`, active flag.
+  - `employees` — unique `employee_code`, name, phone, optional email,
+    optional linked login (`user_id` → `profiles`), branch, reporting
+    manager (`manager_id` → `employees`), `employment_status`
+    (active/inactive), joining date.
+  - `employee_roles` — one row per (employee, role); the role is
+    check-constrained to the 12 staff roles, so an employee can hold
+    several roles.
+  - `audit_logs` — append-only: actor, action, entity, entity id and a
+    JSON change diff. RLS lets authenticated users insert only their
+    own rows, only admins can read, and there are no update/delete
+    policies at all.
+  - RLS is admin-only (`is_admin()`) on branches/employees/roles.
+- **Permission matrix as data** (`src/lib/org.ts`): the 12 staff roles
+  (Collection Center, Picker, Inbound Transporter, Plant Manager,
+  Washerman, Ironing Staff, Quality Checker, Packer, Outbound
+  Transporter, Home Delivery Staff, Cashier/Accountant, Branch
+  Manager), each with its workflow stage and allowed actions — the
+  same list the database enforces. Also holds the branch types, the
+  employee/branch form validators, the `ZC-EMP-0001`-style code
+  generator, and the clearly-marked demo seed (2 units, 3 staff).
+  Employees are operational records: a login is optional and linked,
+  and staff access comes from the employee record — never from the
+  customer/admin `profiles.role`.
+- **APIs** (admin-gated exactly like the Phase 4 routes; zod-validated;
+  the established `503 { mode: "demo" }` when Supabase is absent):
+  `GET/POST /api/admin/branches`, `PATCH /api/admin/branches/[id]`,
+  `GET/POST /api/admin/employees` (responses include `roles[]` and the
+  branch name), `PATCH /api/admin/employees/[id]` (sent roles replace
+  the set; `employmentStatus` toggles activate/deactivate). Employee
+  codes are auto-suggested as the next free `ZC-EMP-nnnn` when not
+  provided; a duplicate code gets `409 DUPLICATE_CODE`. **Every live
+  mutation writes an `audit_logs` row** via `src/lib/audit.ts`
+  (`branch.create`, `employee.update`, `employee.deactivate`, …) with
+  a before/after diff; the helper never throws into the caller's flow.
+- **Admin UI:** `/admin/branches` and `/admin/employees`, linked from
+  the new admin section nav (Order queue · Branches · Employees).
+  Branches: cards on mobile, table on desktop, create/edit form with
+  manager picker (populated once employees exist) and an active
+  toggle. Employees: filters by unit, role and status plus search;
+  role chips and status pills; create/edit form with every field from
+  the plan — name, employee code (auto-suggested, editable), phone,
+  optional email, a note explaining optional login linking, roles
+  multi-select checkboxes, unit, reporting manager, joining date and
+  employment status — and activate/deactivate actions. 44px touch
+  targets throughout, per the Phase 6/B responsive pass.
+- **Demo vs live:** without Supabase the two screens run on the
+  browser demo org store (localStorage keys `zclean_demo_branches_v1`
+  / `zclean_demo_employees_v1`, seeded from `src/lib/org.ts`) under
+  the usual DEMO MODE banner. In live mode everything above reads and
+  writes the new tables under admin RLS.
+- Test the matrix, validators and code generator with
+  `npm run test:org`.
+- **What's next:** Phase 7b — gift vouchers (prepaid card vs promo)
+  plus pricing/settings editors.
+
 ## Setup
 
 ```bash
@@ -183,6 +251,9 @@ cp .env.example .env.local   # fill in your Supabase + Razorpay (test) keys
    editor. It creates all tables, RLS policies, the signup profile trigger,
    the services seed and empty settings rows. For the demo, also run
    `supabase/seed_demo.sql` (demo prices, areas, settings, coupon).
+   For the Phase 7a organisation tables (branches, employees,
+   employee_roles, audit_logs), run `supabase/schema_v2.sql` afterwards —
+   it is additive and safe to re-run.
 2. In Supabase Auth settings, set the Site URL to your app URL
    (e.g. `http://localhost:3000` in development).
 3. To make a user an admin, update their row:

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { getAdminGate } from "@/lib/admin";
+import AdminNav from "@/components/admin/AdminNav";
 
 /**
  * Admin guard (Phase 4) for /admin and everything under it.
@@ -50,6 +51,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
           </p>
         </div>
       )}
+      <AdminNav />
       {children}
     </>
   );

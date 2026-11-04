@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { BRANCH_TYPES, STAFF_ROLES } from "./org";
 
 export const loginSchema = z.object({
   email: z.string().email("Enter a valid email address"),
@@ -146,6 +147,74 @@ export const adminStatusUpdateSchema = z.object({
 });
 
 export type AdminStatusUpdateInput = z.infer<typeof adminStatusUpdateSchema>;
+
+/* ------------------------------------------------------------------ */
+/* Phase 7a — organisation (branches & employees). The role/type lists */
+/* come from the permission matrix in src/lib/org.ts so the API, the   */
+/* database check constraints and the UI can never drift apart.        */
+/* ------------------------------------------------------------------ */
+
+const staffRoleEnum = z.enum(
+  STAFF_ROLES.map((r) => r.role) as [string, ...string[]],
+);
+const branchTypeEnum = z.enum(
+  BRANCH_TYPES.map((t) => t.value) as [string, ...string[]],
+);
+const optionalPincode = pincode.optional().or(z.literal(""));
+const optionalEmail = z
+  .string()
+  .trim()
+  .email("Enter a valid email address")
+  .optional()
+  .or(z.literal(""));
+const optionalUuid = z.string().uuid().nullable().optional();
+
+export const branchCreateSchema = z.object({
+  name: z.string().trim().min(2, "Enter the branch / plant / center name").max(120),
+  type: branchTypeEnum,
+  address: z.string().trim().max(300).optional().or(z.literal("")),
+  area: z.string().trim().max(120).optional().or(z.literal("")),
+  pincode: optionalPincode,
+  managerEmployeeId: optionalUuid,
+  active: z.boolean().optional(),
+});
+
+export const branchUpdateSchema = branchCreateSchema.partial();
+
+export type BranchCreateInput = z.infer<typeof branchCreateSchema>;
+export type BranchUpdateInput = z.infer<typeof branchUpdateSchema>;
+
+export const employeeCreateSchema = z.object({
+  employeeCode: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^[A-Z0-9][A-Z0-9-]{2,19}$/, "Use letters, numbers and dashes (e.g. ZC-EMP-0001)")
+    .optional()
+    .or(z.literal("")),
+  fullName: z.string().trim().min(2, "Enter the employee's full name").max(120),
+  phone: indianPhone,
+  email: optionalEmail,
+  userId: optionalUuid,
+  branchId: optionalUuid,
+  managerId: optionalUuid,
+  joiningDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Use a valid joining date (YYYY-MM-DD)")
+    .optional()
+    .or(z.literal("")),
+  employmentStatus: z.enum(["active", "inactive"]).optional(),
+  roles: z.array(staffRoleEnum).min(1, "Assign at least one role"),
+});
+
+export const employeeUpdateSchema = employeeCreateSchema.partial().extend({
+  // Roles stay optional on update, but when sent they replace the set —
+  // and a replacement set must still contain at least one role.
+  roles: z.array(staffRoleEnum).min(1, "Assign at least one role").optional(),
+});
+
+export type EmployeeCreateInput = z.infer<typeof employeeCreateSchema>;
+export type EmployeeUpdateInput = z.infer<typeof employeeUpdateSchema>;
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;

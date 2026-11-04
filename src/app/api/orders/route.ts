@@ -23,6 +23,7 @@ import {
 } from "@/lib/vouchers-server";
 import { logAudit } from "@/lib/audit";
 import { pickupSlotIso } from "@/lib/slot-time";
+import { generateOtp } from "@/lib/handovers";
 
 /**
  * POST /api/orders — place an order (Phase 3).
@@ -281,6 +282,12 @@ export async function POST(request: Request) {
       voucher_code: voucherPlan ? voucherPlan.voucher.code : null,
       voucher_discount_paise: voucherPlan?.discountPaise ?? 0,
       voucher_redeemed_paise: voucherPlan?.redeemPaise ?? 0,
+      // Phase 8 handover credentials: an unguessable QR token plus the
+      // customer's pickup/delivery OTPs. The customer sees them on
+      // their order page; staff verify them at the doorstep handovers.
+      qr_token: crypto.randomUUID(),
+      pickup_otp: generateOtp(),
+      delivery_otp: generateOtp(),
     })
     .select("id, status, payment_status, created_at")
     .single();

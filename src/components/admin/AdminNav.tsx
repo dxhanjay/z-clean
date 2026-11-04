@@ -10,6 +10,7 @@ import { usePathname } from "next/navigation";
  */
 const LINKS = [
   { href: "/admin", label: "Order queue", exact: true },
+  { href: "/admin/stages", label: "Stage Queues", exact: false },
   { href: "/admin/branches", label: "Branches", exact: false },
   { href: "/admin/employees", label: "Employees", exact: false },
   { href: "/admin/vouchers", label: "Vouchers", exact: false },

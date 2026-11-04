@@ -12,6 +12,12 @@ import {
   updateDemoOrder,
   type DemoOrder,
 } from "@/lib/demo-store";
+import {
+  handoverFlagLabel,
+  handoverPoint,
+  qrPayload,
+} from "@/lib/handovers";
+import { listDemoHandovers } from "@/lib/demo-handovers";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 
 /**
@@ -51,6 +57,19 @@ interface LiveOrder {
   addresses: { line: string; area: string | null; city: string; pincode: string } | null;
   items: LiveOrderItem[];
   history?: TimelineEvent[];
+  qr_payload: string | null;
+  pickup_otp: string | null;
+  delivery_otp: string | null;
+  handover_milestones?: {
+    pointId: string;
+    label: string;
+    fromLabel: string;
+    toLabel: string;
+    method: string;
+    quantity: number;
+    flags: string[];
+    at: string;
+  }[];
 }
 
 function StatusBadge({ label, tone }: { label: string; tone: "brand" | "amber" | "green" | "red" }) {
@@ -65,6 +84,35 @@ function StatusBadge({ label, tone }: { label: string; tone: "brand" | "amber" |
       {label.replaceAll("_", " ")}
     </span>
   );
+}
+
+/** The order's QR code, rendered from its payload (Phase 8). */
+function OrderQrImage({ payload }: { payload: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const QRCode = (await import("qrcode")).default;
+        const data = await QRCode.toDataURL(payload, { width: 168, margin: 1 });
+        if (!cancelled) setUrl(data);
+      } catch {
+        if (!cancelled) setUrl(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [payload]);
+  if (!url) {
+    return (
+      <div className="flex h-[168px] w-[168px] items-center justify-center rounded-xl bg-white p-3 text-center text-xs text-ink-500">
+        QR code unavailable — our rider can use your OTP instead.
+      </div>
+    );
+  }
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={url} alt="Your order QR code" className="h-[168px] w-[168px] rounded-xl bg-white p-1" />;
 }
 
 function paymentTone(status: string): "brand" | "amber" | "green" | "red" {
@@ -280,6 +328,43 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     !isDemo &&
     isPaymentRetryEligible({ paymentMethod, paymentStatus, status });
 
+  /* Phase 8 — handover codes + milestones. OTPs show only until used
+     (the live API nulls them once used; the demo order tracks usedAt
+     the same way). Milestones carry point/role labels only — never
+     employee names. */
+  const orderQrPayload = isDemo
+    ? demoOrder!.qrToken
+      ? qrPayload(demoOrder!.qrToken)
+      : null
+    : liveOrder!.qr_payload;
+  const pickupOtp = isDemo
+    ? demoOrder!.pickupOtpUsedAt
+      ? null
+      : (demoOrder!.pickupOtp ?? null)
+    : liveOrder!.pickup_otp;
+  const deliveryOtp = isDemo
+    ? demoOrder!.deliveryOtpUsedAt
+      ? null
+      : (demoOrder!.deliveryOtp ?? null)
+    : liveOrder!.delivery_otp;
+  const milestones = isDemo
+    ? listDemoHandovers(orderId).map((h) => {
+        const point = handoverPoint(h.pointId);
+        return {
+          pointId: h.pointId,
+          label: point?.customerLabel ?? h.pointId,
+          fromLabel: point?.fromLabel ?? h.fromStage,
+          toLabel: point?.toLabel ?? h.toStage,
+          method: h.method,
+          quantity: h.quantity,
+          flags: h.flags as string[],
+          at: h.createdAt,
+        };
+      })
+    : (liveOrder!.handover_milestones ?? []);
+  const showCodes =
+    Boolean(orderQrPayload) && status !== "DELIVERED" && status !== "CANCELLED";
+
   return (
     <section className="mx-auto max-w-4xl px-4 py-14 sm:px-6">
       <p className="text-sm font-semibold text-brand-700">
@@ -309,6 +394,92 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           createdAt={orderCreatedAt}
         />
       </div>
+
+      {showCodes && orderQrPayload && (
+        <div className="mt-6 rounded-2xl border border-brand-100 p-6">
+          <h2 className="font-bold text-ink-900">Your pickup &amp; delivery codes</h2>
+          <p className="mt-1.5 text-sm leading-relaxed text-ink-500">
+            Every handover of your laundry is verified. At pickup and at
+            delivery, tell our rider the OTP — or let them scan this QR
+            code. Each code works once, for this order only.
+          </p>
+          <div className="mt-4 flex flex-wrap items-start gap-5">
+            <OrderQrImage payload={orderQrPayload} />
+            <div className="grid min-w-[220px] flex-1 gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-ink-500">
+                  Pickup OTP
+                </p>
+                {pickupOtp ? (
+                  <p className="mt-1 text-3xl font-extrabold tracking-[0.35em] text-ink-900">
+                    {pickupOtp}
+                  </p>
+                ) : (
+                  <p className="mt-1 text-sm leading-relaxed text-ink-500">
+                    {status === "PICKED_UP" || milestones.some((m) => m.pointId === "pickup")
+                      ? "Used at pickup ✓"
+                      : "Being generated — if our rider arrives before it appears here, they can use the QR code instead."}
+                  </p>
+                )}
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-ink-500">
+                  Delivery OTP
+                </p>
+                {deliveryOtp ? (
+                  <p className="mt-1 text-3xl font-extrabold tracking-[0.35em] text-ink-900">
+                    {deliveryOtp}
+                  </p>
+                ) : (
+                  <p className="mt-1 text-sm leading-relaxed text-ink-500">
+                    Used at delivery ✓
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {milestones.length > 0 && (
+        <div className="mt-6 rounded-2xl border border-brand-100 p-6">
+          <h2 className="font-bold text-ink-900">Handover record</h2>
+          <p className="mt-1.5 text-sm leading-relaxed text-ink-500">
+            Each verified transfer of your items, in order.
+          </p>
+          <ol className="mt-4 grid gap-3">
+            {milestones.map((m) => (
+              <li key={`${m.pointId}-${m.at}`} className="flex gap-3 text-sm">
+                <span aria-hidden className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-500 text-[11px] font-extrabold text-white">
+                  ✓
+                </span>
+                <div>
+                  <p className="font-semibold text-ink-900">
+                    {m.label}
+                    <span className="ml-2 text-xs font-semibold text-ink-500">
+                      {m.fromLabel} → {m.toLabel} · {m.quantity} item
+                      {m.quantity === 1 ? "" : "s"} ·{" "}
+                      {m.method === "otp" ? "verified by OTP" : "verified by QR scan"}
+                    </span>
+                  </p>
+                  <p className="text-xs text-ink-500">
+                    {new Date(m.at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+                  </p>
+                  {m.flags.length > 0 && (
+                    <p className="mt-1 flex flex-wrap gap-1.5">
+                      {m.flags.map((f) => (
+                        <span key={f} className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-900">
+                          {handoverFlagLabel(f)} — our team is checking
+                        </span>
+                      ))}
+                    </p>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px]">
         <div className="rounded-2xl border border-brand-100 p-6">

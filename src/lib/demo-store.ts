@@ -10,6 +10,7 @@
  */
 
 import { canTransition, nextStatuses } from "./order-flow";
+import { generateOtp } from "./handovers";
 
 export interface PickupRequest {
   ref: string;
@@ -96,6 +97,18 @@ export interface DemoOrder {
   status: string;
   /** Status history, oldest first (Phase 4). Always present after read. */
   history: DemoHistoryEvent[];
+  /**
+   * Phase 8 handover credentials — the demo twins of the orders
+   * columns. Optional because orders stored before Phase 8 lack them;
+   * `withHandoverCodes` fills + persists them on first read so a demo
+   * OTP never changes between page loads.
+   */
+  qrToken?: string;
+  pickupOtp?: string;
+  deliveryOtp?: string;
+  pickupOtpUsedAt?: string | null;
+  deliveryOtpUsedAt?: string | null;
+  otpAttempts?: number;
   createdAt: string;
   source: "demo";
 }
@@ -168,19 +181,76 @@ function withHistory(order: DemoOrder): DemoOrder {
   };
 }
 
+/**
+ * Phase 8: fill any missing handover credentials. Returns the order
+ * plus whether anything changed (callers that read a single order
+ * persist the fill so the codes are stable across page loads).
+ */
+function withHandoverCodes(order: DemoOrder): { order: DemoOrder; changed: boolean } {
+  if (
+    order.qrToken &&
+    order.pickupOtp &&
+    order.deliveryOtp &&
+    order.otpAttempts !== undefined
+  ) {
+    return { order, changed: false };
+  }
+  return {
+    order: {
+      ...order,
+      qrToken: order.qrToken ?? makeDemoRef("QRTOKEN"),
+      pickupOtp: order.pickupOtp ?? generateOtp(),
+      deliveryOtp: order.deliveryOtp ?? generateOtp(),
+      pickupOtpUsedAt: order.pickupOtpUsedAt ?? null,
+      deliveryOtpUsedAt: order.deliveryOtpUsedAt ?? null,
+      otpAttempts: order.otpAttempts ?? 0,
+    },
+    changed: true,
+  };
+}
+
 export function listDemoOrders(): DemoOrder[] {
   return read<DemoOrder>(ORDERS_KEY)
     .map(withHistory)
+    .map((o) => withHandoverCodes(o).order)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
 export function getDemoOrder(id: string): DemoOrder | undefined {
-  const found = read<DemoOrder>(ORDERS_KEY).find((o) => o.id === id);
-  return found ? withHistory(found) : undefined;
+  const rows = read<DemoOrder>(ORDERS_KEY);
+  const idx = rows.findIndex((o) => o.id === id);
+  if (idx === -1) return undefined;
+  const { order, changed } = withHandoverCodes(withHistory(rows[idx]));
+  if (changed) {
+    rows[idx] = order;
+    write(ORDERS_KEY, rows);
+  }
+  return order;
+}
+
+/** Replace a demo order wholesale (Phase 8 handover applier). */
+export function saveDemoOrder(order: DemoOrder): void {
+  const rows = read<DemoOrder>(ORDERS_KEY);
+  const idx = rows.findIndex((o) => o.id === order.id);
+  if (idx === -1) return;
+  rows[idx] = order;
+  write(ORDERS_KEY, rows);
 }
 
 export function addDemoOrder(
-  data: Omit<DemoOrder, "id" | "createdAt" | "source" | "history">,
+  data: Omit<
+    DemoOrder,
+    | "id"
+    | "createdAt"
+    | "source"
+    | "history"
+    | "qrToken"
+    | "pickupOtp"
+    | "deliveryOtp"
+    | "pickupOtpUsedAt"
+    | "deliveryOtpUsedAt"
+    | "otpAttempts"
+  >,
 ): DemoOrder {
   const now = new Date().toISOString();
   const record: DemoOrder = {
@@ -188,6 +258,12 @@ export function addDemoOrder(
     id: makeDemoRef("ORD"),
     createdAt: now,
     source: "demo",
+    qrToken: makeDemoRef("QRTOKEN"),
+    pickupOtp: generateOtp(),
+    deliveryOtp: generateOtp(),
+    pickupOtpUsedAt: null,
+    deliveryOtpUsedAt: null,
+    otpAttempts: 0,
     history: [
       {
         status: data.status,

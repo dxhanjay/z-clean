@@ -28,7 +28,8 @@
     "test:flow": "node scripts/test-flow.mjs",
     "test:retry": "node scripts/test-retry.mjs",
     "test:org": "node scripts/test-org.mjs",
-    "test:vouchers": "node scripts/test-vouchers.mjs"
+    "test:vouchers": "node scripts/test-vouchers.mjs",
+    "test:handovers": "node scripts/test-handovers.mjs"
   },
   "version": "0.1.0"
 }

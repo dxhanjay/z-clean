@@ -334,6 +334,43 @@ export const settingsUpdateSchema = z.object({
 
 export type SettingsUpdateInput = z.infer<typeof settingsUpdateSchema>;
 
+/* ------------------------------------------------------------------ */
+/* Phase 8 — QR/OTP handovers. The chain itself lives in               */
+/* src/lib/handovers.ts; these schemas only shape the request bodies.  */
+/* All chain rules (sequence, role, OTP/QR match, status effect) are   */
+/* enforced server-side by checkHandover — the schema stays dumb.      */
+/* ------------------------------------------------------------------ */
+
+export const handoverCompleteSchema = z.object({
+  pointId: z.string().trim().min(1, "Choose the handover point").max(60),
+  toEmployeeId: z.string().uuid("Select the receiving employee"),
+  method: z.enum(["qr", "otp"]),
+  /** Customer OTP (OTP points only) — exactly 6 digits. */
+  otp: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, "Enter the customer's 6-digit OTP")
+    .optional()
+    .or(z.literal("")),
+  /** Scanned QR payload or pasted token (QR points only). */
+  qrToken: z.string().trim().max(200).optional().or(z.literal("")),
+  /** Physical count handed over; defaults to the order's item count. */
+  quantity: z.number().int().min(0).max(100_000).optional(),
+  /** Delivery point only: record the Pay-on-Delivery collection too. */
+  codCollected: z.boolean().optional(),
+  /** Staff report: something from the bag is missing (flag, not a block). */
+  missingItem: z.boolean().optional(),
+  note: z.string().trim().max(500).optional().or(z.literal("")),
+});
+
+export type HandoverCompleteInput = z.infer<typeof handoverCompleteSchema>;
+
+export const regenerateOtpSchema = z.object({
+  which: z.enum(["pickup", "delivery"]),
+});
+
+export type RegenerateOtpInput = z.infer<typeof regenerateOtpSchema>;
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type ContactInput = z.infer<typeof contactSchema>;

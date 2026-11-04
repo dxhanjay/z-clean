@@ -9,6 +9,19 @@ import {
   applyDemoStatusChange,
   getDemoOrder,
 } from "@/lib/demo-store";
+import AdminHandovers, {
+  type HandoverView,
+  type OtpStateView,
+} from "@/components/admin/AdminHandovers";
+import {
+  completedPointIds,
+  nextHandoverPoint,
+  orderItemCount,
+  otpIsLocked,
+  qrPayload,
+  type HandoverPoint,
+} from "@/lib/handovers";
+import { listDemoHandovers } from "@/lib/demo-handovers";
 
 /**
  * Admin order detail (Phase 4).
@@ -55,6 +68,12 @@ interface Detail {
   status: string;
   history: (TimelineEvent & { actor?: string | null })[];
   createdAt: string;
+  // Phase 8 handover chain state.
+  itemCount: number;
+  qrPayload: string | null;
+  otpState: OtpStateView | null;
+  handovers: HandoverView[];
+  nextPoint: HandoverPoint | null;
 }
 
 interface LiveDetailOrder {
@@ -76,6 +95,18 @@ interface LiveDetailOrder {
   addresses: { line: string; area: string | null; city: string; pincode: string } | { line: string; area: string | null; city: string; pincode: string }[] | null;
   items: { itemName: string; qty: number; unitPricePaise: number; lineTotalPaise: number }[];
   history: { status: string; note: string | null; actorId: string | null; at: string }[];
+  qr_payload: string | null;
+  item_count: number;
+  otp_state: {
+    pickupSet: boolean;
+    pickupUsedAt: string | null;
+    deliverySet: boolean;
+    deliveryUsedAt: string | null;
+    attempts: number;
+    locked: boolean;
+  } | null;
+  handovers: HandoverView[];
+  next_point: HandoverPoint | null;
 }
 
 function first<T>(value: T | T[] | null): T | null {
@@ -113,6 +144,7 @@ export default function AdminOrderDetail({
       setState("missing");
       return;
     }
+    const demoHandovers = listDemoHandovers(id);
     setDetail({
       id: o.id,
       title: `Demo order ${o.id}`,
@@ -145,6 +177,31 @@ export default function AdminOrderDetail({
         actor: h.actor,
       })),
       createdAt: o.createdAt,
+      itemCount: orderItemCount(o.items),
+      qrPayload: o.qrToken ? qrPayload(o.qrToken) : null,
+      otpState: {
+        pickupSet: Boolean(o.pickupOtp),
+        pickupUsedAt: o.pickupOtpUsedAt ?? null,
+        deliverySet: Boolean(o.deliveryOtp),
+        deliveryUsedAt: o.deliveryOtpUsedAt ?? null,
+        attempts: o.otpAttempts ?? 0,
+        locked: otpIsLocked(o.otpAttempts ?? 0),
+      },
+      handovers: demoHandovers.map((h) => ({
+        id: h.id,
+        pointId: h.pointId,
+        fromStage: h.fromStage,
+        toStage: h.toStage,
+        method: h.method,
+        fromEmployeeName: h.fromEmployeeName,
+        toEmployeeName: h.toEmployeeName,
+        quantity: h.quantity,
+        expectedQuantity: h.expectedQuantity,
+        flags: h.flags,
+        note: h.note,
+        at: h.createdAt,
+      })),
+      nextPoint: nextHandoverPoint(o.status, completedPointIds(demoHandovers)),
     });
     setState("ready");
   }, [id]);
@@ -194,6 +251,11 @@ export default function AdminOrderDetail({
           actor: h.actorId ? "admin/staff" : "system",
         })),
         createdAt: o.created_at,
+        itemCount: o.item_count ?? 0,
+        qrPayload: o.qr_payload,
+        otpState: o.otp_state,
+        handovers: o.handovers ?? [],
+        nextPoint: o.next_point,
       });
       setState("ready");
     } catch {
@@ -504,6 +566,24 @@ export default function AdminOrderDetail({
               </div>
             )}
           </div>
+
+          <AdminHandovers
+            orderId={detail.id}
+            mode={mode}
+            status={detail.status}
+            paymentMethod={detail.paymentMethod}
+            paymentStatus={detail.paymentStatus}
+            outstandingPaise={Math.max(0, detail.totalPaise - detail.voucherRedeemedPaise)}
+            itemCount={detail.itemCount}
+            qrPayload={detail.qrPayload}
+            otpState={detail.otpState}
+            handovers={detail.handovers}
+            nextPoint={detail.nextPoint}
+            onChanged={() => {
+              if (mode === "demo") loadDemo();
+              else void loadLive();
+            }}
+          />
 
           {detail.paymentStatus !== "paid" && (
             <div className="rounded-2xl border border-brand-100 p-4 sm:p-6">

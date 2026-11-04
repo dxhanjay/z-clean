@@ -376,6 +376,136 @@ thing anywhere in the system.
   + employee stage queues; Phase 9 — finance (partial payments,
   balances, refunds, daily closing, reconciliation) and reports.
 
+## Phase 8 — QR/OTP handovers + stage queues (Requirements v2)
+
+Every custody transfer of an order is now a recorded, verified
+handover. The chain is data — `HANDOVER_CHAIN` in
+`src/lib/handovers.ts` — and the queues, the order screens and the API
+validation all read that one list. Handovers attach to the canonical
+lifecycle (Requirements v2 §4): a point may carry a status effect, and
+completion is allowed only when that move is legal per
+`src/lib/order-flow.ts`. There is no parallel status system and no
+current-point column — which point an order awaits is *derived* from
+its status plus the handovers already recorded.
+
+- **Migration `supabase/schema_v4.sql`** (additive, idempotent — run
+  AFTER `schema_v3.sql`):
+  - `orders` gains `qr_token` (unique, unguessable; existing rows are
+    backfilled), `pickup_otp`, `pickup_otp_used_at`, `delivery_otp`,
+    `delivery_otp_used_at`, and `otp_attempts` — ONE shared counter
+    across both OTPs. OTPs of pre-v4 orders stay NULL until an admin
+    generates them; the API answers `OTP_NOT_SET`, it never invents a
+    code silently.
+  - `handovers` — the append-only transfer ledger: order, `point_id`,
+    from/to stage labels, `method` (`qr` | `otp`), from/to employee,
+    the recording admin account, `quantity` vs `expected_quantity`,
+    and `flags` constrained to the plan's vocabulary (`missing_item`,
+    `quantity_mismatch`, `duplicate`, `wrong_order`, `unauthorized`,
+    `otp_retry`). RLS is admin-only (select + insert; no update/delete
+    policies — the ledger cannot be rewritten). Customers never read
+    this table directly.
+
+- **The chain (11 points):**
+
+  | # | Point | From → To | Verify | Status effect |
+  |---|---|---|---|---|
+  | 1 | `pickup` | Customer → Picker | customer pickup OTP | → `PICKED_UP` |
+  | 2 | `picker_to_centre` | Picker → Collection Center | QR | — |
+  | 3 | `centre_to_plant` | Collection Center / Inbound Transporter → Plant Manager | QR | → `RECEIVED` |
+  | 4 | `plant_sorting` | Plant Manager → Washerman (Sorting & Inspection) | QR | → `IN_PROCESS` |
+  | 5 | `plant_stain` | Washerman → Washerman (Stain Treatment) | QR | — |
+  | 6 | `plant_processing` | Washerman → Ironing Staff (Processing) | QR | — |
+  | 7 | `plant_finishing` | Ironing Staff → Quality Checker (Finishing) | QR | — |
+  | 8 | `plant_qc` | Quality Checker → Packer (Quality Check) | QR | — |
+  | 9 | `plant_packing` | Packer — packing complete | QR | → `READY` |
+  | 10 | `packer_to_outbound` | Packer → Outbound Transporter | QR | → `OUT_FOR_DELIVERY` |
+  | 11 | `delivery` | Outbound Transporter / Home Delivery Staff → Customer | customer delivery OTP | → `DELIVERED` |
+
+  Points 4–9 are the six care stages inside `IN_PROCESS`. At
+  `delivery`, the receiving employee may be Home Delivery Staff or the
+  Outbound Transporter. The handover's from-employee is derived
+  server-side from the previous point's receiver (at pickup the
+  customer hands over, so there is none).
+
+- **Verification rules** (`checkHandover`, one pure function used
+  verbatim by the live route AND the demo-mode applier):
+  - *Sequence:* the point must be the order's next expected point —
+    already-done → `409 DUPLICATE`; anything else →
+    `409 OUT_OF_SEQUENCE`. Terminal and payment side-state orders
+    await nothing.
+  - *Employee:* the selected receiver must exist, be **active**
+    (`409 EMPLOYEE_INACTIVE`) and hold the point's role from the
+    permission matrix (`422 ROLE_MISMATCH`).
+  - *OTP:* 6-digit codes generated per order at creation, shown only
+    to the customer on their order page. Wrong code →
+    `422 OTP_MISMATCH`, the shared attempts counter increments and
+    the failure is audit-logged (failed attempts never create
+    handover rows). **Lockout: 5 failed attempts → `423 OTP_LOCKED`**
+    for both OTPs until an admin regenerates one
+    (`POST /api/admin/orders/[id]/regenerate-otp`, which replaces the
+    code, clears its used marker, resets the counter, and is
+    audit-logged; the new code is returned once to the admin and is
+    visible to the customer on their order page).
+  - *QR:* the payload is `zclean:order:<qr_token>` — the unguessable
+    token, never the order reference. A scan/paste that doesn't match
+    the order's token → `422 QR_MISMATCH` (the wrong-bag guard).
+  - *Quantity:* defaults to the order's total item count; a different
+    count completes **with** a `quantity_mismatch` flag — the plan's
+    rule is flag, don't block. Staff can also flag a missing item.
+  - *COD:* the delivery handover accepts `codCollected: true` with
+    exactly the admin status route's semantics (COD + still
+    `cod_pending`, else `422 COD_NOT_PENDING`); it is rejected at any
+    other point. Status effects write the same history rows and fire
+    the same notification hook as manual status updates, and every
+    completion is audit-logged as `handover.complete`.
+
+- **Staff act from the admin console — honestly.** Employees have no
+  separate logins yet (the Phase 7a decision: a login is optional and
+  linked, never the source of staff access). So handovers are
+  recorded by an admin who *selects the employee physically receiving
+  the items*; that employee is validated (role + active) and named on
+  the record, while the audit log names the admin account that
+  recorded it. The UI copy on both handover screens states this
+  plainly. Per-employee logins remain a future step and will reuse
+  exactly this validation.
+
+- **Screens:**
+  - *Admin order detail → Handover chain:* the order's QR (image +
+    payload), OTP states (set / used / attempts / locked — the raw
+    codes are the customer's and are never returned by the admin API),
+    regenerate buttons when an OTP is missing or locked, the
+    completed chain (employee names, times, method, quantities, flags
+    highlighted), and the next-point card (role-filtered employee
+    select, OTP entry or QR scan/paste field, quantity confirm,
+    missing-item flag, COD-collected checkbox at delivery).
+  - *Stage Queues* (`/admin/stages`, nav): pick an employee (grouped
+    by role) and see their receivable points with counts and the
+    orders awaiting each, oldest first, one click into the order's
+    handover card. `GET /api/admin/stages?employeeId=` drives it.
+  - *Customer order page:* the order QR plus pickup/delivery OTPs —
+    each OTP visible only until it is used, only to the signed-in
+    owner (the endpoint is RLS-scoped; admin list endpoints never
+    include OTPs) — and a simplified handover milestone list (point
+    label, role labels, time, quantity, flags). **No employee personal
+    names appear in the customer view**: milestones are composed
+    server-side from the admin-only handovers table with names and
+    ids stripped.
+  - *Demo mode:* demo orders get QR tokens + OTPs at creation
+    (pre-Phase-8 stored orders are backfilled once, on first read,
+    and persisted), handovers live in a localStorage ledger, and the
+    demo applier runs the same `checkHandover`. The demo seeds three
+    employees; create demo employees with the remaining custody roles
+    on the Employees screen to walk the full chain.
+- Test the chain rules with `npm run test:handovers` (105 checks:
+  chain integrity against `STAFF_ROLES` + `careStages`, effect
+  legality against order-flow, next-point walk, OTP generation /
+  lockout math, QR round-trip, quantity flags, role matching,
+  `checkHandover` scenarios, request schemas).
+- **What's next:** Phase 9 — finance (partial payments, balances,
+  refunds with approval, daily closing, reconciliation) and reports
+  (sales, pending-order aging, employee performance from the handover
+  ledger, voucher usage).
+
 ## Setup
 
 ```bash
@@ -391,7 +521,9 @@ cp .env.example .env.local   # fill in your Supabase + Razorpay (test) keys
    employee_roles, audit_logs), run `supabase/schema_v2.sql` afterwards —
    it is additive and safe to re-run. Then, for Phase 7b (gift_vouchers,
    voucher_transactions, the orders voucher columns), run
-   `supabase/schema_v3.sql` — also additive and safe to re-run.
+   `supabase/schema_v3.sql` — also additive and safe to re-run. Finally,
+   for Phase 8 (the handovers ledger and the orders QR/OTP columns), run
+   `supabase/schema_v4.sql` — likewise additive and safe to re-run.
 2. In Supabase Auth settings, set the Site URL to your app URL
    (e.g. `http://localhost:3000` in development).
 3. To make a user an admin, update their row:

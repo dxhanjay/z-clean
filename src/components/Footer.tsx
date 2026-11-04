@@ -45,6 +45,8 @@ export default async function Footer() {
             <li><Link href="/pricing" className="hover:text-brand-700">Pricing</Link></li>
             <li><Link href="/faq" className="hover:text-brand-700">FAQ</Link></li>
             <li><Link href="/dashboard" className="hover:text-brand-700">My orders</Link></li>
+            <li><Link href="/privacy" className="hover:text-brand-700">Privacy policy</Link></li>
+            <li><Link href="/terms" className="hover:text-brand-700">Terms of service</Link></li>
           </ul>
         </nav>
 

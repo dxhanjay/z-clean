@@ -107,10 +107,51 @@ two must stay in lock-step.
 
 ## Not yet
 
-- App icon / splash assets: `app.json` intentionally carries no
-  icon references in this phase — the PNG assets are binary and are
-  added through a binary-capable channel before store builds (the
-  web PWA icons in `app/public/icons/` + `scripts/generate-icons.mjs`
-  are the brand source).
 - Push notifications and online (Razorpay) payment in-app.
-- Finance, reports, pricing and settings in-app — Mobile Phase 3.
+- Finance, reports, pricing and settings in-app — Mobile Phase 3
+  (delivered; see the phase sections above).
+
+## Store readiness (P1 pack)
+
+Cleared from the audit's store-blocker list (`AUDIT_FINDINGS.md`):
+
+- **Identity (blocker 1):** `app.json` now sets
+  `android.package` and `ios.bundleIdentifier` to `in.zclean.app`.
+- **EAS configuration (blocker 2, repo side):** `eas.json` exists
+  with `development` (dev client, internal), `preview` (internal,
+  Android APK) and `production` (auto-increment, Android app-bundle)
+  profiles. `extra.eas.projectId` is still absent on purpose — it is
+  written by `eas init` when the owner links the project to their
+  Expo account; that linking (and the one-time Expo sign-in) is an
+  owner step, not a repo step.
+- **Icon / splash (blocker 3):** `app.json` references
+  `assets/icon.png` (1024×1024), `assets/splash-icon.png`
+  (1024×1024, contain on brand teal `#22786d`),
+  `assets/adaptive-icon.png` (1024×1024) and
+  `assets/favicon.png` (64×64) — the geometric white "Z" on brand
+  teal, matching the PWA brand mark. The PNGs are binary, so they
+  enter the repo through a binary-capable channel (GitHub web UI),
+  not the text snapshot push; they live in `mobile/assets/` in the
+  workspace.
+- **Native versioning (blocker 4):** `android.versionCode: 1`,
+  `ios.buildNumber: "1"` (marketing version stays `1.0.0`).
+- **Session storage hardening (blocker 6):** Supabase Auth sessions
+  on native now persist via `expo-secure-store` (Keystore/Keychain)
+  instead of plaintext AsyncStorage — see `src/lib/supabase.ts`.
+  Values over SecureStore's 2048-byte limit spill to AsyncStorage
+  (stale copies are cleaned from the other store); web keeps using
+  AsyncStorage/localStorage. On first launch after this update an
+  existing session is picked up from the old store once and
+  re-stored securely; worst case, the user signs in again once.
+
+Still owner-side before a store submission can happen:
+
+- Developer accounts: Google Play Console and Apple Developer
+  Program enrolment, and the signing credentials EAS manages.
+- EAS project linking (`eas init`) under the owner's Expo account.
+- Store-listing materials: screenshots, descriptions, support URL,
+  Google Play Data Safety answers and Apple privacy labels. The
+  privacy policy itself now exists on the web app at `/privacy`
+  (with `/terms`), which covers the policy-URL requirement.
+- Android permission review against the first real build's merged
+  manifest (only possible once EAS builds run).

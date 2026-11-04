@@ -763,6 +763,25 @@ A maintenance-pack release (no business-logic changes):
   `.github/dependabot.yml` opens weekly grouped minor/patch npm
   updates for `/` and `/mobile`, and monthly Actions updates.
 
+## P1 — mobile store readiness
+
+- **Legal pages** — `/privacy` (what is collected and why, the
+  processors — Supabase for database/auth, Vercel for hosting —
+  retention and deletion via the contact page, essential cookies
+  only) and `/terms` (unit pricing confirmed at pickup, Express at
+  1.5×, cancellation before pickup, pay online or on delivery,
+  voucher rules) are live and linked from the footer. The privacy
+  page doubles as the stores' privacy-policy URL.
+- **App identity & build config (mobile)** — `in.zclean.app` is now
+  the Android package and iOS bundle identifier, with
+  `android.versionCode: 1` / `ios.buildNumber: "1"`, brand icon /
+  splash / adaptive-icon assets, and an `eas.json` (development /
+  preview-APK / production app-bundle profiles). Supabase sessions
+  on native are stored in `expo-secure-store`. Remaining store
+  blockers are owner-side (developer accounts, EAS project linking,
+  listing materials, permission review) — itemised in
+  `mobile/README.md` → "Store readiness".
+
 ## Setup
 
 ```bash

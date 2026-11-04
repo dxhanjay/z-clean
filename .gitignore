@@ -1,0 +1,15 @@
+# Dependencies
+/node_modules
+
+# Next.js build output
+/.next/
+/out/
+
+# Env files with real credentials (never commit)
+.env
+.env.local
+.env.*.local
+
+# Misc
+.DS_Store
+*.log

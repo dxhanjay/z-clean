@@ -56,6 +56,13 @@ interface LiveOrder {
   created_at: string;
   addresses: { line: string; area: string | null; city: string; pincode: string } | null;
   items: LiveOrderItem[];
+  /** Phase 9 money summary (null until schema v5 data is composed). */
+  finance?: {
+    effectivePaidPaise: number;
+    outstandingPaise: number;
+    refundsProcessedPaise: number;
+    legacySettled: boolean;
+  } | null;
   history?: TimelineEvent[];
   qr_payload: string | null;
   pickup_otp: string | null;
@@ -118,7 +125,10 @@ function OrderQrImage({ payload }: { payload: string }) {
 function paymentTone(status: string): "brand" | "amber" | "green" | "red" {
   if (status === "paid") return "green";
   if (status === "failed") return "red";
-  if (status === "cod_pending") return "amber";
+  // Phase 9 added 'partially_paid' (amber, like cod_pending) and the
+  // enum already carried 'refunded' (brand) — both render as plain
+  // badges via the label, no special handling needed beyond tone.
+  if (status === "cod_pending" || status === "partially_paid") return "amber";
   return "brand";
 }
 
@@ -296,6 +306,11 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const voucherCode = isDemo ? null : liveOrder!.voucher_code;
   const voucherDiscount = isDemo ? 0 : (liveOrder!.voucher_discount_paise ?? 0);
   const voucherRedeemed = isDemo ? 0 : (liveOrder!.voucher_redeemed_paise ?? 0);
+  // Phase 9: the finance block (when the API composed it) is the true
+  // outstanding — it counts desk payments too, not just gift cards.
+  const outstandingDue = isDemo
+    ? Math.max(0, total - voucherRedeemed)
+    : (liveOrder!.finance?.outstandingPaise ?? Math.max(0, total - voucherRedeemed));
   const items = isDemo
     ? demoOrder!.items.map((i) => ({
         itemName: i.itemName,
@@ -533,15 +548,22 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 <div><dt className="text-ink-500">Paid with gift card{voucherCode ? ` ${voucherCode}` : ""}</dt><dd className="font-semibold text-green-700">{formatPaise(voucherRedeemed)}</dd></div>
               )}
             </dl>
-            {paymentMethod === "cod" && paymentStatus === "cod_pending" && (
-              <p className="mt-3 text-sm leading-relaxed text-ink-500">
-                Please keep {formatPaise(Math.max(0, total - voucherRedeemed))} ready — you pay when your
-                laundry is delivered back.
-                {voucherRedeemed > 0
-                  ? ` (${formatPaise(voucherRedeemed)} was already covered by your gift card.)`
-                  : ""}
-              </p>
-            )}
+            <p className="mt-3 text-sm">
+              <Link href={`/orders/${orderId}/receipt`} className="font-semibold text-brand-700 hover:underline">
+                Receipt / Print →
+              </Link>
+            </p>
+            {paymentMethod === "cod" &&
+              (paymentStatus === "cod_pending" || paymentStatus === "partially_paid") &&
+              outstandingDue > 0 && (
+                <p className="mt-3 text-sm leading-relaxed text-ink-500">
+                  Please keep {formatPaise(outstandingDue)} ready — you pay the
+                  balance when your laundry is delivered back.
+                  {voucherRedeemed > 0
+                    ? ` (${formatPaise(voucherRedeemed)} was already covered by your gift card.)`
+                    : ""}
+                </p>
+              )}
             {isDemo && paymentMethod === "razorpay" && paymentStatus !== "paid" && (
               <div className="mt-4">
                 <h3 className="font-bold text-ink-900">Retry payment</h3>

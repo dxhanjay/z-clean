@@ -13,6 +13,7 @@ import AdminHandovers, {
   type HandoverView,
   type OtpStateView,
 } from "@/components/admin/AdminHandovers";
+import AdminOrderPayments from "@/components/admin/AdminOrderPayments";
 import {
   completedPointIds,
   nextHandoverPoint,
@@ -411,6 +412,10 @@ export default function AdminOrderDetail({
         <Link href={`/orders/${detail.id}`} className="font-semibold text-brand-700 hover:underline">
           /orders/{detail.id.length > 14 ? `${detail.id.slice(0, 8)}…` : detail.id}
         </Link>
+        {" · "}
+        <Link href={`/orders/${detail.id}/receipt`} className="font-semibold text-brand-700 hover:underline">
+          Receipt / Print
+        </Link>
       </p>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">
@@ -579,6 +584,16 @@ export default function AdminOrderDetail({
             otpState={detail.otpState}
             handovers={detail.handovers}
             nextPoint={detail.nextPoint}
+            onChanged={() => {
+              if (mode === "demo") loadDemo();
+              else void loadLive();
+            }}
+          />
+
+          <AdminOrderPayments
+            orderId={detail.id}
+            mode={mode}
+            orderStatus={detail.status}
             onChanged={() => {
               if (mode === "demo") loadDemo();
               else void loadLive();

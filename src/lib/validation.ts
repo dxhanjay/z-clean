@@ -371,6 +371,68 @@ export const regenerateOtpSchema = z.object({
 
 export type RegenerateOtpInput = z.infer<typeof regenerateOtpSchema>;
 
+/* ------------------------------------------------------------------ */
+/* Phase 9 — finance: record payments, refunds workflow, expenses,     */
+/* daily cash closing. Money crosses the API in integer paise. The     */
+/* method/category lists mirror the CHECK constraints in               */
+/* supabase/schema_v5.sql and the constants in src/lib/finance.ts.     */
+/* ------------------------------------------------------------------ */
+
+export const recordPaymentSchema = z.object({
+  method: z.enum(["cash", "upi", "card_machine", "bank_transfer"]),
+  amountPaise: z.number().int().positive("Enter an amount above zero").max(100_000_00),
+  reference: z.string().trim().max(120).optional().or(z.literal("")),
+  note: z.string().trim().max(500).optional().or(z.literal("")),
+  recordedByEmployeeId: optionalUuid,
+});
+
+export type RecordPaymentInput = z.infer<typeof recordPaymentSchema>;
+
+export const refundRequestSchema = z.object({
+  amountPaise: z.number().int().positive("Enter an amount above zero").max(100_000_00),
+  reason: z.string().trim().min(3, "Give a short reason for the refund").max(500),
+  method: z.enum(["cash", "upi", "original_payment"]),
+});
+
+export type RefundRequestInput = z.infer<typeof refundRequestSchema>;
+
+export const refundActionSchema = z.object({
+  action: z.enum(["approve", "reject", "process"]),
+});
+
+export type RefundActionInput = z.infer<typeof refundActionSchema>;
+
+export const expenseCreateSchema = z.object({
+  expenseDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Use a valid date (YYYY-MM-DD)"),
+  category: z.enum([
+    "detergent",
+    "utilities",
+    "rent",
+    "fuel",
+    "packaging",
+    "maintenance",
+    "salary",
+    "other",
+  ]),
+  description: z.string().trim().max(300).optional().or(z.literal("")),
+  amountPaise: z.number().int().positive("Enter an amount above zero").max(100_000_00),
+  branchId: optionalUuid,
+});
+
+export type ExpenseCreateInput = z.infer<typeof expenseCreateSchema>;
+
+export const closeDaySchema = z.object({
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Use a valid date (YYYY-MM-DD)"),
+  countedCashPaise: z.number().int().nonnegative("Counted cash cannot be negative").max(100_000_00),
+  note: z.string().trim().max(500).optional().or(z.literal("")),
+});
+
+export type CloseDayInput = z.infer<typeof closeDaySchema>;
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type ContactInput = z.infer<typeof contactSchema>;

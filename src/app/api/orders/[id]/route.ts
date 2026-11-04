@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { handoverPoint, qrPayload } from "@/lib/handovers";
+import { computeOrderFinance, paymentMethodLabel } from "@/lib/finance";
 
 /**
  * GET /api/orders/[id] — one of the signed-in customer's orders with its
@@ -99,6 +100,95 @@ export async function GET(
     });
   }
 
+  // Phase 9: the money breakdown for the receipt — gateway payments,
+  // staff-ledger entries and processed refunds for THIS order only,
+  // composed through the service-role client after the owner check
+  // above (the ledger tables are admin-only under RLS). Amounts run
+  // through the one finance computation, so the receipt, the order
+  // page and the admin panel always agree.
+  let financeBlock: {
+    effectivePaidPaise: number;
+    outstandingPaise: number;
+    refundsProcessedPaise: number;
+    legacySettled: boolean;
+    payments: { label: string; amountPaise: number; at: string }[];
+    refunds: { label: string; amountPaise: number; at: string }[];
+  } | null = null;
+  if (adminClient) {
+    const [{ data: payRows }, { data: entryRows }, { data: refundRows }] =
+      await Promise.all([
+        adminClient
+          .from("payments")
+          .select("gateway, amount_paise, status, created_at")
+          .eq("order_id", id)
+          .order("created_at", { ascending: true }),
+        adminClient
+          .from("payment_entries")
+          .select("entry_type, method, amount_paise, created_at")
+          .eq("order_id", id)
+          .order("created_at", { ascending: true }),
+        adminClient
+          .from("refunds")
+          .select("amount_paise, status")
+          .eq("order_id", id),
+      ]);
+    const gatewayPayments = (payRows ?? []).map((p) => ({
+      gateway: p.gateway as string,
+      amountPaise: p.amount_paise as number,
+      status: p.status as string,
+      createdAt: p.created_at as string,
+    }));
+    const entries = (entryRows ?? []).map((e) => ({
+      entryType: e.entry_type as "payment" | "refund",
+      method: e.method as string,
+      amountPaise: e.amount_paise as number,
+      createdAt: e.created_at as string,
+    }));
+    const finance = computeOrderFinance(
+      { totalPaise: order.total_paise, paymentStatus: order.payment_status },
+      gatewayPayments,
+      entries,
+      (refundRows ?? []).map((r) => ({
+        amountPaise: r.amount_paise as number,
+        status: r.status as string,
+      })),
+    );
+    financeBlock = {
+      effectivePaidPaise: finance.effectivePaidPaise,
+      outstandingPaise: finance.outstandingPaise,
+      refundsProcessedPaise: finance.refundsProcessedPaise,
+      legacySettled: finance.legacySettled,
+      payments: [
+        ...gatewayPayments
+          .filter((p) => p.status === "paid")
+          .map((p) => ({
+            label:
+              p.gateway === "voucher"
+                ? "Gift card"
+                : p.gateway === "razorpay"
+                  ? "Paid online (Razorpay)"
+                  : paymentMethodLabel(p.gateway),
+            amountPaise: p.amountPaise,
+            at: p.createdAt,
+          })),
+        ...entries
+          .filter((e) => e.entryType === "payment")
+          .map((e) => ({
+            label: paymentMethodLabel(e.method),
+            amountPaise: e.amountPaise,
+            at: e.createdAt,
+          })),
+      ].sort((a, b) => a.at.localeCompare(b.at)),
+      refunds: entries
+        .filter((e) => e.entryType === "refund")
+        .map((e) => ({
+          label: `Refund (${paymentMethodLabel(e.method)})`,
+          amountPaise: e.amountPaise,
+          at: e.createdAt,
+        })),
+    };
+  }
+
   // The raw token stays server-side; the customer gets the payload to
   // render as a QR code, and each OTP only until it has been used.
   const { qr_token: qrToken, ...orderRest } = order;
@@ -107,6 +197,7 @@ export async function GET(
     mode: "live",
     order: {
       ...orderRest,
+      finance: financeBlock,
       qr_payload: qrToken ? qrPayload(qrToken) : null,
       pickup_otp: order.pickup_otp_used_at ? null : order.pickup_otp,
       delivery_otp: order.delivery_otp_used_at ? null : order.delivery_otp,

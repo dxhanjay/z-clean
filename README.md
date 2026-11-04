@@ -506,6 +506,98 @@ its status plus the handovers already recorded.
   (sales, pending-order aging, employee performance from the handover
   ledger, voucher usage).
 
+## Phase 9 — finance & reports (Requirements v2)
+
+- **Run `supabase/schema_v5.sql`** after schema_v4 (additive, safe to
+  re-run). It adds the `payment_entries` staff ledger, the `refunds`
+  workflow table, `expenses`, `cash_closings`, and the
+  `'partially_paid'` value on the `payment_status` enum (`'refunded'`
+  was already there).
+- **One money computation** — `src/lib/finance.ts`, used by every API,
+  screen, receipt and report:
+  - Effective paid = paid rows in the v1 `payments` table (Razorpay
+    **and** Phase 7b gift-card rows) + `payment_entries` of type
+    'payment'. `orders.voucher_redeemed_paise` mirrors the gift-card
+    rows and is **never** added on top — no double counting.
+  - **Legacy rule:** orders marked `paid` by the v1 COD-collection
+    action (no ledger rows) count as settled in full, flagged
+    `legacySettled` so the UI can explain it instead of showing a
+    phantom shortfall.
+  - Outstanding = total − effective paid. Refunds never reopen the
+    bill; refundable = effective − processed refunds − refunds in
+    status requested/approved.
+  - After any money event the order's `payment_status` is re-derived:
+    fully refunded → `refunded`, settled → `paid`, part-paid →
+    `partially_paid`.
+- **Recording payments** (admin order page → Payments): cash, UPI,
+  card machine or bank transfer, part or full, with an optional
+  reference and "received by" employee. Overpayment is refused
+  (422 OVERPAYMENT); the customer timeline gets a note ("Payment
+  received — ₹250 via UPI. Balance ₹140."). All writes audit-logged.
+  Note: a part-paid COD order can no longer use the v1 "Mark COD
+  collected" shortcut (it requires `cod_pending`) — record the rest
+  here instead.
+- **Refunds with approval:** request on the order page (amount,
+  reason, method) → approve / reject → process. Only processing moves
+  money: it writes the ledger refund row (for "original payment
+  method" the ledger method follows the money's origin) and re-derives
+  the payment status. The Finance screen carries the same queue.
+- **Daily closing & reconciliation** (`/admin/finance`): collections
+  grouped by method for any IST date, split online/gateway vs recorded
+  at the desk; expected cash = ledger cash payments − cash refunds
+  (gateway money is never drawer cash); close the day with the counted
+  cash and the difference is frozen on the closing record. A date
+  closes exactly once. Outstanding-balances list (oldest first) and
+  the expenses ledger (add / delete — deletions are audit-logged)
+  live on the same screen.
+- **Receipts:** `/orders/[id]/receipt`, linked from the customer and
+  admin order pages — business details from `settings`, items, totals,
+  the full payments breakdown (gift card + every entry), refunds, and
+  a PAID / REFUNDED / BALANCE DUE stamp, with print CSS that shows
+  only the sheet.
+- **Reports** (`/admin/reports`, 7 / 30 / 90 days): sales by day,
+  service, area and plant (credited via the centre-to-plant handover's
+  receiving plant manager), pending-order aging buckets, employee
+  performance from the handover ledger (completions, deliveries, flags
+  raised), voucher usage (created / issued / redeemed, outstanding
+  gift-card liability, discount given, value redeemed), customer
+  retention (repeat rate, top customers), expenses by category and
+  sales-vs-expense net. Aggregation lives in `src/lib/reports.ts`;
+  empty data shows "No data yet", never an invented number.
+- **Demo mode:** finance and reports run on browser demo stores
+  (`src/lib/demo-finance.ts`) through the same pure modules; the demo
+  stores start empty and only ever show what the demo user recorded.
+- Test the money math with `npm run test:finance` (83 checks:
+  paid-total rule incl. the voucher no-double-count and legacy cases,
+  refundable holds, status decisions, IST day boundaries, expected
+  cash, aging buckets, collections, reports aggregation, schemas).
+
+## Requirements v2 — complete
+
+With Phase 9, the build-out from the owner's "Laundry Management
+Software — Updated Software Requirement Plan" is complete:
+
+| Plan area | Where it lives |
+| --- | --- |
+| Customer booking, pickup, tracking | Phases 1–6 (live) |
+| Branches / plants / collection centers | Phase 7a (`/admin/branches`) |
+| Employees at every stage, 12 roles | Phase 7a (`/admin/employees`, `employee_roles`) |
+| Gift vouchers & prepaid cards, audited | Phase 7b (`/admin/vouchers`) |
+| Pricing & business settings editors | Phase 7b (`/admin/pricing`, `/admin/settings`) |
+| QR/OTP handovers at every transfer | Phase 8 (`/admin/stages`, order QR + OTPs) |
+| Payments: partial, advance, balances | Phase 9 (`payment_entries`, order Payments panel) |
+| Refunds with approval | Phase 9 (request → approve → process) |
+| Receipts | Phase 9 (`/orders/[id]/receipt`) |
+| Daily cash closing & reconciliation | Phase 9 (`/admin/finance`) |
+| Reports & analytics + expenses | Phase 9 (`/admin/reports`) |
+| Audit trail for staff actions | `audit_logs` throughout (7a–9) |
+
+Deliberately still owner-gated, as decided during the build: the live
+Razorpay account setup (only the Payment Link slot ships), individual
+employee logins (staff act from the admin console, recorded by name),
+and the two ₹ settings keys (free-delivery threshold, minimum order)
+being wired into the totals engine.
+
 ## Setup
 
 ```bash
@@ -524,6 +616,9 @@ cp .env.example .env.local   # fill in your Supabase + Razorpay (test) keys
    `supabase/schema_v3.sql` — also additive and safe to re-run. Finally,
    for Phase 8 (the handovers ledger and the orders QR/OTP columns), run
    `supabase/schema_v4.sql` — likewise additive and safe to re-run.
+   Finally, for Phase 9 (the payment ledger, refunds, expenses, cash
+   closings and the `partially_paid` status), run
+   `supabase/schema_v5.sql` — also additive and safe to re-run.
 2. In Supabase Auth settings, set the Site URL to your app URL
    (e.g. `http://localhost:3000` in development).
 3. To make a user an admin, update their row:

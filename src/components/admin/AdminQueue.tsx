@@ -226,6 +226,7 @@ export default function AdminQueue({ mode }: { mode: "live" | "demo" }) {
         <select id="admin-payment" value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value)} className={selectClass}>
           <option value="ALL">Any payment status</option>
           <option value="paid">Paid</option>
+          <option value="partially_paid">Partially paid</option>
           <option value="cod_pending">COD pending</option>
           <option value="pending">Payment pending</option>
           <option value="failed">Payment failed</option>

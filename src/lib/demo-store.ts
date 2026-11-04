@@ -72,7 +72,12 @@ export type DemoPaymentStatus =
   | "pending"
   | "cod_pending"
   | "paid"
-  | "failed";
+  | "failed"
+  // Phase 9: derived by the finance engine (src/lib/finance.ts) when a
+  // demo payment entry settles part of the bill, or a refund returns
+  // all of it.
+  | "partially_paid"
+  | "refunded";
 
 export interface DemoOrder {
   id: string;

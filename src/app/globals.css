@@ -125,3 +125,20 @@ body {
     transition: none;
   }
 }
+
+/* ---- Phase 9: receipt printing ----
+ * When a receipt sheet is on the page, printing shows ONLY the sheet:
+ * the site header/footer and every print:hidden control drop out, and
+ * the sheet loses its screen chrome (border/radius/shadow spacing). */
+@media print {
+  body:has(.receipt-sheet) > header,
+  body:has(.receipt-sheet) header.sticky,
+  body:has(.receipt-sheet) footer {
+    display: none !important;
+  }
+  .receipt-sheet {
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+  }
+}

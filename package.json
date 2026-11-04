@@ -29,7 +29,8 @@
     "test:retry": "node scripts/test-retry.mjs",
     "test:org": "node scripts/test-org.mjs",
     "test:vouchers": "node scripts/test-vouchers.mjs",
-    "test:handovers": "node scripts/test-handovers.mjs"
+    "test:handovers": "node scripts/test-handovers.mjs",
+    "test:finance": "node scripts/test-finance.mjs"
   },
   "version": "0.1.0"
 }

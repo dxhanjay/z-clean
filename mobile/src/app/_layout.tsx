@@ -2,7 +2,14 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, Text, View } from "react-native";
 import { AuthProvider, useAuth } from "../context/AuthContext";
-import { brand } from "../lib/config";
+import { adminTheme, brand } from "../lib/config";
+
+/** Admin console screens get the slate header of the web admin shell. */
+const adminHeader = {
+  headerStyle: { backgroundColor: adminTheme.slate },
+  headerTintColor: "#fff",
+  headerTitleStyle: { fontWeight: "700" as const },
+};
 
 /**
  * Root navigator (Mobile Phase 1): tab shell plus stack screens for
@@ -47,17 +54,17 @@ function RootNavigator() {
       <Stack.Screen name="login" options={{ title: "Sign in" }} />
       <Stack.Screen name="register" options={{ title: "Create account" }} />
       <Stack.Screen name="order/[id]" options={{ title: "Order details" }} />
-      <Stack.Screen name="admin-order/[id]" options={{ title: "Admin — order" }} />
-      <Stack.Screen name="admin-more" options={{ title: "More admin tools" }} />
-      <Stack.Screen name="admin-stages" options={{ title: "Admin — stage queues" }} />
-      <Stack.Screen name="admin-vouchers" options={{ title: "Admin — gift vouchers" }} />
-      <Stack.Screen name="admin-employees" options={{ title: "Admin — employees" }} />
-      <Stack.Screen name="admin-branches" options={{ title: "Admin — branches" }} />
-      <Stack.Screen name="admin-finance" options={{ title: "Admin — finance" }} />
-      <Stack.Screen name="admin-expenses" options={{ title: "Admin — expenses" }} />
-      <Stack.Screen name="admin-reports" options={{ title: "Admin — reports" }} />
-      <Stack.Screen name="admin-pricing" options={{ title: "Admin — pricing" }} />
-      <Stack.Screen name="admin-settings" options={{ title: "Admin — settings" }} />
+      <Stack.Screen name="admin-order/[id]" options={{ title: "Admin — order", ...adminHeader }} />
+      <Stack.Screen name="admin-more" options={{ title: "Admin dashboard", ...adminHeader }} />
+      <Stack.Screen name="admin-stages" options={{ title: "Admin — stage queues", ...adminHeader }} />
+      <Stack.Screen name="admin-vouchers" options={{ title: "Admin — gift vouchers", ...adminHeader }} />
+      <Stack.Screen name="admin-employees" options={{ title: "Admin — employees", ...adminHeader }} />
+      <Stack.Screen name="admin-branches" options={{ title: "Admin — branches", ...adminHeader }} />
+      <Stack.Screen name="admin-finance" options={{ title: "Admin — finance", ...adminHeader }} />
+      <Stack.Screen name="admin-expenses" options={{ title: "Admin — expenses", ...adminHeader }} />
+      <Stack.Screen name="admin-reports" options={{ title: "Admin — reports", ...adminHeader }} />
+      <Stack.Screen name="admin-pricing" options={{ title: "Admin — pricing", ...adminHeader }} />
+      <Stack.Screen name="admin-settings" options={{ title: "Admin — settings", ...adminHeader }} />
     </Stack>
   );
 }

@@ -104,14 +104,14 @@ export default function AdminOrderDetailScreen() {
 
   if (error) {
     return (
-      <Screen>
+      <Screen admin>
         <ErrorBlock message={error} onRetry={() => void load()} />
       </Screen>
     );
   }
   if (!order) {
     return (
-      <Screen>
+      <Screen admin>
         <LoadingBlock label="Loading order…" />
       </Screen>
     );
@@ -121,7 +121,7 @@ export default function AdminOrderDetailScreen() {
   const canCollectCod = order.payment_method === "cod" && order.payment_status === "cod_pending";
 
   return (
-    <Screen>
+    <Screen admin>
       <Title>
         {order.profiles?.name ?? "Customer"} — {formatPaise(order.total_paise)}
       </Title>

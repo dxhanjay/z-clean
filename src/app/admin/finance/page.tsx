@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getAdminGate } from "@/lib/admin";
 import AdminFinance from "@/components/admin/AdminFinance";
+import AdminSectionHeader from "@/components/admin/AdminSectionHeader";
 
 export const metadata: Metadata = {
   title: "Admin — Finance",
@@ -15,17 +16,12 @@ export default async function AdminFinancePage() {
   const mode = gate.kind === "demo" ? "demo" : "live";
 
   return (
-    <section className="mx-auto max-w-6xl px-4 py-8 pb-24 sm:px-6 sm:py-14">
-      <h1 className="text-2xl font-extrabold tracking-tight text-ink-900 sm:text-3xl">
-        Finance
-      </h1>
-      <p className="mt-3 max-w-2xl text-base leading-relaxed text-ink-500">
-        The day&apos;s collections by method, the cash closing, who still
-        owes what, refunds waiting for a decision, and the expenses
-        ledger. Payments against an order are recorded on the order&apos;s
-        own page; everything here is read from the same ledger.
-      </p>
+    <>
+      <AdminSectionHeader
+        title="Finance"
+        subtitle="The day's collections by method, the cash closing, who still owes what, refunds waiting for a decision, and the expenses ledger. Payments against an order are recorded on the order's own page; everything here is read from the same ledger."
+      />
       <AdminFinance mode={mode} />
-    </section>
+    </>
   );
 }

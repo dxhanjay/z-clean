@@ -1,31 +1,30 @@
 import type { Metadata } from "next";
 import { getAdminGate } from "@/lib/admin";
-import AdminQueue from "@/components/admin/AdminQueue";
+import AdminDashboard from "@/components/admin/AdminDashboard";
+import AdminSectionHeader from "@/components/admin/AdminSectionHeader";
 
 export const metadata: Metadata = {
-  title: "Admin — Order Queue",
+  title: "Admin — Dashboard",
 };
 
 /**
- * Admin order queue (Phase 4). The layout has already applied the guard
- * (demo banner, login redirect, or 403); here we only decide which data
- * mode the queue runs in and hand it to the client component.
+ * Admin dashboard (admin redesign) — the /admin landing page: today's
+ * orders and collections, what is in progress, outstanding balances,
+ * and what needs a decision. The order queue lives at /admin/orders.
+ * The layout has already applied the guard; here we only pick the
+ * data mode and hand it to the client component.
  */
 export default async function AdminPage() {
   const gate = await getAdminGate();
   const mode = gate.kind === "demo" ? "demo" : "live";
 
   return (
-    <section className="mx-auto max-w-6xl px-4 py-8 pb-24 sm:px-6 sm:py-14">
-      <h1 className="text-2xl font-extrabold tracking-tight text-ink-900 sm:text-3xl">
-        Order queue
-      </h1>
-      <p className="mt-3 max-w-2xl text-base leading-relaxed text-ink-500">
-        Every order and pickup request for Z-clean in Bokaro Steel City.
-        Open an order to move it along — pickups, cleaning, delivery and
-        Pay-on-Delivery collection are all managed from the order page.
-      </p>
-      <AdminQueue mode={mode} />
-    </section>
+    <>
+      <AdminSectionHeader
+        title="Dashboard"
+        subtitle="The day at a glance — orders, collections, and what needs your attention."
+      />
+      <AdminDashboard mode={mode} />
+    </>
   );
 }

@@ -120,7 +120,7 @@ export default function AdminVouchersScreen() {
 
   if (!isAdmin) {
     return (
-      <Screen>
+      <Screen admin>
         <Title>Gift vouchers</Title>
         <Text style={styles.muted}>This section is for Z-clean admins only.</Text>
       </Screen>
@@ -163,7 +163,7 @@ export default function AdminVouchersScreen() {
 
   if (!vouchers && !error) {
     return (
-      <Screen>
+      <Screen admin>
         {header}
         <SkeletonRows />
       </Screen>
@@ -171,7 +171,7 @@ export default function AdminVouchersScreen() {
   }
 
   return (
-    <Screen scroll={false}>
+    <Screen scroll={false} admin>
       <FlatList
         data={visible}
         keyExtractor={(v) => v.id}

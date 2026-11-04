@@ -26,8 +26,9 @@ import type { AdminOrderSummary } from "../../lib/types";
  * the admin's Bearer token; the server re-verifies the admin role.
  * Filter by status; tap an order for detail + status actions.
  * Handover completion (Phase 8 chain) sits on each order; the other
- * admin sections live under "More admin tools" (native since Mobile
- * Phase 2, except finance/reports/pricing/settings — Phase 3).
+ * admin sections live under the Admin dashboard (admin-more; native
+ * since Mobile Phase 2, except finance/reports/pricing/settings —
+ * Phase 3).
  */
 
 const OrderRow = memo(function OrderRow({
@@ -104,7 +105,7 @@ export default function AdminQueueScreen() {
 
   if (!isAdmin) {
     return (
-      <Screen>
+      <Screen admin>
         <Title>Admin</Title>
         <Text style={styles.muted}>This section is for Z-clean admins only.</Text>
       </Screen>
@@ -114,7 +115,7 @@ export default function AdminQueueScreen() {
   const header = (
     <>
       <Title>Order queue</Title>
-      <GhostButton label="More admin tools" onPress={() => router.push("/admin-more")} />
+      <GhostButton label="Admin dashboard" onPress={() => router.push("/admin-more")} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <View style={{ flexDirection: "row", gap: 8, paddingVertical: 2 }}>
           <Chip label="All" selected={filter === "ALL"} onPress={() => setFilter("ALL")} />
@@ -128,7 +129,7 @@ export default function AdminQueueScreen() {
 
   if (!orders && !error) {
     return (
-      <Screen>
+      <Screen admin>
         {header}
         <SkeletonRows />
       </Screen>
@@ -136,7 +137,7 @@ export default function AdminQueueScreen() {
   }
 
   return (
-    <Screen scroll={false}>
+    <Screen scroll={false} admin>
       <FlatList
         data={visible}
         keyExtractor={(o) => o.id}

@@ -404,7 +404,7 @@ export default function AdminOrderDetail({
             ? "No demo order with this id exists in this browser."
             : "This order does not exist."}
         </p>
-        <Link href="/admin" className="btn-press mt-5 inline-flex min-h-[44px] items-center rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white hover:bg-brand-700">
+        <Link href="/admin/orders" className="btn-press mt-5 inline-flex min-h-[44px] items-center rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white hover:bg-brand-700">
           Back to the queue
         </Link>
       </div>
@@ -421,7 +421,7 @@ export default function AdminOrderDetail({
   return (
     <div>
       <p className="text-sm font-semibold text-brand-700">
-        <Link href="/admin" className="hover:underline">← Order queue</Link>
+        <Link href="/admin/orders" className="hover:underline">← Order queue</Link>
       </p>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-extrabold tracking-tight text-ink-900 sm:text-3xl">

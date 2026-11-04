@@ -659,6 +659,37 @@ npx tsc --noEmit      # type check
 npx expo export       # production bundle check
 ```
 
+## Admin console redesign — sidebar shell + dashboard
+
+The admin panel's chrome was rebuilt as a console: a dark slate
+sidebar with logo block, the signed-in admin's profile block, grouped
+menus (Main · Management · Catalogue & Config · Finance) and a
+footer (storefront link, sign out), a slim topbar with the current
+section title, and pages on a light panel background with white
+cards. On medium screens the sidebar collapses to an icon rail; on
+small screens it becomes a slide-over drawer. The layout is inspired
+by the Gentelella dashboard design and is an original implementation
+in this codebase's Tailwind / React Native stack — no template code
+is used. The admin gate (`getAdminGate`) is unchanged: demo banner,
+login redirect and the 403 screen behave exactly as before, and the
+storefront header/footer no longer wrap admin pages
+(`src/components/SiteChrome.tsx`).
+
+- **Dashboard** (`/admin`): four stat tiles (orders today, collected
+  today, in progress, outstanding) and three panels (recent orders,
+  needs attention — pending refunds and stale pickups — and "today at
+  the desk": expected cash plus the gateway-vs-desk split). Every
+  number comes from the existing admin APIs (orders, finance
+  overview, outstanding, refunds); demo mode computes the same views
+  from the demo stores.
+- **Route move:** the order queue moved from `/admin` to
+  `/admin/orders`; order detail stays at `/admin/orders/[id]`, and
+  its back links point at the new queue URL.
+- The Expo app's "More admin tools" screen is now an **Admin
+  dashboard** with the same slate header block, the same four stat
+  tiles and the same grouped menu; the app's admin screens sit on the
+  same light panel background with slate stack headers.
+
 ## Setup
 
 ```bash

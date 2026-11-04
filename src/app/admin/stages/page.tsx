@@ -8,15 +8,13 @@ export const metadata: Metadata = {
 
 /**
  * Stage Queues (Phase 8). Guard is in the /admin layout; here we only
- * pick the data mode and hand over to the client component.
+ * pick the data mode and hand over to the client component. The
+ * component renders its own heading; the AdminShell provides the
+ * page frame (width, padding, background).
  */
 export default async function AdminStagesPage() {
   const gate = await getAdminGate();
   const mode = gate.kind === "demo" ? "demo" : "live";
 
-  return (
-    <section className="mx-auto max-w-6xl px-4 py-8 pb-24 sm:px-6 sm:py-14">
-      <AdminStages mode={mode} />
-    </section>
-  );
+  return <AdminStages mode={mode} />;
 }

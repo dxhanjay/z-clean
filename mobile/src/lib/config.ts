@@ -22,6 +22,22 @@ export const SUPABASE_PUBLISHABLE_KEY: string =
 
 export const WEB_ADMIN_URL = `${API_BASE_URL}/admin`;
 
+/**
+ * Admin console palette — mirrors the web admin redesign (dark slate
+ * sidebar/header, signature green accent, light panel background,
+ * white cards with a pale border). Used by the admin dashboard home
+ * and the admin stack screens.
+ */
+export const adminTheme = {
+  slate: "#2A3F54",
+  slateDeep: "#22354A",
+  accent: "#1ABB9C",
+  panelBg: "#F7F7F7",
+  cardBorder: "#E6E9ED",
+  muted: "#73879C",
+  heading: "#172D44",
+};
+
 /** Brand palette — mirrors the web app's Tailwind brand scale. */
 export const brand = {
   teal: "#22786d", // brand-600 (primary)

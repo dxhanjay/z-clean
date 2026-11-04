@@ -123,14 +123,14 @@ export default function AdminSettingsScreen() {
 
   if (error && !settings) {
     return (
-      <Screen>
+      <Screen admin>
         <ErrorBlock message={error} onRetry={() => void load()} />
       </Screen>
     );
   }
   if (!settings) {
     return (
-      <Screen>
+      <Screen admin>
         <LoadingBlock label="Loading settings…" />
       </Screen>
     );
@@ -159,7 +159,7 @@ export default function AdminSettingsScreen() {
   }
 
   return (
-    <Screen>
+    <Screen admin>
       <Title>Business settings</Title>
       <Subtitle>The same settings rows the website reads — edits apply immediately.</Subtitle>
       {feedback ? (

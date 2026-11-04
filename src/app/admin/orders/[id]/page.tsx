@@ -8,7 +8,9 @@ export const metadata: Metadata = {
 
 /**
  * Admin order detail (Phase 4). Guard is in the /admin layout; here we
- * only pick the data mode and hand the id to the client component.
+ * only pick the data mode and hand the id to the client component. The
+ * component renders its own heading and back link; the AdminShell
+ * provides the page frame (width, padding, background).
  */
 export default async function AdminOrderPage({
   params,
@@ -19,9 +21,5 @@ export default async function AdminOrderPage({
   const gate = await getAdminGate();
   const mode = gate.kind === "demo" ? "demo" : "live";
 
-  return (
-    <section className="mx-auto max-w-6xl px-4 py-8 pb-24 sm:px-6 sm:py-14">
-      <AdminOrderDetail id={id} mode={mode} />
-    </section>
-  );
+  return <AdminOrderDetail id={id} mode={mode} />;
 }

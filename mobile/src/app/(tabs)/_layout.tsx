@@ -1,7 +1,7 @@
 import { Tabs } from "expo-router";
 import { Text, type ColorValue } from "react-native";
 import { useAuth } from "../../context/AuthContext";
-import { brand } from "../../lib/config";
+import { adminTheme, brand } from "../../lib/config";
 
 function tabIcon(glyph: string) {
   return function TabIcon({ color }: { color: ColorValue }) {
@@ -45,6 +45,9 @@ export default function TabsLayout() {
           tabBarLabel: "Admin",
           tabBarIcon: tabIcon("⚙"),
           href: isAdmin ? undefined : null,
+          // Admin console chrome (redesign): slate header like the
+          // web admin shell and the admin stack screens.
+          headerStyle: { backgroundColor: adminTheme.slate },
         }}
       />
       <Tabs.Screen

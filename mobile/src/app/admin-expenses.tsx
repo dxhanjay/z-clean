@@ -147,14 +147,14 @@ export default function AdminExpensesScreen() {
 
   if (error && !expenses) {
     return (
-      <Screen>
+      <Screen admin>
         <ErrorBlock message={error} onRetry={() => void load()} />
       </Screen>
     );
   }
 
   return (
-    <Screen>
+    <Screen admin>
       <Title>Expenses</Title>
       <Subtitle>The spend ledger behind the sales-vs-expense report.</Subtitle>
       {feedback ? (

@@ -149,7 +149,7 @@ export default function AdminFinanceScreen() {
 
   if (error && !overview) {
     return (
-      <Screen>
+      <Screen admin>
         <ErrorBlock message={error} onRetry={() => void load()} />
       </Screen>
     );
@@ -385,7 +385,7 @@ export default function AdminFinanceScreen() {
   ];
 
   return (
-    <Screen scroll={false}>
+    <Screen scroll={false} admin>
       <FlatList
         data={sections}
         keyExtractor={(s) => s.id}

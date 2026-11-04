@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { getAdminGate } from "@/lib/admin";
-import AdminNav from "@/components/admin/AdminNav";
+import AdminShell from "@/components/admin/AdminShell";
 
 /**
  * Admin guard (Phase 4) for /admin and everything under it.
@@ -12,6 +12,9 @@ import AdminNav from "@/components/admin/AdminNav";
  * - LIVE MODE: a signed-in user is required (else redirect to /login),
  *   and profiles.role must be 'admin' — anyone else gets a plain 403
  *   screen and the children never render.
+ *
+ * Admin redesign: allowed screens render inside AdminShell (sidebar +
+ * topbar console chrome). The gate decisions above are unchanged.
  */
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const gate = await getAdminGate();
@@ -37,13 +40,10 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   }
 
   return (
-    <>
+    <AdminShell email={gate.kind === "ok" ? gate.user.email ?? null : null}>
       {gate.kind === "demo" && (
-        <div className="border-b border-amber-300 bg-amber-50">
-          <p
-            role="status"
-            className="mx-auto max-w-6xl px-4 py-3 text-sm font-bold text-amber-900 sm:px-6"
-          >
+        <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
+          <p role="status" className="text-sm font-bold text-amber-900">
             DEMO MODE — admin panel. This demo is not connected to a live
             database, so you are managing the demo orders and pickup
             requests stored in THIS browser only. Nothing here affects
@@ -51,8 +51,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
           </p>
         </div>
       )}
-      <AdminNav />
       {children}
-    </>
+    </AdminShell>
   );
 }

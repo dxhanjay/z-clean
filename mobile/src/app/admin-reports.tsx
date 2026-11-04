@@ -110,14 +110,14 @@ export default function AdminReportsScreen() {
 
   if (error && !reports) {
     return (
-      <Screen>
+      <Screen admin>
         <ErrorBlock message={error} onRetry={() => void load()} />
       </Screen>
     );
   }
   if (!reports) {
     return (
-      <Screen>
+      <Screen admin>
         <LoadingBlock label="Loading reports…" />
       </Screen>
     );
@@ -327,7 +327,7 @@ export default function AdminReportsScreen() {
   ];
 
   return (
-    <Screen scroll={false}>
+    <Screen scroll={false} admin>
       <FlatList
         data={sections}
         keyExtractor={(s) => s.id}

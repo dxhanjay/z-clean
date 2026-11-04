@@ -116,21 +116,21 @@ export default function AdminPricingScreen() {
 
   if (error && !groups) {
     return (
-      <Screen>
+      <Screen admin>
         <ErrorBlock message={error} onRetry={() => void load()} />
       </Screen>
     );
   }
   if (!groups) {
     return (
-      <Screen>
+      <Screen admin>
         <LoadingBlock label="Loading pricing…" />
       </Screen>
     );
   }
 
   return (
-    <Screen>
+    <Screen admin>
       <Title>Pricing editor</Title>
       <Subtitle>Changes go live on the pricing page and at checkout as soon as they save.</Subtitle>
       {feedback ? (

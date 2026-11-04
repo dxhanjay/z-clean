@@ -4,6 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 /**
+ * @deprecated Superseded by AdminShell (admin redesign): the console
+ * now uses a sidebar + topbar shell, and this pill nav is no longer
+ * rendered anywhere. Kept in the tree only because the snapshot-push
+ * flow cannot delete files — safe to delete in any checkout with
+ * normal git access.
+ *
  * Admin section nav (Phase 7a) — rendered by the admin layout on every
  * admin screen: order queue, branches, employees. Pill links with a
  * 44px touch target, horizontally scrollable on small screens.

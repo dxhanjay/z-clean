@@ -10,7 +10,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import { brand } from "../lib/config";
+import { adminTheme, brand } from "../lib/config";
 
 /** Shared building blocks — one visual language with the web app (brand teal). */
 
@@ -20,21 +20,28 @@ import { brand } from "../lib/config";
  * scrolling, so Screen renders a plain full-height container with
  * the same background and the FlatList owns padding via its own
  * contentContainerStyle.
+ *
+ * Pass `admin` on admin-console screens (redesign): the background
+ * becomes the console's light panel grey (#F7F7F7), matching the web
+ * admin shell.
  */
 export function Screen({
   children,
   style,
   scroll = true,
+  admin = false,
 }: {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
   scroll?: boolean;
+  admin?: boolean;
 }) {
+  const bg = admin ? { backgroundColor: adminTheme.panelBg } : undefined;
   if (!scroll) {
-    return <View style={[styles.screen, style]}>{children}</View>;
+    return <View style={[styles.screen, bg, style]}>{children}</View>;
   }
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={[styles.screenContent, style]}>
+    <ScrollView style={[styles.screen, bg]} contentContainerStyle={[styles.screenContent, style]}>
       {children}
     </ScrollView>
   );

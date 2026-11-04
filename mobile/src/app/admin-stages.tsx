@@ -142,7 +142,7 @@ export default function AdminStagesScreen() {
 
   if (!isAdmin) {
     return (
-      <Screen>
+      <Screen admin>
         <Title>Stage queues</Title>
         <Text style={styles.muted}>This section is for Z-clean admins only.</Text>
       </Screen>
@@ -213,7 +213,7 @@ export default function AdminStagesScreen() {
     );
 
   return (
-    <Screen scroll={false}>
+    <Screen scroll={false} admin>
       <FlatList
         data={stages?.queues ?? []}
         keyExtractor={(q) => q.pointId}

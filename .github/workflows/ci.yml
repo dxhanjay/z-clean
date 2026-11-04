@@ -1,0 +1,47 @@
+name: CI
+
+# P0 hardening: every push to main and every pull request runs the
+# full test suites, a typecheck, lint and a production build BEFORE
+# the code can be considered deployable. (Vercel still deploys from
+# main on push — this workflow is the gate that tells us a push was
+# safe; branch protection can enforce it once enabled on GitHub.)
+#
+# The build runs WITHOUT real Supabase credentials: the placeholder
+# public env below keeps the app in its configured code paths, and
+# the codebase is demo/NOT_CONFIGURED-safe, so no page may require a
+# live database at build time.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  web:
+    name: Web — tests, typecheck, lint, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run all test suites
+        run: npm test
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Production build (placeholder public env)
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder

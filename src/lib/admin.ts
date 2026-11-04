@@ -1,5 +1,5 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/server";
+import { resolveRequestAuth } from "@/lib/supabase/request-auth";
 
 /**
  * Admin gate (Phase 4) — SERVER ONLY.
@@ -15,6 +15,10 @@ import { createClient } from "@/lib/supabase/server";
  *   - "ok"             Signed-in admin. The role is re-read from the
  *                      profiles table on the server for every call —
  *                      it is never trusted from the client.
+ *
+ * The caller may authenticate with the web cookie session OR a
+ * validated Bearer access token (mobile app) — resolveRequestAuth
+ * handles both; the gate's decisions are identical either way.
  */
 export type AdminGate =
   | { kind: "demo" }
@@ -23,13 +27,14 @@ export type AdminGate =
   | { kind: "ok"; user: User; supabase: SupabaseClient };
 
 export async function getAdminGate(): Promise<AdminGate> {
-  const supabase = await createClient();
-  if (!supabase) return { kind: "demo" };
+  // Dual auth (Mobile Phase 1): the caller's cookie session OR a
+  // validated `Authorization: Bearer <access-token>` — see
+  // src/lib/supabase/request-auth.ts. Web callers are unaffected.
+  const auth = await resolveRequestAuth();
+  if (auth.kind === "unconfigured") return { kind: "demo" };
+  if (auth.kind !== "user") return { kind: "unauthenticated" };
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { kind: "unauthenticated" };
+  const { supabase, user } = auth;
 
   const { data: profile } = await supabase
     .from("profiles")

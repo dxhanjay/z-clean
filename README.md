@@ -598,6 +598,67 @@ employee logins (staff act from the admin console, recorded by name),
 and the two ₹ settings keys (free-delivery threshold, minimum order)
 being wired into the totals engine.
 
+## Mobile — Phase 1 (PWA + Expo app, bearer API auth)
+
+One backend now serves three clients: the web app, an installable
+PWA of the same web app, and a native Expo app (Android & iOS) in
+`mobile/`.
+
+### Bearer-token API contract
+
+API routes accept EITHER credential — same endpoints, same response
+shapes, same status codes:
+
+| Credential | Who | How it is checked |
+| --- | --- | --- |
+| Supabase session cookie | Web app (browser) | `@supabase/ssr` cookie client, as always |
+| `Authorization: Bearer <access-token>` | Mobile app | Token validated with the Supabase Auth server (`auth.getUser(token)`); queries then run through an anon-key client carrying the token, so RLS applies as that user |
+
+Resolution lives in `src/lib/supabase/request-auth.ts`
+(`resolveRequestAuth`) and is used by `getAdminGate()` (all admin
+routes) and the customer order routes: `POST /api/orders`,
+`GET /api/orders`, `GET /api/orders/[id]`, `GET /api/admin/orders`,
+`GET /api/admin/orders/[id]`, `PATCH /api/admin/orders/[id]/status`.
+The cookie is tried first, so web behaviour is unchanged; an invalid
+or missing credential gets the route's usual 401/403. Tokens are
+never trusted by decoding alone, and the service-role key plays no
+part in request auth.
+
+### PWA
+
+`src/app/manifest.ts` serves `/manifest.webmanifest` (name "Z-clean",
+standalone, brand teal `#22786d` theme). Icons: an SVG "Z" on brand
+teal (`public/icons/icon.svg`) for install prompts, plus raster PNGs
+(192/512/maskable, apple-touch 180) generated — not hand-maintained —
+by `node scripts/generate-icons.mjs` (zero-dependency PNG encoder).
+Apple web-app meta + theme color are set in `src/app/layout.tsx`.
+
+### Expo app (`mobile/`)
+
+Expo + expo-router + TypeScript. It signs in against the same
+Supabase project (publishable key in `app.json` `extra` — public by
+design; override via `EXPO_PUBLIC_*` env), persists the session in
+AsyncStorage, reads catalogue/areas from the database under the same
+public-read RLS the web storefront uses (bundled approved list as
+fallback, exactly like the web demo read), places orders through
+`POST /api/orders` with the Bearer token (COD + gift-voucher code;
+expected total computed by a port of the web totals engine in
+`mobile/lib/totals.ts`), and shows order detail with the QR payload,
+OTPs, timeline and money breakdown. Admins (profiles.role = 'admin')
+get an Admin tab: order queue with status filter, order detail with
+valid-next-status actions and Mark COD collected, and a "More admin"
+screen that links to the web admin for the sections that are not
+in-app yet (handovers and finance arrive in Mobile Phases 2/3).
+Ordering requires sign-in — there is no demo mode in the app.
+
+```bash
+cd mobile
+npm install
+npx expo start        # dev server / Expo Go
+npx tsc --noEmit      # type check
+npx expo export       # production bundle check
+```
+
 ## Setup
 
 ```bash

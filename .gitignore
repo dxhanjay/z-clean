@@ -13,3 +13,9 @@
 # Misc
 .DS_Store
 *.log
+
+# Expo mobile app (Mobile Phase 1) — its deps/build output stay local
+/mobile/node_modules
+/mobile/.expo
+/mobile/dist
+/mobile/*.log

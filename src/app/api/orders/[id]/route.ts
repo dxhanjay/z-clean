@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { resolveRequestAuth } from "@/lib/supabase/request-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { handoverPoint, qrPayload } from "@/lib/handovers";
 import { computeOrderFinance, paymentMethodLabel } from "@/lib/finance";
@@ -27,16 +27,16 @@ export async function GET(
 ) {
   const { id } = await params;
 
-  const supabase = await createClient();
-  if (!supabase) {
+  // Dual auth (Mobile Phase 1): cookie session or validated Bearer
+  // token. RLS scopes the reads below to the owner either way.
+  const auth = await resolveRequestAuth();
+  if (auth.kind === "unconfigured") {
     return NextResponse.json({ mode: "demo" }, { status: 503 });
   }
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
+  if (auth.kind !== "user") {
     return NextResponse.json({ error: "Sign in required." }, { status: 401 });
   }
+  const { supabase } = auth;
 
   const { data: order, error } = await supabase
     .from("orders")

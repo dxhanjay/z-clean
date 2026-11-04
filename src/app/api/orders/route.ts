@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/server";
+import { resolveRequestAuth } from "@/lib/supabase/request-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { orderSchema } from "@/lib/validation";
 import { isPincodeServiceable } from "@/lib/pricing";
@@ -102,23 +102,24 @@ export async function POST(request: Request) {
     );
   }
 
-  const supabase = await createClient();
-
   // Who is ordering? Live orders need an account (orders.user_id NOT NULL).
+  // Dual auth (Mobile Phase 1): the web cookie session OR a validated
+  // `Authorization: Bearer <access-token>` from the mobile app — the
+  // resolved client carries the caller's identity, so every insert
+  // below runs under that user's RLS either way.
+  const auth = await resolveRequestAuth();
+  const supabase = auth.kind === "unconfigured" ? null : auth.supabase;
   let userId: string | null = null;
   let userEmail: string | null = null;
   if (supabase) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    userId = user?.id ?? null;
-    userEmail = user?.email ?? null;
-    if (!userId) {
+    if (auth.kind !== "user") {
       return NextResponse.json(
         { error: "Please sign in to place an order.", code: "AUTH_REQUIRED" },
         { status: 401 },
       );
     }
+    userId = auth.user.id;
+    userEmail = auth.user.email ?? null;
   }
 
   // First-order check for first-order-only coupons.
@@ -464,16 +465,14 @@ export async function POST(request: Request) {
 
 /** GET /api/orders — the signed-in customer's orders (live mode only). */
 export async function GET() {
-  const supabase = await createClient();
-  if (!supabase) {
+  const auth = await resolveRequestAuth();
+  if (auth.kind === "unconfigured") {
     return NextResponse.json({ mode: "demo", orders: [] }, { status: 503 });
   }
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
+  if (auth.kind !== "user") {
     return NextResponse.json({ error: "Sign in required." }, { status: 401 });
   }
+  const { supabase } = auth;
 
   const { data, error } = await supabase
     .from("orders")

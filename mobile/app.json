@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "Z-clean",
+    "slug": "z-clean",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "zclean",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar"
+    ],
+    "extra": {
+      "apiBaseUrl": "https://z-clean-iota.vercel.app",
+      "supabaseUrl": "https://hvoqfcwtrlaszqsajlho.supabase.co",
+      "supabasePublishableKey": "sb_publishable_HpBnkz1IqUNgsL_hPpbHKQ_5vE9TI-s"
+    }
+  }
+}

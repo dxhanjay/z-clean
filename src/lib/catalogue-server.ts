@@ -37,7 +37,7 @@ export interface StorefrontCatalogue {
   fromDatabase: boolean;
 }
 
-const UNIT_LABELS: Record<string, string> = {
+export const UNIT_LABELS: Record<string, string> = {
   kg: "per kg",
   piece: "per piece",
   pair: "per pair",

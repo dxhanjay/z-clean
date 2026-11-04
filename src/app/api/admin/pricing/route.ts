@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminGate } from "@/lib/admin";
+import { UNIT_LABELS } from "@/lib/catalogue-server";
 
 /**
  * GET /api/admin/pricing — the FULL catalogue for the pricing editor
@@ -24,21 +25,25 @@ export async function GET() {
   }
   const { supabase } = gate;
 
+  // Column reality (verified against the live schema): services has NO
+  // sort_order; price_items uses item_name and has NO unit/unit_label/
+  // sort_order columns — the unit lives on services.pricing_unit.
   const { data: serviceRows, error } = await supabase
     .from("services")
-    .select("id, slug, name, sort_order")
-    .order("sort_order", { ascending: true });
+    .select("id, slug, name, pricing_unit")
+    .order("name", { ascending: true });
   if (error || !serviceRows) {
     return NextResponse.json({ error: "Could not load the catalogue." }, { status: 500 });
   }
   const { data: itemRows, error: itemsError } = await supabase
     .from("price_items")
-    .select("id, service_id, name, unit, unit_label, price_paise, express_multiplier, active, sort_order")
-    .order("sort_order", { ascending: true });
+    .select("id, service_id, item_name, price_paise, express_multiplier, active")
+    .order("item_name", { ascending: true });
   if (itemsError || !itemRows) {
     return NextResponse.json({ error: "Could not load price items." }, { status: 500 });
   }
 
+  const unitByService = new Map(serviceRows.map((s) => [s.id, s.pricing_unit]));
   const groups = serviceRows.map((s) => ({
     serviceId: s.id,
     slug: s.slug,
@@ -47,10 +52,10 @@ export async function GET() {
       .filter((i) => i.service_id === s.id)
       .map((i) => ({
         id: i.id,
-        name: i.name,
+        name: i.item_name,
         pricePaise: i.price_paise,
-        unit: i.unit,
-        unitLabel: i.unit_label,
+        unit: unitByService.get(i.service_id) ?? "piece",
+        unitLabel: UNIT_LABELS[unitByService.get(i.service_id) ?? "piece"] ?? "per piece",
         expressMultiplier: Number(i.express_multiplier),
         active: i.active,
       })),

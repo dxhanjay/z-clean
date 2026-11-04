@@ -42,6 +42,37 @@ The native companion to the Z-clean web app, in the same repo
 - Still web-only (Mobile Phase 3): finance, reports, pricing,
   settings — the in-app index links out to the real web admin.
 
+## Mobile Phase 3 — finance, reports & editors in-app
+
+- **Finance** — IST day summary with the gateway-vs-desk collection
+  split, expected-cash card, **close the day** (counted cash, with
+  the server's ALREADY_CLOSED surfaced) and closing history;
+  **outstanding balances** (tap through to the order); the **refund
+  queue** with approve/reject and a confirm-gated process step.
+- **Expenses** — range-filtered list (the API's `?from`/`?to`),
+  add-expense form across the 8 categories, audit-logged delete.
+- **Per-order payments & refunds** on each admin order: the full
+  finance breakdown (gateway + ledger + the legacy-settled note),
+  record a payment (server errors such as OVERPAYMENT /
+  NOTHING_OUTSTANDING shown verbatim), request a refund, and the
+  order's refund list with inline approve/reject/process.
+- **Reports** — 7/30/90-day periods: sales by day/service/area,
+  processed-by-plant, pending-order aging, employee performance,
+  voucher usage (incl. outstanding gift-card liability), retention,
+  expenses by category, and the sales-vs-expense net. Empty sections
+  say "No data yet" rather than inventing numbers.
+- **Pricing & settings editors** — per-item price / express
+  multiplier / active with the web's ₹→paise conversion, and the
+  business settings with paise keys edited in rupees; only changed
+  keys are sent.
+- **Receipt** — customer and admin order screens open the live
+  printable web receipt (`/orders/<id>/receipt`).
+
+**The mobile app is now complete**: every admin section that exists
+on the web exists natively in the app, on the same APIs. The admin
+index keeps one convenience link to the web admin for wide tables
+and printing.
+
 Ordering requires sign-in — there is deliberately **no demo mode**
 in the app. All API calls go to the production backend with the
 session's access token as `Authorization: Bearer <token>` (see the

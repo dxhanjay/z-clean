@@ -29,6 +29,11 @@ export default function RootLayout() {
         <Stack.Screen name="admin-vouchers" options={{ title: "Admin — gift vouchers" }} />
         <Stack.Screen name="admin-employees" options={{ title: "Admin — employees" }} />
         <Stack.Screen name="admin-branches" options={{ title: "Admin — branches" }} />
+        <Stack.Screen name="admin-finance" options={{ title: "Admin — finance" }} />
+        <Stack.Screen name="admin-expenses" options={{ title: "Admin — expenses" }} />
+        <Stack.Screen name="admin-reports" options={{ title: "Admin — reports" }} />
+        <Stack.Screen name="admin-pricing" options={{ title: "Admin — pricing" }} />
+        <Stack.Screen name="admin-settings" options={{ title: "Admin — settings" }} />
       </Stack>
     </AuthProvider>
   );

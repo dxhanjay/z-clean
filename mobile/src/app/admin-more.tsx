@@ -7,29 +7,36 @@ import { WEB_ADMIN_URL } from "../lib/config";
 /**
  * More admin tools — the admin index.
  *
- * Mobile Phase 2 made the operations sections native: stage queues
- * & handovers, gift vouchers, employees and branches all live in the
- * app now (handover completion itself sits on each admin order).
- * Finance, reports, pricing and settings are complete in the WEB
- * admin and arrive in Mobile Phase 3; until then these buttons open
- * the real thing in the browser — no fake screens.
+ * As of Mobile Phase 3 every admin section is native in the app:
+ * operations (Phase 2 — stage queues & handovers, vouchers,
+ * employees, branches) and money & insight (Phase 3 — finance,
+ * expenses, reports, pricing, settings). Handover completion and
+ * per-order payments/refunds live on each admin order. One plain
+ * "Open web admin" link remains as a convenience.
  */
 const NATIVE_SECTIONS: {
   label: string;
   note: string;
-  href: "/admin-stages" | "/admin-vouchers" | "/admin-employees" | "/admin-branches";
+  href:
+    | "/admin-stages"
+    | "/admin-vouchers"
+    | "/admin-employees"
+    | "/admin-branches"
+    | "/admin-finance"
+    | "/admin-expenses"
+    | "/admin-reports"
+    | "/admin-pricing"
+    | "/admin-settings";
 }[] = [
   { label: "Stage queues", note: "Who is waiting at each handover point, per employee", href: "/admin-stages" },
   { label: "Gift vouchers", note: "Campaigns, prepaid cards, issue / cancel / expire, history", href: "/admin-vouchers" },
   { label: "Employees & roles", note: "Staff records across the 12-role matrix", href: "/admin-employees" },
   { label: "Branches & plants", note: "Plants, collection centers and branches", href: "/admin-branches" },
-];
-
-const WEB_SECTIONS: { label: string; path: string; phase: string }[] = [
-  { label: "Finance — payments, refunds, closing", path: "/admin/finance", phase: "Mobile Phase 3" },
-  { label: "Reports & analytics", path: "/admin/reports", phase: "Mobile Phase 3" },
-  { label: "Pricing editor", path: "/admin/pricing", phase: "Mobile Phase 3" },
-  { label: "Business settings", path: "/admin/settings", phase: "Mobile Phase 3" },
+  { label: "Finance", note: "Day summary, cash closing, outstanding balances, refund queue", href: "/admin-finance" },
+  { label: "Expenses", note: "The spend ledger behind the sales-vs-expense report", href: "/admin-expenses" },
+  { label: "Reports & analytics", note: "Sales, aging, employee performance, vouchers, retention", href: "/admin-reports" },
+  { label: "Pricing editor", note: "Prices and express multipliers — live at checkout on save", href: "/admin-pricing" },
+  { label: "Business settings", note: "Phone, WhatsApp, delivery thresholds and more", href: "/admin-settings" },
 ];
 
 export default function AdminMoreScreen() {
@@ -37,8 +44,8 @@ export default function AdminMoreScreen() {
     <Screen>
       <Title>More admin tools</Title>
       <Subtitle>
-        Operations run natively in the app. Handover completion lives on each order in the Admin
-        queue.
+        Everything runs natively in the app. Handover completion and per-order payments & refunds
+        live on each order in the Admin queue.
       </Subtitle>
 
       {NATIVE_SECTIONS.map((s) => (
@@ -49,20 +56,14 @@ export default function AdminMoreScreen() {
         </Card>
       ))}
 
-      <Subtitle>
-        These sections are complete in the web admin and arrive in the app in Mobile Phase 3. They
-        open in your browser, signed in with the same admin account.
-      </Subtitle>
-      {WEB_SECTIONS.map((s) => (
-        <Card key={s.path}>
-          <Text style={styles.label}>{s.label}</Text>
-          <Text style={styles.muted}>{s.phase}</Text>
-          <GhostButton
-            label="Open in web admin"
-            onPress={() => void Linking.openURL(`${WEB_ADMIN_URL.replace(/\/admin$/, "")}${s.path}`)}
-          />
-        </Card>
-      ))}
+      <Card>
+        <Text style={styles.label}>Web admin</Text>
+        <Text style={styles.muted}>
+          The full web admin, signed in with the same admin account — handy for wide tables and
+          printing.
+        </Text>
+        <GhostButton label="Open web admin" onPress={() => void Linking.openURL(WEB_ADMIN_URL)} />
+      </Card>
     </Screen>
   );
 }

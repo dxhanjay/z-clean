@@ -282,6 +282,196 @@ export interface VoucherDetail {
   transactions: VoucherTransaction[];
 }
 
+/* ---------------- Mobile Phase 3 — finance, reports, editors ---------------- */
+
+/** One row of the staff money ledger (GET /api/admin/orders/[id]/payments). */
+export interface PaymentEntryView {
+  id: string;
+  entryType: "payment" | "refund";
+  method: string;
+  amountPaise: number;
+  reference: string | null;
+  note: string | null;
+  recordedByEmployeeId: string | null;
+  recordedByEmployeeName: string | null;
+  actorLabel: string | null;
+  createdAt: string;
+}
+
+export interface GatewayPaymentView {
+  id: string;
+  gateway: string;
+  amountPaise: number;
+  status: string;
+  gatewayPaymentId: string | null;
+  createdAt: string;
+}
+
+export interface RefundView {
+  id: string;
+  orderId?: string;
+  amountPaise: number;
+  reason: string;
+  method: string;
+  status: "requested" | "approved" | "rejected" | "processed";
+  requestedByLabel: string | null;
+  decidedByLabel: string | null;
+  decidedAt: string | null;
+  processedAt: string | null;
+  createdAt: string;
+  /** Present on the cross-order refund queue (GET /api/admin/refunds). */
+  customer?: string;
+  phone?: string | null;
+  orderTotalPaise?: number | null;
+}
+
+/** The one finance computation for an order (web src/lib/finance.ts OrderFinance). */
+export interface OrderFinanceBreakdown {
+  totalPaise: number;
+  gatewayPaidPaise: number;
+  entriesPaidPaise: number;
+  basePaidPaise: number;
+  legacySettled: boolean;
+  effectivePaidPaise: number;
+  outstandingPaise: number;
+  refundsProcessedPaise: number;
+  refundsPendingPaise: number;
+  refundablePaise: number;
+}
+
+export interface OrderPaymentsView {
+  paymentStatus: string;
+  paymentMethod: string;
+  orderStatus: string;
+  finance: OrderFinanceBreakdown;
+  gatewayPayments: GatewayPaymentView[];
+  entries: PaymentEntryView[];
+  refunds: RefundView[];
+}
+
+export interface CashClosing {
+  id: string;
+  date: string;
+  expectedCashPaise: number;
+  countedCashPaise: number;
+  differencePaise: number;
+  closedByLabel: string | null;
+  note: string | null;
+  createdAt: string;
+}
+
+export interface FinanceOverview {
+  date: string;
+  collections: { method: string; gatewayPaise: number; entriesPaise: number; totalPaise: number }[];
+  totalCollectedPaise: number;
+  refundsProcessedPaise: number;
+  refundsProcessedCount: number;
+  expensesTotalPaise: number;
+  netCollectedPaise: number;
+  expectedCashPaise: number;
+  closing: CashClosing | null;
+}
+
+export interface OutstandingRow {
+  orderId: string;
+  status: string;
+  paymentStatus: string;
+  customer: string;
+  phone: string | null;
+  area: string | null;
+  city: string | null;
+  totalPaise: number;
+  paidPaise: number;
+  outstandingPaise: number;
+  ageDays: number;
+  createdAt: string;
+}
+
+export interface ExpenseRow {
+  id: string;
+  expenseDate: string;
+  category: string;
+  description: string | null;
+  amountPaise: number;
+  branchId: string | null;
+  branchName: string | null;
+  actorLabel: string | null;
+  createdAt: string;
+}
+
+/* Reports — mirrors web src/lib/reports.ts Reports. */
+export interface KeyValueTotal {
+  key: string;
+  label: string;
+  orders: number;
+  grossPaise: number;
+}
+
+export interface ReportsData {
+  salesByDay: { date: string; orders: number; grossPaise: number; collectedPaise: number }[];
+  salesByService: KeyValueTotal[];
+  salesByArea: KeyValueTotal[];
+  processedByPlant: KeyValueTotal[];
+  pendingAging: {
+    bucket: string;
+    count: number;
+    orders: { id: string; status: string; ageDays: number; totalPaise: number }[];
+  }[];
+  employeePerformance: {
+    employeeId: string;
+    name: string;
+    handovers: number;
+    flagsRaised: number;
+    deliveries: number;
+  }[];
+  voucherUsage: {
+    created: number;
+    issued: number;
+    redeemed: number;
+    outstandingLiabilityPaise: number;
+    discountGivenPaise: number;
+    redeemedValuePaise: number;
+  };
+  retention: {
+    customers: number;
+    repeatCustomers: number;
+    repeatRatePercent: number;
+    topCustomers: { label: string; orders: number; grossPaise: number }[];
+  };
+  expensesByCategory: { category: string; totalPaise: number }[];
+  salesVsExpense: {
+    grossPaise: number;
+    collectedPaise: number;
+    expensesPaise: number;
+    netPaise: number;
+  };
+}
+
+/** Pricing editor shapes (GET /api/admin/pricing). */
+export interface PricingItem {
+  id: string;
+  name: string;
+  pricePaise: number;
+  unit: string;
+  unitLabel: string;
+  expressMultiplier: number;
+  active: boolean;
+}
+
+export interface PricingGroup {
+  serviceId: string;
+  slug: string;
+  title: string;
+  items: PricingItem[];
+}
+
+/** Settings editor row (GET /api/admin/settings). */
+export interface SettingRow {
+  key: string;
+  value: string | null;
+  updated_at?: string;
+}
+
 export interface PlaceOrderResult {
   mode: string;
   orderId: string;

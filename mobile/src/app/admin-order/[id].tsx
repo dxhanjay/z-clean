@@ -1,7 +1,9 @@
+import * as Linking from "expo-linking";
 import { useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { Alert, Text, View } from "react-native";
 import HandoverPanel from "../../components/HandoverPanel";
+import OrderPaymentsPanel from "../../components/OrderPaymentsPanel";
 import {
   Badge,
   Card,
@@ -15,6 +17,7 @@ import {
   styles,
 } from "../../components/ui";
 import { ApiError, fetchAdminOrderDetail, patchAdminOrderStatus } from "../../lib/api";
+import { API_BASE_URL } from "../../lib/config";
 import { formatPaise, formatWhen } from "../../lib/format";
 import { nextStatuses, statusLabel } from "../../lib/order-flow";
 import type { AdminOrderDetail } from "../../lib/types";
@@ -28,8 +31,8 @@ import type { AdminOrderDetail } from "../../lib/types";
  *     src/lib/order-flow allows are offered; the server re-checks),
  *   - Mark COD collected on a cod_pending Pay-on-Delivery order.
  * The plain status actions coexist with handovers, exactly as on the
- * web. Finance actions arrive in Mobile Phase 3 — see "More admin
- * tools".
+ * web. Mobile Phase 3 adds the payments & refunds panel below
+ * (OrderPaymentsPanel) and a receipt action.
  */
 export default function AdminOrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -210,10 +213,13 @@ export default function AdminOrderDetailScreen() {
             }
           />
         )}
-        <Text style={styles.muted}>
-          The payments ledger and refunds are in the web admin for now — see More admin tools.
-        </Text>
+        <GhostButton
+          label="Receipt — printable web receipt"
+          onPress={() => void Linking.openURL(`${API_BASE_URL}/orders/${order.id}/receipt`)}
+        />
       </Card>
+
+      <OrderPaymentsPanel key={`pay:${order.id}:${order.payment_status}`} orderId={order.id} onChanged={() => void load()} />
 
       {order.history.length > 0 && (
         <Card>

@@ -4,11 +4,20 @@ import type {
   AdminOrderDetail,
   AdminOrderSummary,
   Branch,
+  CashClosing,
   CustomerOrderDetail,
   Employee,
+  ExpenseRow,
+  FinanceOverview,
   GiftVoucher,
   MyOrderSummary,
+  OrderPaymentsView,
+  OutstandingRow,
   PlaceOrderResult,
+  PricingGroup,
+  RefundView,
+  ReportsData,
+  SettingRow,
   StagesResult,
   VoucherDetail,
 } from "./types";
@@ -278,4 +287,158 @@ export async function patchVoucher(
     body: JSON.stringify(body),
   });
   return data.voucher;
+}
+
+/* ------------- Mobile Phase 3 — finance ------------- */
+
+export async function fetchFinanceOverview(date: string): Promise<FinanceOverview> {
+  const data = await apiFetch<{ mode: string } & FinanceOverview>(
+    `/api/admin/finance/overview?date=${encodeURIComponent(date)}`,
+  );
+  return {
+    date: data.date,
+    collections: data.collections ?? [],
+    totalCollectedPaise: data.totalCollectedPaise,
+    refundsProcessedPaise: data.refundsProcessedPaise,
+    refundsProcessedCount: data.refundsProcessedCount,
+    expensesTotalPaise: data.expensesTotalPaise,
+    netCollectedPaise: data.netCollectedPaise,
+    expectedCashPaise: data.expectedCashPaise,
+    closing: data.closing ?? null,
+  };
+}
+
+export async function fetchClosings(): Promise<CashClosing[]> {
+  const data = await apiFetch<{ mode: string; closings: CashClosing[] }>("/api/admin/finance/closings");
+  return data.closings ?? [];
+}
+
+export async function closeDay(body: {
+  date: string;
+  countedCashPaise: number;
+  note?: string;
+}): Promise<{ expectedCashPaise: number; countedCashPaise: number; differencePaise: number }> {
+  return apiFetch("/api/admin/finance/close-day", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function fetchOutstanding(): Promise<OutstandingRow[]> {
+  const data = await apiFetch<{ mode: string; orders: OutstandingRow[] }>("/api/admin/finance/outstanding");
+  return data.orders ?? [];
+}
+
+export async function fetchRefundQueue(): Promise<RefundView[]> {
+  const data = await apiFetch<{ mode: string; refunds: RefundView[] }>("/api/admin/refunds");
+  return data.refunds ?? [];
+}
+
+export async function patchRefund(
+  id: string,
+  action: "approve" | "reject" | "process",
+): Promise<{ status: string; paymentStatus?: string }> {
+  return apiFetch(`/api/admin/refunds/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ action }),
+  });
+}
+
+/* ------------- Mobile Phase 3 — expenses ------------- */
+
+export async function fetchExpenses(params?: { from?: string; to?: string }): Promise<ExpenseRow[]> {
+  const q = new URLSearchParams();
+  if (params?.from) q.set("from", params.from);
+  if (params?.to) q.set("to", params.to);
+  const qs = q.toString();
+  const data = await apiFetch<{ mode: string; expenses: ExpenseRow[] }>(
+    `/api/admin/expenses${qs ? `?${qs}` : ""}`,
+  );
+  return data.expenses ?? [];
+}
+
+export async function createExpense(body: {
+  expenseDate: string;
+  category: string;
+  description?: string;
+  amountPaise: number;
+  branchId?: string | null;
+}): Promise<void> {
+  await apiFetch("/api/admin/expenses", { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function deleteExpense(id: string): Promise<void> {
+  await apiFetch(`/api/admin/expenses/${id}`, { method: "DELETE" });
+}
+
+/* ------------- Mobile Phase 3 — per-order payments & refunds ------------- */
+
+export async function fetchOrderPayments(id: string): Promise<OrderPaymentsView> {
+  const data = await apiFetch<{ mode: string } & OrderPaymentsView>(`/api/admin/orders/${id}/payments`);
+  return {
+    paymentStatus: data.paymentStatus,
+    paymentMethod: data.paymentMethod,
+    orderStatus: data.orderStatus,
+    finance: data.finance,
+    gatewayPayments: data.gatewayPayments ?? [],
+    entries: data.entries ?? [],
+    refunds: data.refunds ?? [],
+  };
+}
+
+export async function recordPayment(
+  id: string,
+  body: { method: string; amountPaise: number; reference?: string; note?: string },
+): Promise<{ paymentStatus: string }> {
+  return apiFetch(`/api/admin/orders/${id}/payments`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function requestRefund(
+  id: string,
+  body: { amountPaise: number; reason: string; method: string },
+): Promise<{ refundId: string; status: string }> {
+  return apiFetch(`/api/admin/orders/${id}/refunds`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+/* ------------- Mobile Phase 3 — reports ------------- */
+
+export async function fetchReports(days: number): Promise<ReportsData> {
+  const data = await apiFetch<{ mode: string; reports: ReportsData }>(`/api/admin/reports?days=${days}`);
+  return data.reports;
+}
+
+/* ------------- Mobile Phase 3 — pricing & settings editors ------------- */
+
+export async function fetchPricing(): Promise<PricingGroup[]> {
+  const data = await apiFetch<{ mode: string; groups: PricingGroup[] }>("/api/admin/pricing");
+  return data.groups ?? [];
+}
+
+export async function patchPricing(
+  id: string,
+  body: { pricePaise?: number; expressMultiplier?: number; active?: boolean },
+): Promise<{ item: { pricePaise: number; unitLabel: string } }> {
+  return apiFetch(`/api/admin/pricing/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function fetchSettings(): Promise<SettingRow[]> {
+  const data = await apiFetch<{ mode: string; settings: SettingRow[] }>("/api/admin/settings");
+  return data.settings ?? [];
+}
+
+export async function patchSettings(values: Record<string, string | null>): Promise<SettingRow[]> {
+  const data = await apiFetch<{ mode: string; settings: SettingRow[] }>("/api/admin/settings", {
+    method: "PATCH",
+    body: JSON.stringify({ values }),
+  });
+  return data.settings ?? [];
 }

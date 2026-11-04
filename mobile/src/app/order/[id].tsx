@@ -1,3 +1,4 @@
+import * as Linking from "expo-linking";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
@@ -6,6 +7,7 @@ import {
   Badge,
   Card,
   ErrorBlock,
+  GhostButton,
   LoadingBlock,
   Screen,
   Title,
@@ -13,7 +15,7 @@ import {
   styles,
 } from "../../components/ui";
 import { fetchOrderDetail } from "../../lib/api";
-import { brand } from "../../lib/config";
+import { API_BASE_URL, brand } from "../../lib/config";
 import { formatPaise, formatWhen } from "../../lib/format";
 import { ORDER_STEPS, statusLabel, stepIndex } from "../../lib/order-flow";
 import type { CustomerOrderDetail } from "../../lib/types";
@@ -222,6 +224,17 @@ export default function OrderDetailScreen() {
           </Text>
         )}
         <Text style={styles.muted}>Placed: {formatWhen(order.created_at)}</Text>
+      </Card>
+
+      <Card>
+        <Text style={styles.label}>Receipt</Text>
+        <Text style={styles.muted}>
+          Opens the printable web receipt for this order in your browser.
+        </Text>
+        <GhostButton
+          label="Open receipt"
+          onPress={() => void Linking.openURL(`${API_BASE_URL}/orders/${order.id}/receipt`)}
+        />
       </Card>
     </Screen>
   );

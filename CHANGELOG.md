@@ -3,6 +3,50 @@
 All notable changes to Z-clean. (This file was started at Delta 1;
 earlier history lives in the README's phase sections and the git log.)
 
+## Phase 5 realism pass — product-render hero (2026-11-05)
+
+Owner verdict on the Scope M scene: "that 3d shirt is looking
+like cartoon." The flat extruded silhouette + flat lighting
+were the cause; both were rebuilt. Composition, capability
+gate, fallback matrix, lazy-chunk discipline and the
+performance contract are unchanged.
+
+### Changed
+- **Lighting** — image-based lighting from a locally generated
+  `RoomEnvironment` (PMREM) replaces the ambient wash; one key
+  directional remains for definition. ACES tone mapping,
+  exposure 1.06, sRGB output pinned in `onCreated`.
+- **Torso** — the flat extrusion is replaced by parametric
+  front/back cloth panels (spline width profile with waist
+  taper, depth fullness, shirttail hem, scooped neckline)
+  closed by bulged seam strips; drape undulations and
+  micro-wrinkles are displaced into the vertices, and the
+  placket is a raised strip with stitch grooves displaced
+  into the surface itself. Buttons (now glossy pearl domes)
+  and the pocket are seated from the same surface functions.
+- **Sleeves** — straight angled cylinders replaced by tapered
+  tubes swept along drooping CatmullRom curves with a slight
+  forward bend, shoulder caps, cuff bands, cuff buttons and
+  shadowed sleeve openings. Collar band now leaves a genuine
+  front gap for the open V, with a shadowed neck interior.
+- **Fabric** — a canvas-drawn plain-weave pattern now feeds
+  bump + roughness maps on every cloth material (stack
+  included); sheen retuned, v1 clearcoat sheen nearly removed.
+- **Stage** — painted blue-grey studio backdrop (canvas
+  gradient + light pool) behind the garments; particles
+  110 → 55 and faded; contact shadows softer; the folded
+  stack gains a folded-over top flap and larger corner radii.
+- **Assets** — still 100% procedural: geometry, weave,
+  backdrop and environment are all generated at runtime.
+  No models, no image textures, no downloads.
+
+### Performance
+- Lazy 3D chunks: 956,869 → 965,794 raw bytes (+8.9 kB,
+  +0.9%); the three/drei vendor chunks are byte-identical.
+  `/` First Load JS unchanged at 117 kB. Full suite:
+  897 passed, 0 failed (no test changes — no new pure logic
+  was extracted).
+
 ## Phase 5 — 3D experience, Scope M (2026-11-05)
 
 ### Added

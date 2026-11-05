@@ -184,3 +184,14 @@ of any asset in it:
 - The reference's other garments (hoodies, hanging rails) were
   deliberately not reproduced: the board's hero is ONE shirt,
   and the scene keeps that single, readable hero object.
+
+*(Realism-pass amendment, same day: the owner's verdict on the
+scene above was "cartoon", so the shirt and stage were rebuilt
+toward the board's product-render mood — the extrusion became
+parametric cloth panels with baked drape, the sleeves swept
+tubes, the cloth gained a procedural weave, lighting became
+image-based (a locally generated environment, still no
+external assets), and the stage is now a painted blue-grey
+studio backdrop in the board's spirit rather than the site's
+pastel gradient. The interpretation-not-copy position above
+is unchanged: every asset remains procedural and original.)*

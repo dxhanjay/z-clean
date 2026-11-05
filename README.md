@@ -1363,16 +1363,55 @@ placket, long sleeves angled gently down, a chest pocket —
 beside a neat **folded-garment stack**, over a soft pedestal
 glow on the hero's pastel backdrop, with sparse drifting
 particles, slow levitation, a subtle sway, and damped
-pointer-parallax. Lighting is three directional lights + ambient
-(no shadow maps; the ground shadow is drei `ContactShadows`).
+pointer-parallax. Lighting is image-based (see the realism
+pass below) plus three directional lights (no shadow maps;
+the ground shadow is drei `ContactShadows`).
 
 **Licence: every mesh is procedural geometry** built in
-`src/components/HeroScene3D.tsx` (an extruded shirt silhouette,
-cylinders, rounded boxes) with cloth-like physical materials
-(sheen + a touch of clearcoat). There are **no model files, no
-image textures and no external assets**; the only textures are
-canvas radial gradients generated at runtime (particle sprite,
-ground glow). Nothing was taken from the reference site.
+`src/components/HeroScene3D.tsx` (parametric cloth panels,
+swept tube sleeves, rounded boxes) with cloth-like physical
+materials. There are **no model files, no image textures and
+no external assets**; the only textures are canvases generated
+at runtime (a cotton-weave pattern, radial gradients for the
+particle sprite and ground glow, and the studio backdrop
+gradient). Nothing was taken from the reference site.
+
+### Realism pass (2026-11-05)
+
+The owner's verdict on the first scene was "cartoon" — a flat
+extruded silhouette under flat lights. The rebuild keeps the
+composition and the fallback/perf contracts, and replaces the
+shirt and the rendering:
+
+- **Image-based lighting** — the scene environment is a
+  `RoomEnvironment` rendered through `PMREMGenerator` on the
+  visitor's device (`StudioEnvironment` in the component). No
+  HDR file is downloaded or shipped; the environment is
+  generated locally at runtime, so the asset rule above is
+  intact. ACES tone mapping, exposure 1.06.
+- **The torso is a parametric cloth surface** — front and back
+  panels sampled from shared surface functions (waist taper
+  via a spline width profile, chest/waist depth fullness, a
+  shirttail hem, a scooped front neckline), closed by bulged
+  seam strips. Drape undulations and micro-wrinkles are baked
+  into the vertices; the **placket is displaced into the
+  surface** (a raised centre strip with stitch grooves), and
+  the buttons and chest pocket are placed from the same
+  surface functions, so they hug the cloth.
+- **Sleeves are tapered tubes** swept along drooping
+  CatmullRom curves with a forward bend — shoulder cap, cuff
+  band, cuff button, and a shadowed sleeve opening.
+- **Fabric has a weave** — a canvas-drawn plain-weave pattern
+  feeds the bump map and a roughness map (≈0.78 average) of
+  every cloth material; sheen is tuned (roughness 0.5) and the
+  clearcoat sheen of v1 is nearly gone. Buttons are glossy
+  pearl domes (clearcoat 1).
+- **Stage** — a painted blue-grey studio backdrop (canvas
+  gradient with a soft light pool) sits behind the garments,
+  matching the reference board; particles halved (110 → 55)
+  and faded; contact shadows softer (blur 3.4, opacity 0.30).
+- The folded stack wears the same weave materials, gains a
+  folded-over top flap and softer slab radii.
 
 ### Performance contract (verified in the production build)
 
@@ -1390,8 +1429,13 @@ ground glow). Nothing was taken from the reference site.
 - DPR is capped at 2 (1.5 on small screens); the render loop
   pauses when the hero scrolls off-screen or the tab hides
   (IntersectionObserver + visibilitychange → `frameloop`).
-- Geometry counts are tiny (one extruded silhouette, ~20 small
-  meshes, 110 points).
+- Geometry counts stay small: the torso panels are 65×81-vertex
+  grids (~10k triangles for both), sleeves are 37×21 tubes, ~35
+  meshes total, 55 points, and four runtime canvas textures
+  (weave ×2 at 256², backdrop at 1024×512, sprites). The realism
+  pass grew the lazy 3D chunks by ~9 kB total (~966 kB raw
+  across the same five files); `/` First Load JS is unchanged
+  at 117 kB.
 
 ### Interactive garment cards (CSS 3D, no WebGL)
 

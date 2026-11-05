@@ -57,7 +57,7 @@ export default function AboutPage() {
         </h2>
         <div className="mt-6 grid gap-6 sm:grid-cols-3">
           {values.map((value) => (
-            <div key={value.title} className="rounded-2xl bg-brand-50 p-6">
+            <div key={value.title} className="glass rounded-[1.5rem] p-6">
               <h3 className="font-bold text-ink-900">{value.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-ink-500">
                 {value.description}

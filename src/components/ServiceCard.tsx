@@ -62,7 +62,7 @@ export default function ServiceCard({
   const image = serviceImages[service.slug];
   return (
     <Tilt className="relative h-full rounded-[2rem]">
-    <article className="group relative flex h-full flex-col overflow-hidden rounded-[2rem] bg-white shadow-soft ring-1 ring-mist-200/70 transition-all duration-300 hover:-translate-y-1 hover:shadow-soft-lg">
+    <article className="glass group relative flex h-full flex-col overflow-hidden rounded-[2rem] transition-all duration-300 hover:-translate-y-1 hover:shadow-soft-lg">
       {image ? (
         <div className="relative overflow-hidden">
           <img

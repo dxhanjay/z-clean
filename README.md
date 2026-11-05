@@ -1466,6 +1466,70 @@ pointer-events-none, and keyboard focus is unchanged.
   states, stale threshold (3 minutes), merge semantics
   (newer `recordedAt` wins) and chip hide-rules are byte-identical.
 
+### Glass + 3D scroll pass (2026-11-05)
+
+The owner's follow-up — "make my website 3d scrollable and
+glass effect background" — layers a frosted-glass ambience and
+scroll-driven depth over the public marketing experience.
+Effect language only: no copy, data, price or flow changed, and
+the admin console, the staff app and the customer task flows
+(/order, /orders, /dashboard, auth) are deliberately excluded —
+their surfaces stay crisp and solid.
+
+- **Ambient backdrop** — `src/components/AmbientBackground.tsx`,
+  mounted by `SiteChrome` on the homepage and the marketing /
+  legal shells only (/, /services, /pricing, /blog, /about,
+  /process, /faq, /contact, /app, /privacy, /terms). A fixed
+  pastel wash with four large colour orbs (sky, teal, blush,
+  mist). The orbs are radial gradients — soft by construction —
+  so the full-screen layer uses **no blur filter**; each orb
+  drifts on a 46–58s transform-only keyframe loop. Page content
+  is lifted into a `relative z-10` wrapper above it.
+- **Glass utilities** (`src/app/globals.css`, in
+  `@layer utilities` so hover shadow variants still win):
+  `.glass` (white 60%, blur 16px + saturate 1.4, pale edge, soft
+  shadow), `.glass-strong` (header, dropdown), `.glass-chip`
+  (footer area chips) and `.glass-dark` (the CTA band's inner
+  card over its navy gradient). The plain `-webkit-` prefixed
+  backdrop-filter is written alongside the standard property
+  for iOS Safari, and an `@supports not (backdrop-filter…)`
+  fallback swaps every variant to near-opaque white — no layout
+  ever depends on seeing through a surface. Applied to: the
+  header, hero fact cards + Track button, why/care/how-it-works
+  cards, service + blog cards, pricing teaser + pricing page
+  cards, testimonials, FAQ panels, services/pricing hero
+  panels, about value cards, process step cards, footer chips.
+  Section bands on the homepage went translucent (veil
+  gradients / 70% mist) so the ambience breathes through.
+- **3D scroll reveals** — `src/components/motion/
+  ScrollReveal3D.tsx` wraps the homepage's major sections and
+  the services/pricing/blog hero bands: a block enters tipped
+  back (rotateX 10°, +36px, 25% opacity) and settles flat over
+  0.85s, siblings staggered ≤120ms per step (capped 600ms).
+  Same no-JS contract as `Reveal`: the hidden state is a class
+  added after mount, so SSR HTML is never hidden.
+- **Continuous parallax** — `ParallaxRoot` (homepage only)
+  runs ONE passive, rAF-throttled scroll listener translating
+  every `[data-parallax]` layer (the four orbs, the hero's two
+  soft blobs) by scrollY × speed (0.05–0.11), clamped to
+  ±480px by `parallaxOffset`.
+- **Hero scroll response** — `HeroShowcase` publishes hero
+  scroll progress (0–1, from its wrapper rect) into the
+  `heroScrollState` channel in `src/lib/motion.ts`; the hero
+  scene's frame loop damps toward it and adds up to +0.55 rad
+  of Y rotation and a slight X lean (`heroScrollRotation`) as
+  the hero scrolls away.
+- **Reduced motion** collapses all of it: no orb drift, no
+  parallax listener, reveals render in their final state, the
+  hero progress channel stays 0. The pure rules
+  (`scrollMotionEnabled`, `heroScrollProgress`,
+  `heroScrollRotation`, `revealDelayMs`, `parallaxOffset`,
+  `parallaxEnabled`) are unit-tested in
+  `scripts/test-motion.mjs`.
+- **Cost**: homepage First Load JS 117 → 118 kB (+1 kB) in the
+  production build; no new dependencies; the three.js chunks
+  are untouched and still homepage-lazy only.
+
 ## Setup
 
 ```bash

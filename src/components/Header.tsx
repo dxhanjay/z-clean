@@ -49,7 +49,7 @@ export default function Header() {
   }, [servicesOpen]);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-mist-200/80 bg-white/85 shadow-soft-sm backdrop-blur-md">
+    <header className="glass-strong sticky top-0 z-40">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <Link
           href="/"
@@ -90,7 +90,7 @@ export default function Header() {
                   : "invisible -translate-y-1 opacity-0"
               }`}
             >
-              <div className="overflow-hidden rounded-[1.75rem] bg-white shadow-soft-xl ring-1 ring-mist-200">
+              <div className="glass-strong overflow-hidden rounded-[1.75rem]">
                 <ul className="grid grid-cols-2 gap-1 p-3">
                   {services.map((service) => (
                     <li key={service.slug}>

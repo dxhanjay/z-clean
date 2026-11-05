@@ -6,6 +6,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { ContactShadows, RoundedBox } from "@react-three/drei";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { AnnotationChip } from "./HeroVisual";
+import { getHeroScrollProgress, heroScrollRotation } from "@/lib/motion";
 
 /**
  * The 3D hero (Phase 5, Scope M — realism pass) — a real-time
@@ -919,6 +920,7 @@ function GarmentGroup() {
   const ref = useRef<THREE.Group | null>(null);
   const pointerTarget = useRef({ x: 0, y: 0 });
   const pointerSmooth = useRef({ x: 0, y: 0 });
+  const scrollSmooth = useRef(0);
 
   useEffect(() => {
     function onMove(event: PointerEvent) {
@@ -942,11 +944,23 @@ function GarmentGroup() {
     pointerSmooth.current.y = THREE.MathUtils.damp(
       pointerSmooth.current.y, pointerTarget.current.y, lambda, delta,
     );
+    // Scroll response (glass + 3D scroll pass): HeroShowcase
+    // publishes hero scroll progress to the motion channel; as
+    // the hero scrolls away the garment turns to follow (up to
+    // +0.55 rad Y with a slight X lean at full scroll — the rule
+    // and its clamps live in heroScrollRotation). Damped like the
+    // pointer so a fast flick never snaps the cloth.
+    scrollSmooth.current = THREE.MathUtils.damp(
+      scrollSmooth.current, getHeroScrollProgress(), 3.2, delta,
+    );
+    const scrollRotation = heroScrollRotation(scrollSmooth.current);
     group.position.y = Math.sin(t * 0.55) * 0.09;
     group.rotation.y =
-      -0.05 + Math.sin(t * 0.22) * 0.07 + pointerSmooth.current.x * 0.16;
+      -0.05 + Math.sin(t * 0.22) * 0.07 + pointerSmooth.current.x * 0.16 +
+      scrollRotation.rotationY;
     group.rotation.x =
-      Math.sin(t * 0.3) * 0.012 + pointerSmooth.current.y * 0.045;
+      Math.sin(t * 0.3) * 0.012 + pointerSmooth.current.y * 0.045 +
+      scrollRotation.rotationX;
   });
 
   return (

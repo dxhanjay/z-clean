@@ -195,3 +195,32 @@ external assets), and the stage is now a painted blue-grey
 studio backdrop in the board's spirit rather than the site's
 pastel gradient. The interpretation-not-copy position above
 is unchanged: every asset remains procedural and original.)*
+
+## Glass + 3D scroll note (2026-11-05)
+
+The owner's follow-up asked for a "glass effect background"
+and a "3d scrollable" website. What shipped borrows only the
+*effect language* of frosted-glass marketing sites — a soft
+pastel ambience behind translucent white surfaces, sections
+that tip into place as they scroll in, layers drifting at
+different depths — applied to Z-clean's own Phase A design:
+
+- **The glass is the brand's own**: frosted WHITE over the
+  site's mist/teal/blush palette (the brand is a light theme;
+  no dark-mode glass was imported), with the existing soft
+  shadows and oversized radii kept. Every word, price, photo
+  and fact on the glass surfaces is the site's existing
+  content, unchanged.
+- **The ambience is original and procedural**: four radial
+  gradient orbs in palette colours over a pastel wash — no
+  imagery from any reference, and no blur filter on the
+  full-screen layer (the orbs are soft by construction).
+- **The 3D scroll is presentation, not data**: reveals tilt
+  real sections into view, parallax drifts decorative layers,
+  and the hero garment turns as it scrolls away. Nothing about
+  an order, a price or a tracking state is animated into
+  looking different from what it is, and the task flows,
+  admin and staff surfaces were left out of the treatment
+  entirely.
+- Reduced-motion visitors get the same pages, still: no
+  drift, no parallax, no tip-in — content in its final state.

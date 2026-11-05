@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Reveal from "@/components/Reveal";
+import ScrollReveal3D from "@/components/motion/ScrollReveal3D";
 import { loadStorefrontCatalogue } from "@/lib/catalogue-server";
 import { formatInr, pricingTerms } from "@/lib/pricing";
 
@@ -54,10 +54,10 @@ export default async function PricingTeaser() {
   if (rows.length === 0) return null;
 
   return (
-    <section aria-labelledby="pricing-heading" className="bg-mist-100">
+    <section aria-labelledby="pricing-heading" className="bg-mist-100/70">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
       <div className="grid items-start gap-10 lg:grid-cols-5">
-        <Reveal className="lg:col-span-2">
+        <ScrollReveal3D className="lg:col-span-2">
           <p className="text-sm font-bold uppercase tracking-widest text-brand-600">
             Pricing
           </p>
@@ -91,9 +91,9 @@ export default async function PricingTeaser() {
           >
             See the full price list →
           </Link>
-        </Reveal>
-        <Reveal delay={120} className="lg:col-span-3">
-          <div className="overflow-hidden rounded-[2rem] bg-white shadow-soft ring-1 ring-mist-200/70">
+        </ScrollReveal3D>
+        <ScrollReveal3D index={1} className="lg:col-span-3">
+          <div className="glass overflow-hidden rounded-[2rem]">
             <table className="w-full text-left text-sm">
               <caption className="sr-only">
                 Popular Z-clean services and their rates
@@ -121,7 +121,7 @@ export default async function PricingTeaser() {
               </tbody>
             </table>
           </div>
-        </Reveal>
+        </ScrollReveal3D>
       </div>
       </div>
     </section>

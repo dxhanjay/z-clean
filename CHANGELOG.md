@@ -3,6 +3,66 @@
 All notable changes to Z-clean. (This file was started at Delta 1;
 earlier history lives in the README's phase sections and the git log.)
 
+## Glass + 3D scroll pass (2026-11-05)
+
+Owner request: "Make my website 3d scrollable and glass effect
+background." A frosted-glass ambience and scroll-driven depth
+for the public marketing experience. Visual only — no copy,
+data, pricing or flow changed. Admin, staff and the customer
+task flows (/order, /orders, /dashboard, auth) are untouched.
+
+### Added
+- **Ambient backdrop** (`AmbientBackground`, mounted by
+  SiteChrome on marketing routes only): fixed pastel wash +
+  four pre-softened radial-gradient orbs (sky/teal/blush/mist)
+  drifting on 46–58s transform-only loops. No blur filter on
+  the full-screen layer; content lifted into a `relative z-10`
+  wrapper above it.
+- **Glass utilities** in globals.css (inside `@layer utilities`
+  so hover shadow variants still win): `.glass`, `.glass-strong`,
+  `.glass-chip`, `.glass-dark` — frosted white (blur 14–18px,
+  saturate 1.4), `-webkit-` prefixes for iOS Safari, and an
+  `@supports not (backdrop-filter…)` near-opaque fallback.
+- **`ScrollReveal3D`** (src/components/motion): sections enter
+  with a shallow 3D tip (rotateX 10°, +36px, 25% opacity →
+  flat, 0.85s), staggered ≤120ms/step capped at 600ms; same
+  post-mount-class no-JS safety as `Reveal`.
+- **`ParallaxRoot`** (homepage): one passive rAF-throttled
+  scroll listener drifting all `[data-parallax]` layers
+  (orbs, hero blobs) at 0.05–0.11× scroll, clamped ±480px.
+- **Hero scroll response**: HeroShowcase publishes hero scroll
+  progress to the `heroScrollState` channel in
+  src/lib/motion.ts; the 3D garment turns up to +0.55 rad Y
+  (slight X lean) as the hero scrolls away, damped in the
+  scene's frame loop.
+
+### Changed
+- Glass applied to: header (+ services dropdown), hero fact
+  cards and Track button, why / care-process / how-it-works
+  cards, service and blog cards, pricing teaser and pricing
+  page cards, testimonials, FAQ teaser + FAQ page panels,
+  services/pricing hero panels, about value cards, process
+  step cards, footer area chips (glass-chip), and the CTA
+  band (keeps its navy gradient; content now floats on a
+  glass-dark inner card). Homepage section bands went
+  translucent (veil gradients, 70% mist/white) so the
+  ambience shows through.
+- ScrollReveal3D applied across the homepage's major sections
+  and the services / pricing / blog hero bands, replacing the
+  flat Reveal there (the How It Works steps keep Reveal —
+  its data-reveal attribute drives the connector line).
+
+### Rules & verification
+- Reduced motion collapses everything: still orbs, no
+  parallax, reveals in final state, hero channel at 0.
+- New pure rules in src/lib/motion.ts §4 (`scrollMotionEnabled`,
+  `heroScrollProgress`, `heroScrollRotation`, channel
+  accessors, `revealDelayMs`, `parallaxOffset`,
+  `parallaxEnabled`) — 29 new assertions in
+  scripts/test-motion.mjs (61 total there); full suite
+  897 → 926 passing. Production build green; homepage First
+  Load JS 117 → 118 kB (+1 kB), no new dependencies.
+
 ## Phase 5 realism pass — product-render hero (2026-11-05)
 
 Owner verdict on the Scope M scene: "that 3d shirt is looking

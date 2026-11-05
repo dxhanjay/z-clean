@@ -4,7 +4,7 @@ import { formatBlogDate, type BlogPost } from "@/content/blog";
 /** Blog post card — shared by /blog and the homepage blog section. */
 export default function BlogCard({ post }: { post: BlogPost }) {
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-[2rem] bg-white shadow-soft ring-1 ring-mist-200/70 transition-all duration-300 hover:-translate-y-1 hover:shadow-soft-lg">
+    <article className="glass group flex h-full flex-col overflow-hidden rounded-[2rem] transition-all duration-300 hover:-translate-y-1 hover:shadow-soft-lg">
       <Link href={`/blog/${post.slug}`} className="block overflow-hidden">
         <img
           src={post.cover.src}

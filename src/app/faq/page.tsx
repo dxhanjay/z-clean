@@ -15,7 +15,7 @@ export default function FaqPage() {
         <h1 className="text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">
           Frequently asked questions
         </h1>
-        <div className="mt-10 divide-y divide-brand-100">
+        <div className="glass mt-10 divide-y divide-brand-100 rounded-[2rem] px-6 sm:px-8">
           {faqs.map((faq) => (
             <details key={faq.q} className="group py-5">
               <summary className="cursor-pointer list-none font-bold text-ink-900 marker:hidden">

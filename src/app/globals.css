@@ -173,6 +173,224 @@ body {
   -webkit-backdrop-filter: blur(12px);
 }
 
+/* ---- Glass + 3D scroll pass: frosted surfaces over the ambient layer ----
+ * The brand is a LIGHT theme, so glass here means frosted white:
+ * translucent white fill, a real backdrop blur + saturation lift, a
+ * pale edge and the soft floating-card shadow. backdrop-filter is
+ * only ever applied to bounded surfaces (header, cards, chips) —
+ * never to the full-screen ambient layer itself, whose orbs are
+ * pre-softened radial gradients.
+ *
+ * These live in @layer utilities on purpose: at equal specificity
+ * they override the plain bg-*/shadow-* utilities they replace,
+ * while state variants (hover:shadow-soft-lg) still win on hover —
+ * unlayered rules would have silently killed those hovers.
+ */
+@layer utilities {
+  .glass {
+    background: rgb(255 255 255 / 0.6);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    backdrop-filter: blur(16px) saturate(1.4);
+    border: 1px solid rgb(255 255 255 / 0.6);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .glass-strong {
+    background: rgb(255 255 255 / 0.78);
+    -webkit-backdrop-filter: blur(18px) saturate(1.4);
+    backdrop-filter: blur(18px) saturate(1.4);
+    border: 1px solid rgb(255 255 255 / 0.65);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .glass-chip {
+    background: rgb(255 255 255 / 0.55);
+    -webkit-backdrop-filter: blur(14px) saturate(1.4);
+    backdrop-filter: blur(14px) saturate(1.4);
+    border: 1px solid rgb(255 255 255 / 0.55);
+    box-shadow: var(--shadow-soft-sm);
+  }
+
+  /* Dark glass for the navy CTA band: a light frost over the gradient
+     instead of a solid slab. */
+  .glass-dark {
+    background: rgb(255 255 255 / 0.08);
+    -webkit-backdrop-filter: blur(14px) saturate(1.3);
+    backdrop-filter: blur(14px) saturate(1.3);
+    border: 1px solid rgb(255 255 255 / 0.22);
+    box-shadow: 0 18px 40px -18px rgb(6 20 32 / 0.45);
+  }
+
+  /* Browsers without backdrop-filter get a near-solid panel instead —
+     the layout never depends on seeing through the surface. */
+  @supports not (
+    (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
+  ) {
+    .glass,
+    .glass-chip {
+      background: rgb(255 255 255 / 0.94);
+    }
+    .glass-strong {
+      background: rgb(255 255 255 / 0.97);
+    }
+    .glass-dark {
+      background: rgb(255 255 255 / 0.14);
+    }
+  }
+}
+
+/* Translucent variants of the Phase A bands, used where the ambient
+   layer should breathe through (homepage). The opaque originals
+   stay for surfaces that sit on plain white. */
+.bg-pastel-hero-veil {
+  background: linear-gradient(
+    155deg,
+    rgb(223 234 245 / 0.85) 0%,
+    rgb(238 244 249 / 0.72) 46%,
+    rgb(255 255 255 / 0.5) 100%
+  );
+}
+
+.bg-pastel-band-veil {
+  background: linear-gradient(
+    180deg,
+    rgb(238 244 249 / 0.66) 0%,
+    rgb(255 255 255 / 0.42) 100%
+  );
+}
+
+/*
+ * Ambient background (public marketing pages only — SiteChrome
+ * mounts it). A fixed pastel wash with large, soft colour orbs.
+ * The orbs are radial gradients whose edges are already soft, so
+ * the layer itself needs NO blur filter (a full-screen blur is the
+ * one thing that would hurt low-end GPUs). Parallax translates the
+ * .ambient-orb wrapper; the drift animation lives on the inner
+ * element so the two transforms never fight.
+ */
+.ambient-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: linear-gradient(
+    158deg,
+    var(--color-mist-200) 0%,
+    var(--color-mist-100) 42%,
+    #fdf6f2 78%,
+    var(--color-mist-50) 100%
+  );
+}
+
+.ambient-orb {
+  position: absolute;
+  border-radius: 9999px;
+  will-change: transform;
+}
+
+.ambient-orb-drift {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+}
+
+.ambient-orb--teal {
+  background: radial-gradient(
+    circle at center,
+    rgb(47 150 135 / 0.34) 0%,
+    rgb(47 150 135 / 0.12) 45%,
+    transparent 68%
+  );
+}
+
+.ambient-orb--sky {
+  background: radial-gradient(
+    circle at center,
+    rgb(125 178 221 / 0.4) 0%,
+    rgb(125 178 221 / 0.14) 45%,
+    transparent 68%
+  );
+}
+
+.ambient-orb--blush {
+  background: radial-gradient(
+    circle at center,
+    rgb(243 186 165 / 0.36) 0%,
+    rgb(243 186 165 / 0.12) 45%,
+    transparent 68%
+  );
+}
+
+.ambient-orb--mist {
+  background: radial-gradient(
+    circle at center,
+    rgb(168 196 222 / 0.38) 0%,
+    rgb(168 196 222 / 0.13) 45%,
+    transparent 68%
+  );
+}
+
+@keyframes zc-orb-drift-a {
+  from {
+    transform: translate3d(-2.5%, -1.5%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(3%, 2.5%, 0) scale(1.06);
+  }
+}
+
+@keyframes zc-orb-drift-b {
+  from {
+    transform: translate3d(2%, 2%, 0) scale(1.04);
+  }
+  to {
+    transform: translate3d(-2.5%, -2%, 0) scale(0.98);
+  }
+}
+
+@keyframes zc-orb-drift-c {
+  from {
+    transform: translate3d(0, -2.5%, 0) scale(0.98);
+  }
+  to {
+    transform: translate3d(1.5%, 2.5%, 0) scale(1.05);
+  }
+}
+
+.ambient-drift-a {
+  animation: zc-orb-drift-a 52s ease-in-out infinite alternate;
+}
+.ambient-drift-b {
+  animation: zc-orb-drift-b 58s ease-in-out infinite alternate;
+}
+.ambient-drift-c {
+  animation: zc-orb-drift-c 46s ease-in-out infinite alternate;
+}
+
+/*
+ * ScrollReveal3D (glass + 3D scroll pass). Same safety contract as
+ * .reveal: content renders fully visible, ScrollReveal3D.tsx adds
+ * .reveal3d-init after mount and .reveal3d-shown on entry, so no-JS
+ * and pre-hydration HTML are never hidden. The tilt folds its own
+ * perspective() into the transform, which keeps the component a
+ * single self-contained box (no extra perspective wrapper in the
+ * layout). Transform + opacity only — no layout shift.
+ */
+.reveal3d-init {
+  opacity: 0.25;
+  transform: perspective(1100px) rotateX(10deg) translateY(36px)
+    scale(0.985);
+  transition:
+    opacity 0.85s cubic-bezier(0.22, 0.61, 0.21, 1),
+    transform 0.85s cubic-bezier(0.22, 0.61, 0.21, 1);
+}
+
+.reveal3d-shown {
+  opacity: 1;
+  transform: perspective(1100px) rotateX(0deg) translateY(0) scale(1);
+}
+
 @keyframes zc-float {
   from {
     transform: translateY(-6px);
@@ -276,8 +494,16 @@ body {
   .page-enter,
   .zc-float,
   .zc-float-slow,
-  .zc-pin-pulse {
+  .zc-pin-pulse,
+  .ambient-drift-a,
+  .ambient-drift-b,
+  .ambient-drift-c {
     animation: none;
+  }
+  .reveal3d-init {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
   .zc-pin-pulse {
     opacity: 0;

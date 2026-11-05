@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import PageEnter from "@/components/PageEnter";
+import AmbientBackground from "@/components/AmbientBackground";
 
 /**
  * Storefront chrome switch (admin redesign).
@@ -40,13 +41,39 @@ export default function SiteChrome({
     return <main className="flex-1">{children}</main>;
   }
 
+  // Glass + 3D scroll pass: the ambient backdrop belongs to the
+  // public marketing experience only. Customer task flows (/order,
+  // /orders, /dashboard, auth) keep their crisp solid surfaces, so
+  // the layer mounts on the homepage and the marketing/legal shells.
+  const showAmbient =
+    pathname === "/" ||
+    MARKETING_ROUTES.some(
+      (route) => pathname === route || pathname?.startsWith(`${route}/`),
+    );
+
   return (
     <>
-      {header}
-      <main className="flex-1">
-        <PageEnter>{children}</PageEnter>
-      </main>
-      {footer}
+      {showAmbient && <AmbientBackground />}
+      <div className="relative z-10 flex flex-1 flex-col">
+        {header}
+        <main className="flex-1">
+          <PageEnter>{children}</PageEnter>
+        </main>
+        {footer}
+      </div>
     </>
   );
 }
+
+const MARKETING_ROUTES = [
+  "/services",
+  "/pricing",
+  "/blog",
+  "/about",
+  "/process",
+  "/faq",
+  "/contact",
+  "/app",
+  "/privacy",
+  "/terms",
+];

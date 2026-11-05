@@ -18,6 +18,13 @@ import { haversineMeters, type LatLng } from "./tracking";
  *      gliding when the jump is implausible for a single step
  *      (first fix, a near-identical point, a long teleport, or a
  *      reduced-motion visitor).
+ *   4. Scroll-driven motion (glass + 3D scroll pass) — the hero
+ *      garment turns as the hero scrolls away, homepage sections
+ *      rise into place with a shallow 3D tilt, and decorative
+ *      layers drift at a fraction of the scroll speed. Every rule
+ *      collapses to "no motion" for reduced-motion visitors, and
+ *      every number is clamped so a stray scroll value can never
+ *      over-rotate, over-drift or hide content.
  */
 
 /* ------------------------------------------------------------------ */
@@ -160,4 +167,131 @@ export function markerPositionAt(
   if (durationMs <= 0) return { lat: to.lat, lng: to.lng };
   const eased = easeInOutCubic(elapsedMs / durationMs);
   return interpolateLatLng(from, to, eased);
+}
+
+/* ------------------------------------------------------------------ */
+/* 4. Scroll-driven motion (glass + 3D scroll pass)                    */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The single gate for every scroll-driven effect in this section:
+ * a reduced-motion preference switches ALL of it off — reveals sit
+ * in their final state, parallax never translates, and the hero
+ * garment keeps only its idle levitation/parallax.
+ */
+export function scrollMotionEnabled(input: {
+  prefersReducedMotion: boolean;
+}): boolean {
+  return !input.prefersReducedMotion;
+}
+
+/* ---- Hero scroll progress + garment rotation ---- */
+
+/** Radians of Y rotation the garment group earns over a full hero scroll. */
+export const HERO_SCROLL_MAX_ROTATION_Y = 0.55;
+
+/** Radians of X tilt at full hero scroll — a slight lean, never a flip. */
+export const HERO_SCROLL_MAX_TILT_X = 0.08;
+
+/**
+ * How far the visitor has scrolled THROUGH the hero, 0–1, from the
+ * hero wrapper's viewport rect: 0 while its top is at or below the
+ * viewport top, 1 once it has scrolled a full hero-height past.
+ * Degenerate inputs (zero height, NaNs from a detached node) are 0.
+ */
+export function heroScrollProgress(input: {
+  heroTop: number;
+  heroHeight: number;
+}): number {
+  if (!Number.isFinite(input.heroTop) || !Number.isFinite(input.heroHeight)) {
+    return 0;
+  }
+  if (input.heroHeight <= 0) return 0;
+  return clamp01(-input.heroTop / input.heroHeight);
+}
+
+/** Rotation the hero garment group should hold at a scroll progress. */
+export function heroScrollRotation(progress: number): {
+  rotationY: number;
+  rotationX: number;
+} {
+  const p = clamp01(progress);
+  return {
+    rotationY: HERO_SCROLL_MAX_ROTATION_Y * p,
+    rotationX: HERO_SCROLL_MAX_TILT_X * p,
+  };
+}
+
+/**
+ * Module-level scroll-progress channel between HeroShowcase (which
+ * owns the scroll listener) and the hero scene's frame loop (which
+ * reads it every frame without re-rendering React). Deliberately a
+ * plain mutable holder — no state library for one number.
+ */
+export const heroScrollState = { progress: 0 };
+
+export function setHeroScrollProgress(value: number): void {
+  heroScrollState.progress = clamp01(value);
+}
+
+export function getHeroScrollProgress(): number {
+  return heroScrollState.progress;
+}
+
+/* ---- Section reveal (ScrollReveal3D) ---- */
+
+/** Default stagger step between sibling reveals, ms. */
+export const REVEAL_STAGGER_STEP_MS = 120;
+
+/** Stagger never delays a block by more than this, ms. */
+export const REVEAL_STAGGER_MAX_MS = 600;
+
+/**
+ * Transition delay for the nth block in a staggered reveal group.
+ * Non-positive / non-finite indexes reveal immediately.
+ */
+export function revealDelayMs(
+  index: number,
+  stepMs: number = REVEAL_STAGGER_STEP_MS,
+  maxMs: number = REVEAL_STAGGER_MAX_MS,
+): number {
+  if (!Number.isFinite(index) || index <= 0) return 0;
+  const step = Number.isFinite(stepMs) && stepMs > 0 ? stepMs : 0;
+  const cap = Number.isFinite(maxMs) && maxMs > 0 ? maxMs : 0;
+  return Math.min(Math.floor(index) * step, cap);
+}
+
+/* ---- Parallax layers ---- */
+
+/** A parallax layer never drifts further than this from its place, px. */
+export const PARALLAX_MAX_OFFSET_PX = 480;
+
+/**
+ * Vertical drift for a decorative layer: a small fraction of the
+ * scroll position, hard-clamped so a very long page can never push
+ * a layer off its stage. Non-finite inputs drift nowhere.
+ */
+export function parallaxOffset(
+  scrollY: number,
+  speed: number,
+  maxAbsPx: number = PARALLAX_MAX_OFFSET_PX,
+): number {
+  if (!Number.isFinite(scrollY) || !Number.isFinite(speed)) return 0;
+  const cap =
+    Number.isFinite(maxAbsPx) && maxAbsPx > 0 ? maxAbsPx : PARALLAX_MAX_OFFSET_PX;
+  const raw = scrollY * speed;
+  return Math.min(cap, Math.max(-cap, raw));
+}
+
+/**
+ * Parallax runs only when motion is allowed AND there is at least
+ * one layer to move — the scroll listener is never even attached
+ * for an empty page.
+ */
+export function parallaxEnabled(input: {
+  prefersReducedMotion: boolean;
+  targetCount: number;
+}): boolean {
+  if (!scrollMotionEnabled(input)) return false;
+  return Number.isFinite(input.targetCount) && input.targetCount > 0;
 }

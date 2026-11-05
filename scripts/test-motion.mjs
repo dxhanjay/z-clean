@@ -9,6 +9,11 @@
  *   3. rider-marker transitions — glide only between two recorded
  *      points a plausible step apart; snap otherwise; easing and
  *      interpolation stay between the recorded endpoints.
+ *   4. scroll-driven motion (glass + 3D scroll pass) — hero scroll
+ *      progress + garment rotation clamp to their ranges, the
+ *      shared progress channel clamps writes, reveal stagger caps,
+ *      and parallax offsets clamp; one reduced-motion gate rules
+ *      all of it.
  * The WebGL scene, DOM tilt and Leaflet rendering are NOT unit
  * tested — only the decisions behind them are.
  * Run: `npm run test:motion`. Exits non-zero on failure.
@@ -53,6 +58,20 @@ try {
     easeInOutCubic,
     interpolateLatLng,
     markerPositionAt,
+    HERO_SCROLL_MAX_ROTATION_Y,
+    HERO_SCROLL_MAX_TILT_X,
+    REVEAL_STAGGER_STEP_MS,
+    REVEAL_STAGGER_MAX_MS,
+    PARALLAX_MAX_OFFSET_PX,
+    scrollMotionEnabled,
+    heroScrollProgress,
+    heroScrollRotation,
+    heroScrollState,
+    setHeroScrollProgress,
+    getHeroScrollProgress,
+    revealDelayMs,
+    parallaxOffset,
+    parallaxEnabled,
   } = motion;
 
   let passed = 0;
@@ -160,6 +179,85 @@ try {
     near(posMid.lat, (base.lat + stepNear.lat) / 2, 1e-9));
   check("positionAt: never travels beyond the newest recorded point",
     posMid.lat > base.lat && posMid.lat < stepNear.lat);
+
+  /* 4. Scroll-driven motion (glass + 3D scroll pass) --------------- */
+  check("scroll gate: motion allowed → on",
+    scrollMotionEnabled({ prefersReducedMotion: false }) === true);
+  check("scroll gate: reduced motion → everything off",
+    scrollMotionEnabled({ prefersReducedMotion: true }) === false);
+
+  check("hero progress: top at viewport top → 0",
+    heroScrollProgress({ heroTop: 0, heroHeight: 600 }) === 0);
+  check("hero progress: hero still below the fold line → 0",
+    heroScrollProgress({ heroTop: 240, heroHeight: 600 }) === 0);
+  check("hero progress: half scrolled → 0.5",
+    near(heroScrollProgress({ heroTop: -300, heroHeight: 600 }), 0.5));
+  check("hero progress: fully scrolled → 1",
+    heroScrollProgress({ heroTop: -600, heroHeight: 600 }) === 1);
+  check("hero progress: overscroll clamps to 1",
+    heroScrollProgress({ heroTop: -2400, heroHeight: 600 }) === 1);
+  check("hero progress: zero height → 0",
+    heroScrollProgress({ heroTop: -300, heroHeight: 0 }) === 0);
+  check("hero progress: NaN inputs → 0",
+    heroScrollProgress({ heroTop: Number.NaN, heroHeight: 600 }) === 0 &&
+    heroScrollProgress({ heroTop: -300, heroHeight: Number.NaN }) === 0);
+
+  check("hero rotation caps: 0.55 rad Y, slight X tilt",
+    HERO_SCROLL_MAX_ROTATION_Y === 0.55 && HERO_SCROLL_MAX_TILT_X > 0 && HERO_SCROLL_MAX_TILT_X <= 0.15);
+  const rot0 = heroScrollRotation(0);
+  const rotMid = heroScrollRotation(0.5);
+  const rotFull = heroScrollRotation(1);
+  check("hero rotation: 0 at rest",
+    rot0.rotationY === 0 && rot0.rotationX === 0);
+  check("hero rotation: half progress → half rotation",
+    near(rotMid.rotationY, HERO_SCROLL_MAX_ROTATION_Y / 2) &&
+    near(rotMid.rotationX, HERO_SCROLL_MAX_TILT_X / 2));
+  check("hero rotation: full progress → the caps",
+    rotFull.rotationY === HERO_SCROLL_MAX_ROTATION_Y &&
+    rotFull.rotationX === HERO_SCROLL_MAX_TILT_X);
+  check("hero rotation: out-of-range progress clamps",
+    heroScrollRotation(7).rotationY === HERO_SCROLL_MAX_ROTATION_Y &&
+    heroScrollRotation(-2).rotationY === 0 &&
+    heroScrollRotation(Number.NaN).rotationY === 0);
+
+  setHeroScrollProgress(0.3);
+  check("hero channel: write then read",
+    getHeroScrollProgress() === 0.3 && heroScrollState.progress === 0.3);
+  setHeroScrollProgress(2);
+  check("hero channel: writes clamp above 1", getHeroScrollProgress() === 1);
+  setHeroScrollProgress(-1);
+  check("hero channel: writes clamp below 0", getHeroScrollProgress() === 0);
+  setHeroScrollProgress(Number.NaN);
+  check("hero channel: NaN write → 0", getHeroScrollProgress() === 0);
+  setHeroScrollProgress(0);
+
+  check("reveal stagger: first block is immediate", revealDelayMs(0) === 0);
+  check("reveal stagger: steps of 120ms",
+    REVEAL_STAGGER_STEP_MS === 120 && revealDelayMs(1) === 120 && revealDelayMs(3) === 360);
+  check("reveal stagger: capped at the max",
+    REVEAL_STAGGER_MAX_MS === 600 && revealDelayMs(10) === 600 && revealDelayMs(100) === 600);
+  check("reveal stagger: negative / NaN index → 0",
+    revealDelayMs(-2) === 0 && revealDelayMs(Number.NaN) === 0);
+  check("reveal stagger: fractional index floors",
+    revealDelayMs(2.9) === 240);
+
+  check("parallax: offset is scrollY × speed",
+    parallaxOffset(1000, 0.1) === 100 && parallaxOffset(250, 0.06) === 15);
+  check("parallax: negative speed drifts the other way",
+    parallaxOffset(1000, -0.1) === -100);
+  check("parallax: long pages clamp at the cap",
+    PARALLAX_MAX_OFFSET_PX === 480 &&
+    parallaxOffset(100000, 0.12) === 480 &&
+    parallaxOffset(100000, -0.12) === -480);
+  check("parallax: custom cap respected",
+    parallaxOffset(10000, 0.1, 200) === 200);
+  check("parallax: non-finite inputs drift nowhere",
+    parallaxOffset(Number.NaN, 0.1) === 0 && parallaxOffset(100, Number.NaN) === 0);
+
+  check("parallax gate: needs motion allowed AND targets",
+    parallaxEnabled({ prefersReducedMotion: false, targetCount: 3 }) === true &&
+    parallaxEnabled({ prefersReducedMotion: true, targetCount: 3 }) === false &&
+    parallaxEnabled({ prefersReducedMotion: false, targetCount: 0 }) === false);
 
   console.log(`\n${passed} passed, ${failures.length} failed`);
   if (failures.length > 0) process.exit(1);

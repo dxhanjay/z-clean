@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Reveal from "@/components/Reveal";
+import ScrollReveal3D from "@/components/motion/ScrollReveal3D";
 import ServiceCard from "@/components/ServiceCard";
 import { services } from "@/lib/services";
 import { loadStorefrontCatalogue } from "@/lib/catalogue-server";
@@ -25,9 +25,9 @@ export default async function HomeServices() {
   }
 
   return (
-    <section aria-labelledby="services-heading" className="bg-white">
+    <section aria-labelledby="services-heading" className="bg-white/70">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-        <Reveal>
+        <ScrollReveal3D>
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="text-sm font-bold uppercase tracking-widest text-brand-600">
@@ -47,15 +47,15 @@ export default async function HomeServices() {
               View all services →
             </Link>
           </div>
-        </Reveal>
+        </ScrollReveal3D>
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {services.map((service, i) => (
-            <Reveal key={service.slug} delay={(i % 4) * 90} className="h-full">
+            <ScrollReveal3D key={service.slug} index={i % 4} className="h-full">
               <ServiceCard
                 service={service}
                 fromPriceInr={fromPriceBySlug.get(service.slug)}
               />
-            </Reveal>
+            </ScrollReveal3D>
           ))}
         </div>
       </div>

@@ -1,9 +1,21 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Component, useEffect, useState, type ReactNode } from "react";
+import {
+  Component,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import HeroVisual from "./HeroVisual";
-import { heroRenderMode, type HeroRenderMode } from "@/lib/motion";
+import {
+  heroRenderMode,
+  heroScrollProgress,
+  scrollMotionEnabled,
+  setHeroScrollProgress,
+  type HeroRenderMode,
+} from "@/lib/motion";
 
 /**
  * Hero visual selector (Phase 5, Scope M).
@@ -56,6 +68,7 @@ function detectWebGLSupport(): boolean {
 export default function HeroShowcase() {
   const [mode, setMode] = useState<HeroRenderMode>("static");
   const [failed, setFailed] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMode(
@@ -68,11 +81,59 @@ export default function HeroShowcase() {
     );
   }, []);
 
-  if (mode !== "canvas" || failed) return <HeroVisual />;
+  // Glass + 3D scroll pass: publish how far the visitor has
+  // scrolled through the hero into the module channel in
+  // src/lib/motion.ts; the scene's frame loop reads it and turns
+  // the garment as the hero leaves. One passive, rAF-throttled
+  // listener; reduced-motion visitors never publish (the value
+  // stays 0 and the garment keeps its idle motion only).
+  useEffect(() => {
+    if (
+      !scrollMotionEnabled({
+        prefersReducedMotion: window.matchMedia(
+          "(prefers-reduced-motion: reduce)",
+        ).matches,
+      })
+    ) {
+      return;
+    }
+    const el = wrapRef.current;
+    if (!el) return;
+    let raf = 0;
+    let scheduled = false;
+    const update = () => {
+      scheduled = false;
+      const rect = el.getBoundingClientRect();
+      setHeroScrollProgress(
+        heroScrollProgress({ heroTop: rect.top, heroHeight: rect.height }),
+      );
+    };
+    const onScroll = () => {
+      if (!scheduled) {
+        scheduled = true;
+        raf = window.requestAnimationFrame(update);
+      }
+    };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (raf) window.cancelAnimationFrame(raf);
+      setHeroScrollProgress(0);
+    };
+  }, []);
 
   return (
-    <SceneErrorBoundary fallback={<HeroVisual />}>
-      <HeroScene3D onError={() => setFailed(true)} />
-    </SceneErrorBoundary>
+    <div ref={wrapRef}>
+      {mode !== "canvas" || failed ? (
+        <HeroVisual />
+      ) : (
+        <SceneErrorBoundary fallback={<HeroVisual />}>
+          <HeroScene3D onError={() => setFailed(true)} />
+        </SceneErrorBoundary>
+      )}
+    </div>
   );
 }

@@ -1,4 +1,4 @@
-import Reveal from "@/components/Reveal";
+import ScrollReveal3D from "@/components/motion/ScrollReveal3D";
 import { loadApprovedReviews } from "@/lib/reviews-server";
 import { starsFor } from "@/lib/reviews";
 
@@ -16,9 +16,9 @@ export default async function Testimonials() {
   if (reviews.length === 0) return null;
 
   return (
-    <section aria-labelledby="testimonials-heading" className="bg-white">
+    <section aria-labelledby="testimonials-heading" className="bg-white/70">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-        <Reveal>
+        <ScrollReveal3D>
           <p className="text-sm font-bold uppercase tracking-widest text-brand-600">
             Testimonials
           </p>
@@ -32,11 +32,11 @@ export default async function Testimonials() {
             Real reviews from delivered orders, published after a quick
             check by our team.
           </p>
-        </Reveal>
+        </ScrollReveal3D>
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {reviews.slice(0, 6).map((review, i) => (
-            <Reveal key={review.id} delay={(i % 3) * 90} className="h-full">
-              <figure className="flex h-full flex-col rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-mist-200/70">
+            <ScrollReveal3D key={review.id} index={i % 3} className="h-full">
+              <figure className="glass flex h-full flex-col rounded-[2rem] p-6">
                 <p
                   className="text-amber-500"
                   aria-label={`Rated ${review.rating} out of 5`}
@@ -55,7 +55,7 @@ export default async function Testimonials() {
                   )}
                 </figcaption>
               </figure>
-            </Reveal>
+            </ScrollReveal3D>
           ))}
         </div>
       </div>

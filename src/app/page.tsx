@@ -4,6 +4,8 @@ import HeroShowcase from "@/components/HeroShowcase";
 import HomeServices from "@/components/HomeServices";
 import Marquee from "@/components/Marquee";
 import Reveal from "@/components/Reveal";
+import ParallaxRoot from "@/components/motion/ParallaxRoot";
+import ScrollReveal3D from "@/components/motion/ScrollReveal3D";
 import PricingTeaser from "@/components/PricingTeaser";
 import Testimonials from "@/components/Testimonials";
 import BlogSection from "@/components/BlogSection";
@@ -76,20 +78,27 @@ const h2Cls =
   "mt-3 text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl";
 const eyebrowCls =
   "text-sm font-bold uppercase tracking-widest text-brand-600";
-const cardCls =
-  "rounded-[2rem] bg-white shadow-soft ring-1 ring-mist-200/70";
+/* Glass + 3D scroll pass: the floating cards are frosted glass over
+   the ambient backdrop (the .glass utility carries the fill, blur,
+   edge and shadow). */
+const cardCls = "glass rounded-[2rem]";
 
 export default function HomePage() {
   return (
     <>
+      {/* Drives data-parallax layers (ambient orbs + hero blobs). */}
+      <ParallaxRoot />
+
       {/* Hero */}
-      <section className="bg-pastel-hero relative overflow-hidden">
+      <section className="bg-pastel-hero-veil relative overflow-hidden">
         <div
           aria-hidden="true"
+          data-parallax="0.1"
           className="absolute -left-24 top-16 h-72 w-72 rounded-full bg-white/50 blur-3xl"
         />
         <div
           aria-hidden="true"
+          data-parallax="0.06"
           className="absolute -right-16 bottom-24 h-80 w-80 rounded-full bg-mist-300/40 blur-3xl"
         />
         <div className="relative mx-auto max-w-6xl px-4 pb-20 pt-16 sm:px-6 sm:pt-24">
@@ -118,7 +127,7 @@ export default function HomePage() {
                 </Link>
                 <Link
                   href="/dashboard"
-                  className="glass-panel rounded-full px-6 py-3 text-sm font-bold text-ink-900 shadow-soft-sm ring-1 ring-white/70 transition-colors hover:bg-white"
+                  className="glass rounded-full px-6 py-3 text-sm font-bold text-ink-900 transition-colors hover:bg-white/75"
                 >
                   Track Your Order
                 </Link>
@@ -132,7 +141,7 @@ export default function HomePage() {
             {heroFacts.map((fact) => (
               <div
                 key={fact.title}
-                className="glass-panel rounded-[1.5rem] px-5 py-4 shadow-soft-sm ring-1 ring-white/60"
+                className="glass rounded-[1.5rem] px-5 py-4"
               >
                 <dt className="flex items-center gap-2 text-sm font-extrabold text-ink-900">
                   <span aria-hidden="true" className="text-brand-600">✓</span>
@@ -209,26 +218,26 @@ export default function HomePage() {
       </section>
 
       {/* Why choose us */}
-      <section aria-labelledby="why-heading" className="bg-pastel-band">
+      <section aria-labelledby="why-heading" className="bg-pastel-band-veil">
         <div className={`mx-auto max-w-6xl px-4 sm:px-6 ${sectionPad}`}>
-          <Reveal>
+          <ScrollReveal3D>
             <p className={eyebrowCls}>Why choose us</p>
             <h2 id="why-heading" className={h2Cls}>
               Why people hand their laundry to Z-clean
             </h2>
-          </Reveal>
+          </ScrollReveal3D>
           <div className="mt-10 grid items-stretch gap-6 lg:grid-cols-5">
-            <Reveal className="group overflow-hidden rounded-[2rem] shadow-soft lg:col-span-2">
+            <ScrollReveal3D className="group overflow-hidden rounded-[2rem] shadow-soft lg:col-span-2">
               <img
                 src={whyImage.src}
                 alt={whyImage.alt}
                 loading="lazy"
                 className="h-64 w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 lg:h-full"
               />
-            </Reveal>
+            </ScrollReveal3D>
             <div className="grid gap-6 sm:grid-cols-2 lg:col-span-3">
               {trustPoints.map((point, i) => (
-                <Reveal key={point.title} delay={i * 90}>
+                <ScrollReveal3D key={point.title} index={i}>
                   <div className={`h-full p-6 ${cardCls}`}>
                     <span className="text-2xl font-extrabold text-brand-300" aria-hidden="true">
                       {String(i + 1).padStart(2, "0")}
@@ -238,7 +247,7 @@ export default function HomePage() {
                       {point.description}
                     </p>
                   </div>
-                </Reveal>
+                </ScrollReveal3D>
               ))}
             </div>
           </div>
@@ -249,14 +258,14 @@ export default function HomePage() {
       <HomeServices />
 
       {/* How it works */}
-      <section aria-labelledby="how-heading" className="bg-mist-100">
+      <section aria-labelledby="how-heading" className="bg-mist-100/70">
         <div className={`mx-auto max-w-6xl px-4 sm:px-6 ${sectionPad}`}>
-          <Reveal>
+          <ScrollReveal3D>
             <p className={eyebrowCls}>How it works</p>
             <h2 id="how-heading" className={h2Cls}>
               Done in four easy steps
             </h2>
-          </Reveal>
+          </ScrollReveal3D>
           <Reveal className="relative">
             <div
               aria-hidden="true"
@@ -264,7 +273,7 @@ export default function HomePage() {
             />
             <ol className="relative mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {howItWorksSteps.map((step, i) => (
-                <li key={step.title} className="group overflow-hidden rounded-[2rem] bg-white shadow-soft transition-shadow hover:shadow-soft-lg">
+                <li key={step.title} className="glass group overflow-hidden rounded-[2rem] transition-shadow hover:shadow-soft-lg">
                   <div className="overflow-hidden">
                     <img
                       src={stepImages[i].src}
@@ -291,7 +300,7 @@ export default function HomePage() {
 
       {/* Garment care process */}
       <section aria-labelledby="care-heading" className={`mx-auto max-w-6xl px-4 sm:px-6 ${sectionPad}`}>
-        <Reveal>
+        <ScrollReveal3D>
           <p className={eyebrowCls}>Our process</p>
           <h2 id="care-heading" className={h2Cls}>
             A staged care process for every garment
@@ -300,8 +309,8 @@ export default function HomePage() {
             Behind every order is the same careful sequence — six stages that
             keep fabrics, colours and finishes safe from drop-off to doorstep.
           </p>
-        </Reveal>
-        <Reveal>
+        </ScrollReveal3D>
+        <ScrollReveal3D index={1}>
           <ol className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {careStages.map((stage, i) => (
               <li key={stage.title} className={`p-6 ${cardCls}`}>
@@ -315,7 +324,7 @@ export default function HomePage() {
               </li>
             ))}
           </ol>
-        </Reveal>
+        </ScrollReveal3D>
         <Link href="/process" className="mt-8 inline-block text-sm font-semibold text-brand-700 hover:text-brand-800">
           Read the full process →
         </Link>

@@ -32,7 +32,7 @@ export default function ProcessPage() {
           />
           <ol className="relative mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {howItWorksSteps.map((step, i) => (
-              <li key={step.title} className="group overflow-hidden rounded-2xl border border-brand-100 bg-white">
+              <li key={step.title} className="glass group overflow-hidden rounded-2xl">
                 <div className="overflow-hidden">
                   <img
                     src={stepImages[i].src}

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import BlogCard from "@/components/BlogCard";
-import Reveal from "@/components/Reveal";
+import ScrollReveal3D from "@/components/motion/ScrollReveal3D";
 import { latestBlogPosts } from "@/content/blog";
 
 /**
@@ -13,9 +13,9 @@ export default function BlogSection() {
   if (posts.length === 0) return null;
 
   return (
-    <section aria-labelledby="blog-heading" className="bg-mist-100">
+    <section aria-labelledby="blog-heading" className="bg-mist-100/70">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-        <Reveal>
+        <ScrollReveal3D>
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="text-sm font-bold uppercase tracking-widest text-brand-600">
@@ -35,12 +35,12 @@ export default function BlogSection() {
               All articles →
             </Link>
           </div>
-        </Reveal>
+        </ScrollReveal3D>
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {posts.map((post, i) => (
-            <Reveal key={post.slug} delay={(i % 3) * 90} className="h-full">
+            <ScrollReveal3D key={post.slug} index={i % 3} className="h-full">
               <BlogCard post={post} />
-            </Reveal>
+            </ScrollReveal3D>
           ))}
         </div>
       </div>

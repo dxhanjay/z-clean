@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import CtaBand from "@/components/CtaBand";
+import ScrollReveal3D from "@/components/motion/ScrollReveal3D";
 import {
   DEMO_CITY,
   formatInr,
@@ -30,20 +31,22 @@ export default async function PricingPage() {
   return (
     <>
       <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
-        <div className="rounded-[2.5rem] bg-pastel-hero px-6 py-10 shadow-soft-sm sm:px-10">
-          <h1 className="text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">
-            Simple, transparent pricing
-          </h1>
-          <p className="mt-4 max-w-2xl text-base leading-relaxed text-ink-500">
-            Every service is priced by a clear unit — by weight, by piece, by
-            pair or by area — so you always know what you are paying for before
-            any cleaning begins.
-          </p>
-        </div>
+        <ScrollReveal3D>
+          <div className="glass rounded-[2.5rem] px-6 py-10 sm:px-10">
+            <h1 className="text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">
+              Simple, transparent pricing
+            </h1>
+            <p className="mt-4 max-w-2xl text-base leading-relaxed text-ink-500">
+              Every service is priced by a clear unit — by weight, by piece, by
+              pair or by area — so you always know what you are paying for before
+              any cleaning begins.
+            </p>
+          </div>
+        </ScrollReveal3D>
 
         <div
           role="status"
-          className="mt-8 rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-mist-200/70"
+          className="glass mt-8 rounded-[2rem] p-6"
         >
           <h2 className="font-bold text-ink-900">
             Our {DEMO_CITY} price list — approved rates
@@ -58,7 +61,7 @@ export default async function PricingPage() {
 
         <div className="mt-10 grid gap-10 lg:grid-cols-2">
           {priceGroups.map((group) => (
-            <div key={group.title} className="rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-mist-200/70 sm:p-8">
+            <div key={group.title} className="glass rounded-[2rem] p-6 sm:p-8">
               <h2 className="text-xl font-extrabold tracking-tight text-ink-900">
                 {group.title}
               </h2>

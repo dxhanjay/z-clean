@@ -9,7 +9,7 @@ export default async function Footer() {
   // (Phase 7b), falling back to the config constants.
   const contact = await getBusinessSettings();
   return (
-    <footer className="border-t border-mist-200 bg-mist-100">
+    <footer className="border-t border-mist-200 bg-mist-100/80">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
         <div>
           <p className="text-lg font-extrabold tracking-tight text-ink-900">
@@ -89,7 +89,7 @@ export default async function Footer() {
             {serviceAreas.map((a) => (
               <li
                 key={`${a.area}-${a.pincode}`}
-                className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-ink-700 shadow-soft-sm"
+                className="glass-chip rounded-full px-3 py-1 text-xs font-semibold text-ink-700"
               >
                 {a.area} · {a.pincode}
               </li>

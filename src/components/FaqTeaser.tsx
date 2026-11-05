@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Reveal from "@/components/Reveal";
+import ScrollReveal3D from "@/components/motion/ScrollReveal3D";
 import { faqs } from "@/lib/faqs";
 
 /**
@@ -13,7 +13,7 @@ export default function FaqTeaser({ count = 4 }: { count?: number }) {
 
   return (
     <section aria-labelledby="faq-heading" className="mx-auto max-w-4xl px-4 py-16 sm:px-6 sm:py-20">
-      <Reveal>
+      <ScrollReveal3D>
         <p className="text-center text-sm font-bold uppercase tracking-widest text-brand-600">
           FAQ
         </p>
@@ -23,9 +23,9 @@ export default function FaqTeaser({ count = 4 }: { count?: number }) {
         >
           Questions, answered
         </h2>
-      </Reveal>
-      <Reveal>
-        <div className="mt-8 divide-y divide-mist-200 rounded-[2rem] bg-white px-6 shadow-soft ring-1 ring-mist-200/70 sm:px-8">
+      </ScrollReveal3D>
+      <ScrollReveal3D index={1}>
+        <div className="glass mt-8 divide-y divide-mist-200/80 rounded-[2rem] px-6 sm:px-8">
           {shown.map((faq) => (
             <details key={faq.q} className="group py-5">
               <summary className="cursor-pointer list-none font-bold text-ink-900 marker:hidden">
@@ -45,7 +45,7 @@ export default function FaqTeaser({ count = 4 }: { count?: number }) {
             </details>
           ))}
         </div>
-      </Reveal>
+      </ScrollReveal3D>
       <p className="mt-4 text-center">
         <Link
           href="/faq"

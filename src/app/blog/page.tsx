@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import BlogCard from "@/components/BlogCard";
 import CtaBand from "@/components/CtaBand";
-import Reveal from "@/components/Reveal";
+import ScrollReveal3D from "@/components/motion/ScrollReveal3D";
 import { latestBlogPosts } from "@/content/blog";
 
 export const metadata: Metadata = {
@@ -20,7 +20,7 @@ export default function BlogPage() {
   return (
     <>
       <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
-        <Reveal>
+        <ScrollReveal3D>
           <p className="text-sm font-bold uppercase tracking-widest text-brand-600">
             Our Blog
           </p>
@@ -32,12 +32,12 @@ export default function BlogPage() {
             what to wash, what to dry clean, and how to store the pieces
             you love.
           </p>
-        </Reveal>
+        </ScrollReveal3D>
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {posts.map((post, i) => (
-            <Reveal key={post.slug} delay={(i % 3) * 90} className="h-full">
+            <ScrollReveal3D key={post.slug} index={i % 3} className="h-full">
               <BlogCard post={post} />
-            </Reveal>
+            </ScrollReveal3D>
           ))}
         </div>
       </section>

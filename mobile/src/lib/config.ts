@@ -23,6 +23,32 @@ export const SUPABASE_PUBLISHABLE_KEY: string =
 export const WEB_ADMIN_URL = `${API_BASE_URL}/admin`;
 
 /**
+ * Business contact points for Help & Support (Delta 2) — the SINGLE
+ * source for the mobile app, mirroring the web's src/lib/config.ts
+ * `businessSettings`.
+ *
+ * DEMO VALUES (owner-confirmed 2026-11-04 for the web; the same demo
+ * number is reused here): the phone/WhatsApp number is a placeholder
+ * the owner will replace with the real business number before
+ * launch, and the web config's email is still EMPTY — so `email`
+ * stays empty here too and the support UI hides the email action
+ * until the owner provides one (the web config's own convention:
+ * never hardcode invented contact details).
+ */
+export const BUSINESS = {
+  /** Display format of the demo business number. */
+  phoneDisplay: "+91 24456 7889",
+  /** tel: link target — same digits as the web config's phone. */
+  phoneTel: "+91244567889",
+  /** wa.me path segment — digits only, no "+" or spaces. */
+  whatsapp: "91244567889",
+  /** Empty until the owner confirms a business email (web parity). */
+  email: "",
+  /** Public FAQ page on the customer website. */
+  faqUrl: `${API_BASE_URL}/faq`,
+} as const;
+
+/**
  * Admin console palette — mirrors the web admin redesign (dark slate
  * sidebar/header, signature green accent, light panel background,
  * white cards with a pale border). Used by the admin dashboard home

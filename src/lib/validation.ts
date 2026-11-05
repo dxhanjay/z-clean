@@ -470,6 +470,23 @@ export const customerDisabledSchema = z.object({
 
 export type CustomerDisabledInput = z.infer<typeof customerDisabledSchema>;
 
+/* Delta 2 — push token registration. The token's Expo shape is
+   verified again in the route with isExpoPushToken (lib/push.ts);
+   the schema only bounds type/length and the platform enum. */
+
+export const pushRegisterSchema = z.object({
+  token: z.string().trim().min(1).max(200),
+  platform: z.enum(["android", "ios", "web"]),
+});
+
+export type PushRegisterInput = z.infer<typeof pushRegisterSchema>;
+
+export const pushUnregisterSchema = z.object({
+  token: z.string().trim().min(1).max(200),
+});
+
+export type PushUnregisterInput = z.infer<typeof pushUnregisterSchema>;
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type ContactInput = z.infer<typeof contactSchema>;

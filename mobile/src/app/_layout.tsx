@@ -1,8 +1,10 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import { AuthProvider, useAuth } from "../context/AuthContext";
 import { adminTheme, brand } from "../lib/config";
+import { setupPushNotifications } from "../lib/push";
 
 /** Admin console screens get the slate header of the web admin shell. */
 const adminHeader = {
@@ -24,6 +26,13 @@ const adminHeader = {
  */
 function RootNavigator() {
   const { loading } = useAuth();
+
+  // Push (Delta 2): foreground presentation + tap deep-links to the
+  // order tracking screen. Registration itself happens in
+  // AuthContext once a session exists.
+  useEffect(() => {
+    setupPushNotifications();
+  }, []);
 
   if (loading) {
     return (

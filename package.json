@@ -38,7 +38,8 @@
     "test:roles": "node scripts/test-roles.mjs",
     "test:analytics": "node scripts/test-analytics.mjs",
     "test:notifications": "node scripts/test-notifications.mjs",
-    "test": "npm run test:totals && npm run test:flow && npm run test:retry && npm run test:org && npm run test:vouchers && npm run test:handovers && npm run test:finance && npm run test:ratelimit && npm run test:roles && npm run test:analytics && npm run test:notifications"
+    "test:push": "node scripts/test-push.mjs",
+    "test": "npm run test:totals && npm run test:flow && npm run test:retry && npm run test:org && npm run test:vouchers && npm run test:handovers && npm run test:finance && npm run test:ratelimit && npm run test:roles && npm run test:analytics && npm run test:notifications && npm run test:push"
   },
   "version": "0.1.0"
 }

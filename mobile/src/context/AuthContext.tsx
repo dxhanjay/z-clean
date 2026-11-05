@@ -5,10 +5,12 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 import { supabase } from "../lib/supabase";
+import { registerForPush, unregisterPush } from "../lib/push";
 import { isAdminTier, roleLevel } from "../lib/roles";
 
 /**
@@ -83,24 +85,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfileName(data?.name ?? null);
   }, []);
 
+  /**
+   * Push registration (Delta 2): once a user id is known (login or
+   * session restore), register this device's Expo token with the
+   * backend — fire-and-forget, guarded per user so token refreshes
+   * don't re-register. registerForPush itself honours the local
+   * "Order updates" preference and every unsupported platform.
+   */
+  const pushUserRef = useRef<string | null>(null);
+  const syncPushRegistration = useCallback((userId: string | null) => {
+    if (!userId) {
+      pushUserRef.current = null;
+      return;
+    }
+    if (pushUserRef.current === userId) return;
+    pushUserRef.current = userId;
+    void registerForPush();
+  }, []);
+
   useEffect(() => {
     let mounted = true;
     supabase.auth.getSession().then(async ({ data }) => {
       if (!mounted) return;
       setSession(data.session);
       await loadProfile(data.session?.user.id ?? null);
+      syncPushRegistration(data.session?.user.id ?? null);
       if (mounted) setLoading(false);
     });
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, next) => {
       setSession(next);
       await loadProfile(next?.user.id ?? null);
+      syncPushRegistration(next?.user.id ?? null);
       setLoading(false);
     });
     return () => {
       mounted = false;
       sub.subscription.unsubscribe();
     };
-  }, [loadProfile]);
+  }, [loadProfile, syncPushRegistration]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
@@ -124,6 +146,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
+    // Delete this device's push token BEFORE the session ends — the
+    // DELETE call needs the session's Bearer token, and the next
+    // account on this phone must not receive this user's pushes.
+    await unregisterPush();
+    pushUserRef.current = null;
     await supabase.auth.signOut();
   }, []);
 

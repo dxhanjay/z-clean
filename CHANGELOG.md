@@ -3,6 +3,46 @@
 All notable changes to Z-clean. (This file was started at Delta 1;
 earlier history lives in the README's phase sections and the git log.)
 
+## Delta 2 — Push notifications & in-app support (2026-11-05)
+
+Requires `supabase/schema_v8.sql` (apply before deploying).
+
+### Added
+- **Push pipeline (backend)** — `push_tokens` table (schema_v8,
+  owner-only RLS, unique token, `user_id` index); `src/lib/push.ts`
+  with the Expo sender (100-message chunks, `DeviceNotRegistered`
+  pruning, never-throws `{ sent, pruned, errors }` summary) and the
+  pure helpers (`isExpoPushToken`, `chunkArray`, `buildPushMessages`,
+  `tokensToPrune`, `statusChangePush` — timeline copy + deep-link
+  data). `notifyStatusChange` now ALSO pushes to the order's
+  customer (owner resolved via the service-role client); the Phase 4
+  log line and both call sites are unchanged.
+- **Token API** — `POST /api/push/register` (signed-in, cookie or
+  Bearer; `422 INVALID_PUSH_TOKEN` for non-Expo tokens; upsert
+  reassigns a token that moved accounts on a shared device) and
+  `DELETE /api/push/register` (own-row removal for logout /
+  preference-off). Minimal `{ ok: true }` responses.
+- **Mobile push client** — `expo-notifications` + `expo-device`
+  (SDK 58), `mobile/src/lib/push.ts`: registration after login /
+  session restore, `orders` Android channel, foreground alerts, tap
+  deep-link to the tracking screen, graceful `unsupported` on web /
+  simulators / Expo Go Android (SDK 53+ removed remote push there).
+  "Order updates" toggle on the Account tab (local preference;
+  server-side preference storage is a noted follow-up).
+- **In-app support** — `BUSINESS` contact constant in
+  `mobile/src/lib/config.ts` (demo phone/WhatsApp mirroring the web
+  config; email empty → action hidden, as on the web) and a Help &
+  Support card (call / WhatsApp / email / FAQs) on the Account tab
+  and the order tracking screen, with the order reference
+  pre-filled from an order.
+- **Tests** — `scripts/test-push.mjs` (38 checks: token validation,
+  chunking, message building, pruning decisions, status copy),
+  wired into `npm test`.
+
+### Owner-gated (no code change needed when ready)
+- Android delivery needs an FCM V1 service-account key in EAS;
+  iOS delivery needs APNs via the Apple Developer account.
+
 ## Delta 1 — Admin extensions (2026-11-05)
 
 Requires `supabase/schema_v7.sql` (apply before deploying).

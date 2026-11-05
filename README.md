@@ -885,6 +885,94 @@ stored, so items clear themselves when the underlying work is done.
 Tests: `npm run test:roles`, `npm run test:analytics`,
 `npm run test:notifications` (wired into `npm test`).
 
+## Delta 2 — push notifications & in-app support
+
+**Requires `supabase/schema_v8.sql`** (apply before deploying).
+
+### Push architecture
+
+```
+admin status / handover route
+  → notifyStatusChange (src/lib/notify.ts — log provider, unchanged)
+  → push provider: orders.user_id via service-role client
+  → sendPushToUser (src/lib/push.ts) → Expo Push Service → APNs / FCM
+  → customer's devices (rows in push_tokens)
+```
+
+- **Token store** — `push_tokens` (schema_v8): one row per device
+  install, `expo_push_token` unique across the table, RLS owner-only
+  (select/insert/update/delete where `user_id = auth.uid()`); the
+  service role bypasses RLS for sends and cross-account reassignment.
+- **Registration** — `POST /api/push/register { token, platform }`
+  (any signed-in user, cookie or Bearer; the token must pass
+  `isExpoPushToken`, else `422 INVALID_PUSH_TOKEN`) upserts on the
+  token: the same phone signing into a different account REASSIGNS
+  the row, which is why writes run through the service-role client
+  after the caller is authenticated (the written `user_id` is always
+  the verified caller's). `DELETE /api/push/register { token }`
+  removes the caller's row (logout hygiene / preference off). Both
+  answer a minimal `{ ok: true }`.
+- **Sending** — `sendPushToUser(adminClient, userId, payload)` loads
+  the user's tokens, builds Expo messages (`sound: "default"`,
+  `priority: "high"`), posts to
+  `https://exp.host/--/api/v2/push/send` in chunks of 100, and
+  PRUNES tokens whose ticket reports `DeviceNotRegistered`. It never
+  throws (the notify hook's fire-and-forget standard): failures are
+  logged and a `{ sent, pruned, errors }` summary is returned.
+- **Copy & deep link** — `statusChangePush()` reuses the tracking
+  timeline's labels/hints (`src/lib/order-flow.ts`), so push, web
+  tracking and the app all say the same thing; `data` carries
+  `{ orderId, url: "/orders/<id>" }` and the app's notification
+  listener deep-links taps to the order tracking screen.
+
+### Token lifecycle
+
+Register on login / session restore → refreshed (upsert) on every
+app start with a session → deleted on logout, when the user turns
+"Order updates" off, and by the server when Expo reports the device
+unregistered. Dead installs therefore cannot accumulate.
+
+### Mobile client behaviour
+
+`mobile/src/lib/push.ts` degrades silently wherever push cannot
+work: web (no-op), simulators, permission denied — and **Expo Go on
+Android (SDK 53+), from which Expo removed remote push entirely**;
+development / standalone builds receive normally. Android order
+updates land on the `orders` notification channel (created at
+registration; also the app.json plugin's `defaultChannel`, icon
+colour `#22786d`). Foreground notifications show as alerts; the
+"Order updates" toggle on the Account tab is backed by a LOCAL
+preference (AsyncStorage) — **follow-up: server-side preference
+storage**, if per-account cross-device preferences are ever needed.
+
+### OWNER-GATED delivery credentials
+
+The pipeline above is complete, but a standalone build only
+DELIVERS once EAS holds the platform credentials:
+- **Android** — an FCM V1 service-account key (free Firebase
+  project) uploaded to EAS credentials for `in.zclean.app`.
+- **iOS** — APNs via the Apple Developer account (EAS can generate
+  and manage the key once the account exists).
+Until then Expo accepts the messages and the app registers tokens,
+but devices will not receive them. No code change is needed when
+the credentials land.
+
+### In-app support
+
+`BUSINESS` in `mobile/src/lib/config.ts` is the single mobile source
+for support contacts, mirroring the web's `businessSettings`: the
+DEMO phone/WhatsApp (`+91244567889`, owner-confirmed demo value —
+replace with the real business number before launch). The web
+config's email is still empty, so `BUSINESS.email` is empty and the
+email action is hidden until the owner provides one — no invented
+contact details. A Help & Support card (call / WhatsApp / email /
+FAQs → the web `/faq` page) sits on the Account tab and on the
+order tracking screen; from an order, the WhatsApp/email text is
+pre-filled with the order reference.
+
+Tests: `npm run test:push` (token validation, chunking, message
+building, pruning decisions, status copy — wired into `npm test`).
+
 ## Setup
 
 ```bash
@@ -913,6 +1001,10 @@ cp .env.example .env.local   # fill in your Supabase + Razorpay (test) keys
    `profiles.disabled`, and the tier-aware `is_admin()`), run
    `supabase/schema_v7.sql` — additive and safe to re-run, and it must
    be applied BEFORE deploying the Delta 1 code.
+   Finally, for Delta 2 (the `push_tokens` table for push
+   notifications), run `supabase/schema_v8.sql` — additive and safe
+   to re-run, and it must be applied BEFORE deploying the Delta 2
+   code.
 2. In Supabase Auth settings, set the Site URL to your app URL
    (e.g. `http://localhost:3000` in development), and add
    `<site-url>/reset-password` to the Redirect URLs allow list so

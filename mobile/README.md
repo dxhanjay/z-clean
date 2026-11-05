@@ -125,9 +125,32 @@ two must stay in lock-step.
   `GET /api/admin/notifications`; tapping an item deep-links to the
   order, finance, vouchers or queue section it belongs to.
 
+## Delta 2 — push notifications & in-app support
+
+- **Push** (`src/lib/push.ts`, `expo-notifications`): registers the
+  device's Expo token with `POST /api/push/register` after login /
+  session restore (AuthContext), deletes it on logout. Foreground
+  pushes show as alerts; tapping one deep-links to the order
+  tracking screen. Android uses the `orders` channel (brand colour
+  `#22786d`, also the app.json plugin's default). Degrades silently
+  on web, simulators and denied permission — and in **Expo Go on
+  Android (SDK 53+), which cannot receive remote push at all**;
+  delivery to standalone builds additionally waits on owner-side
+  EAS credentials (FCM V1 / APNs) — see the web README's Delta 2
+  section.
+- **Preference** — "Order updates" toggle on the Account tab,
+  backed by a local AsyncStorage setting; off also deletes the
+  server token. Server-side preference storage is a follow-up.
+- **Support** (`src/components/SupportCard.tsx`): Help & Support on
+  the Account tab and on the order tracking screen — call /
+  WhatsApp / email / FAQs from `BUSINESS` in `src/lib/config.ts`
+  (demo number, mirroring the web config; email hidden until the
+  owner sets one). WhatsApp/email text is pre-filled with the order
+  reference when opened from an order.
+
 ## Not yet
 
-- Push notifications and online (Razorpay) payment in-app.
+- Online (Razorpay) payment in-app.
 - Finance, reports, pricing and settings in-app — Mobile Phase 3
   (delivered; see the phase sections above).
 

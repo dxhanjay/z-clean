@@ -94,6 +94,31 @@ export async function requestPasswordReset(email: string): Promise<void> {
   });
 }
 
+/* ---------------- Push notifications (Delta 2) ---------------- */
+
+/**
+ * Register this device's Expo push token for the signed-in user
+ * (POST /api/push/register). The server upserts on the token, so a
+ * token moving between accounts on a shared device is reassigned.
+ */
+export async function registerPushToken(
+  token: string,
+  platform: "android" | "ios" | "web",
+): Promise<void> {
+  await apiFetch<{ ok: boolean }>("/api/push/register", {
+    method: "POST",
+    body: JSON.stringify({ token, platform }),
+  });
+}
+
+/** Remove this device's token for the signed-in user (logout / off). */
+export async function unregisterPushToken(token: string): Promise<void> {
+  await apiFetch<{ ok: boolean }>("/api/push/register", {
+    method: "DELETE",
+    body: JSON.stringify({ token }),
+  });
+}
+
 /* ---------------- Customer ---------------- */
 
 export interface PlaceOrderBody {

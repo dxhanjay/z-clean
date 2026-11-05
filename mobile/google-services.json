@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1043366649408",
+    "project_id": "z-clean-db762",
+    "storage_bucket": "z-clean-db762.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1043366649408:android:f5146f7a5315bef454c9a5",
+        "android_client_info": {
+          "package_name": "in.zclean.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCtudHrglzi8X7f7eZnunZc7at8P3l0gbE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

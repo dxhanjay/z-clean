@@ -1,13 +1,17 @@
 import { haversineMeters, type LatLng } from "./tracking";
 
 /**
- * Motion decisions (Phase 5 — 3D experience, Scope M) as pure,
- * testable functions. The components own the DOM/WebGL/map side
- * effects; every RULE about when motion may happen lives here:
+ * Motion decisions (Phase 5) as pure, testable functions. The
+ * components own the DOM/map side effects; every RULE about when
+ * motion may happen lives here:
  *
- *   1. Hero render mode — the 3D hero mounts only when the device
- *      can actually run WebGL AND the visitor has not asked for
- *      reduced motion. Every other case is the static composition.
+ *   1. Hero media mode — the hero is the owner's supplied animated
+ *      video (an earlier WebGL scene was retired on 2026-11-05 by
+ *      the owner's decision). The video autoplays only when the
+ *      visitor has not asked for reduced motion; reduced-motion
+ *      visitors get the video's poster frame as a still image,
+ *      and the server render is that poster for everyone (no
+ *      layout shift, no-JS safe).
  *   2. Card tilt — pointer-tracked CSS 3D tilt is a fine-pointer,
  *      motion-allowed enhancement only, clamped to a small angle
  *      so cards tip politely instead of flipping.
@@ -18,35 +22,24 @@ import { haversineMeters, type LatLng } from "./tracking";
  *      gliding when the jump is implausible for a single step
  *      (first fix, a near-identical point, a long teleport, or a
  *      reduced-motion visitor).
- *   4. Scroll-driven motion (glass + 3D scroll pass) — the hero
- *      garment turns as the hero scrolls away, homepage sections
- *      rise into place with a shallow 3D tilt, and decorative
- *      layers drift at a fraction of the scroll speed. Every rule
- *      collapses to "no motion" for reduced-motion visitors, and
- *      every number is clamped so a stray scroll value can never
- *      over-rotate, over-drift or hide content.
- *   5. Hero turntable (owner's reference videos) — the hero shirt
- *      turns on a slow, endless product turntable while the folded
- *      stack beside it only breathes a few degrees. The angle is a
- *      pure function of elapsed time with a gentle velocity ramp
- *      at load, so the loop is frame-rate independent, wraps
- *      cleanly, and — like every motion here — never runs at all
- *      for reduced-motion visitors (the scene is not mounted).
+ *   4. Scroll-driven motion (glass + 3D scroll pass) — homepage
+ *      sections rise into place with a shallow 3D tilt, and
+ *      decorative layers drift at a fraction of the scroll speed.
+ *      Every rule collapses to "no motion" for reduced-motion
+ *      visitors, and every number is clamped so a stray scroll
+ *      value can never over-drift or hide content.
  */
 
 /* ------------------------------------------------------------------ */
-/* 1. Hero render mode                                                 */
+/* 1. Hero media mode                                                  */
 /* ------------------------------------------------------------------ */
 
-export type HeroRenderMode = "canvas" | "static";
+export type HeroMediaMode = "video" | "poster";
 
-export function heroRenderMode(input: {
-  webglSupported: boolean;
+export function heroMediaMode(input: {
   prefersReducedMotion: boolean;
-}): HeroRenderMode {
-  if (!input.webglSupported) return "static";
-  if (input.prefersReducedMotion) return "static";
-  return "canvas";
+}): HeroMediaMode {
+  return input.prefersReducedMotion ? "poster" : "video";
 }
 
 /* ------------------------------------------------------------------ */
@@ -183,66 +176,12 @@ export function markerPositionAt(
 /**
  * The single gate for every scroll-driven effect in this section:
  * a reduced-motion preference switches ALL of it off — reveals sit
- * in their final state, parallax never translates, and the hero
- * garment keeps only its idle levitation/parallax.
+ * in their final state and parallax never translates.
  */
 export function scrollMotionEnabled(input: {
   prefersReducedMotion: boolean;
 }): boolean {
   return !input.prefersReducedMotion;
-}
-
-/* ---- Hero scroll progress + garment rotation ---- */
-
-/** Radians of Y rotation the garment group earns over a full hero scroll. */
-export const HERO_SCROLL_MAX_ROTATION_Y = 0.55;
-
-/** Radians of X tilt at full hero scroll — a slight lean, never a flip. */
-export const HERO_SCROLL_MAX_TILT_X = 0.08;
-
-/**
- * How far the visitor has scrolled THROUGH the hero, 0–1, from the
- * hero wrapper's viewport rect: 0 while its top is at or below the
- * viewport top, 1 once it has scrolled a full hero-height past.
- * Degenerate inputs (zero height, NaNs from a detached node) are 0.
- */
-export function heroScrollProgress(input: {
-  heroTop: number;
-  heroHeight: number;
-}): number {
-  if (!Number.isFinite(input.heroTop) || !Number.isFinite(input.heroHeight)) {
-    return 0;
-  }
-  if (input.heroHeight <= 0) return 0;
-  return clamp01(-input.heroTop / input.heroHeight);
-}
-
-/** Rotation the hero garment group should hold at a scroll progress. */
-export function heroScrollRotation(progress: number): {
-  rotationY: number;
-  rotationX: number;
-} {
-  const p = clamp01(progress);
-  return {
-    rotationY: HERO_SCROLL_MAX_ROTATION_Y * p,
-    rotationX: HERO_SCROLL_MAX_TILT_X * p,
-  };
-}
-
-/**
- * Module-level scroll-progress channel between HeroShowcase (which
- * owns the scroll listener) and the hero scene's frame loop (which
- * reads it every frame without re-rendering React). Deliberately a
- * plain mutable holder — no state library for one number.
- */
-export const heroScrollState = { progress: 0 };
-
-export function setHeroScrollProgress(value: number): void {
-  heroScrollState.progress = clamp01(value);
-}
-
-export function getHeroScrollProgress(): number {
-  return heroScrollState.progress;
 }
 
 /* ---- Section reveal (ScrollReveal3D) ---- */
@@ -301,74 +240,4 @@ export function parallaxEnabled(input: {
 }): boolean {
   if (!scrollMotionEnabled(input)) return false;
   return Number.isFinite(input.targetCount) && input.targetCount > 0;
-}
-
-/* ------------------------------------------------------------------ */
-/* 5. Hero turntable (owner's reference videos)                        */
-/* ------------------------------------------------------------------ */
-
-/** Seconds per full turntable revolution — slow, showroom pace. */
-export const TURNTABLE_PERIOD_S = 28;
-
-/** Turntable angular speed at full pace, rad/s (≈0.224). */
-export const TURNTABLE_ANGULAR_SPEED = (Math.PI * 2) / TURNTABLE_PERIOD_S;
-
-/** Seconds over which the turntable eases in from rest at load. */
-export const TURNTABLE_EASE_IN_S = 1.5;
-
-/**
- * Turntable angle (radians, wrapped to [0, 2π)) at an elapsed
- * time in seconds, derived purely from the clock — never from
- * accumulated per-frame state, so pausing the render loop (hero
- * off-screen, tab hidden) pauses the turntable with it.
- *
- * Ease-in: the angular velocity ramps linearly from 0 to full
- * pace over the first `easeInS` seconds, so the shirt never
- * jolts into motion on load. Integrating that ramp, the angle
- * trails the full-pace angle by exactly half the ramp: during
- * the ramp angle = ω·t²/(2T); afterwards angle = ω·(t − T/2).
- * Non-finite or negative elapsed times sit at the front view.
- */
-export function turntableAngleAt(
-  elapsedSeconds: number,
-  options?: { periodS?: number; easeInS?: number },
-): number {
-  if (!Number.isFinite(elapsedSeconds) || elapsedSeconds <= 0) return 0;
-  const period =
-    options?.periodS !== undefined &&
-    Number.isFinite(options.periodS) &&
-    options.periodS > 0
-      ? options.periodS
-      : TURNTABLE_PERIOD_S;
-  const easeIn =
-    options?.easeInS !== undefined &&
-    Number.isFinite(options.easeInS) &&
-    options.easeInS >= 0
-      ? options.easeInS
-      : TURNTABLE_EASE_IN_S;
-  const omega = (Math.PI * 2) / period;
-  const t = elapsedSeconds;
-  const effective =
-    easeIn > 0 && t < easeIn ? (t * t) / (2 * easeIn) : t - easeIn / 2;
-  const angle = (omega * effective) % (Math.PI * 2);
-  return angle < 0 ? angle + Math.PI * 2 : angle;
-}
-
-/** The folded stack never turns — it only breathes this far. */
-export const STACK_SWAY_MAX_RAD = 0.06;
-
-/** Seconds per full counter-sway cycle of the folded stack. */
-export const STACK_SWAY_PERIOD_S = 90;
-
-/**
- * The folded stack's counter-drift: a very slow sinusoid bounded
- * by ±STACK_SWAY_MAX_RAD, so the stack grounds the composition
- * while the shirt turns beside it. Non-finite time → at rest.
- */
-export function stackSwayAngleAt(elapsedSeconds: number): number {
-  if (!Number.isFinite(elapsedSeconds)) return 0;
-  return (
-    STACK_SWAY_MAX_RAD *
-    Math.sin((elapsedSeconds * Math.PI * 2) / STACK_SWAY_PERIOD_S)
-  );
 }

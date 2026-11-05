@@ -19,8 +19,19 @@ const navLinkCls =
 
 export default function Header() {
   const [servicesOpen, setServicesOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
+
+  // Owner's direction (Nov 5, 2026): the header is glass only at the
+  // very top — once the page scrolls it turns SOLID (no transparency,
+  // no blur) so links stay crisp over passing content.
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   // Close the dropdown on navigation and on Escape / outside click.
   useEffect(() => {
@@ -49,7 +60,13 @@ export default function Header() {
   }, [servicesOpen]);
 
   return (
-    <header className="glass-strong sticky top-0 z-40">
+    <header
+      className={`sticky top-0 z-40 transition-[background-color,box-shadow] duration-300 ${
+        scrolled
+          ? "border-b border-ink-900/5 bg-white shadow-[0_10px_36px_rgba(23,43,66,0.10)]"
+          : "glass-strong"
+      }`}
+    >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <Link
           href="/"

@@ -224,3 +224,29 @@ different depths — applied to Z-clean's own Phase A design:
   entirely.
 - Reduced-motion visitors get the same pages, still: no
   drift, no parallax, no tip-in — content in its final state.
+
+## Hero video note (2026-11-05)
+
+The owner replaced the 3D hero with his own animated video
+("Use this animated video instead of that 3d models used in
+main website"):
+
+- **The asset is the owner's**: a short looping film of a
+  pressed white shirt revolving on its hanger, supplied by
+  him and served from `public/hero-shirt.mp4` with a poster
+  frame — provenance is his own upload, so no licence,
+  attribution or reference-site question arises. It is
+  presented inside the site's own glass showcase frame with
+  the two pre-existing annotation chips; no copy, claim or
+  statistic was added or changed.
+- **The procedural scene is retired, honestly**: the WebGL
+  shirt (and its realism/turntable iterations documented
+  above) was deleted rather than left dormant, and the
+  three.js dependencies were uninstalled. What the references
+  asked for — a premium garment revolving in a glass stage —
+  is now done with the owner's footage instead of a real-time
+  interpretation.
+- **Restraint kept**: the video is decorative and muted with
+  no audio; reduced-motion visitors receive the poster frame
+  as a still, and the rest of the motion system (glass,
+  reveals, parallax, tilt, tracking glide) is unchanged.

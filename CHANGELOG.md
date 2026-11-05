@@ -3,6 +3,52 @@
 All notable changes to Z-clean. (This file was started at Delta 1;
 earlier history lives in the README's phase sections and the git log.)
 
+## Hero video — owner's animated film replaces the 3D scene (2026-11-05)
+
+Owner's decision: *"Use this animated video instead of that 3d
+models used in main website."* The hero is now the owner's own
+supplied animated video; the procedural WebGL scene is retired.
+
+### Changed
+- **HeroShowcase is a video showcase**: a portrait (aspect 4/5)
+  glass-strong framed card in the hero's visual slot presenting
+  `public/hero-shirt.mp4` (720×1280, 10 s loop, ~684 KB, no
+  audio) — a pressed white shirt turning slowly on its hanger.
+  The server renders the poster frame (`hero-shirt-poster.jpg`)
+  as a still; motion-allowed visitors swap to the autoplaying,
+  muted, looping `<video>` on mount. The two honest annotation
+  chips are retained at the frame's corners; the film is
+  decorative (aria-hidden + sr-only description).
+
+### Removed
+- **The WebGL hero, entirely**: `HeroScene3D.tsx` and the
+  Phase A photo composition `HeroVisual.tsx` deleted (the
+  `AnnotationChip` component moved into HeroShowcase, its only
+  remaining consumer); the dynamic import, error boundary,
+  WebGL detection and hero scroll-progress plumbing removed
+  from HeroShowcase.
+- **Motion rules that served only the scene**:
+  `heroRenderMode`, the hero scroll channel
+  (`heroScrollState` / `heroScrollProgress` /
+  `heroScrollRotation` + accessors) and the turntable section
+  (`turntableAngleAt`, `stackSwayAngleAt` + constants) deleted
+  from `src/lib/motion.ts`, replaced in §1 by `heroMediaMode`
+  (video vs poster). Tilt, marker-glide, reveal and parallax
+  rules are untouched.
+- **Dependencies**: `three`, `@react-three/fiber`,
+  `@react-three/drei`, `@types/three` uninstalled
+  (package.json + lockfile together).
+
+### Rules & verification
+- **Reduced motion → poster**: the video element never mounts
+  for reduced-motion visitors; `heroMediaMode` is unit-tested.
+- Motion suite 76 → 43 assertions (the 33 removed assertions
+  are exactly the retired scene rules); full suite 941 → 908,
+  all 18 suites green. Production build green; homepage First
+  Load JS 118 → 116 kB; a chunk sweep finds no three.js code
+  anywhere in the build. Glass ambience, ScrollReveal3D,
+  parallax, card tilt and tracking-map motion all remain.
+
 ## Hero turntable pass (2026-11-05)
 
 Owner's reference videos: the hero garment on a slow product

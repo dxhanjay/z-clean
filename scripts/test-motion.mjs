@@ -4,21 +4,16 @@
  * compiles src/lib/motion.ts (pulling in tracking → handovers →
  * org) with the project's own TypeScript into a scratch dir, then
  * asserts the pure RULES the components obey:
- *   1. hero render mode — canvas only with WebGL + motion allowed,
+ *   1. hero media mode — the owner's animated hero video plays
+ *      unless the visitor prefers reduced motion (poster still),
  *   2. tilt enablement + geometry (centre = no tilt, edges clamp),
  *   3. rider-marker transitions — glide only between two recorded
  *      points a plausible step apart; snap otherwise; easing and
  *      interpolation stay between the recorded endpoints.
- *   4. scroll-driven motion (glass + 3D scroll pass) — hero scroll
- *      progress + garment rotation clamp to their ranges, the
- *      shared progress channel clamps writes, reveal stagger caps,
- *      and parallax offsets clamp; one reduced-motion gate rules
- *      all of it.
- *   5. hero turntable (owner's reference videos) — the shirt's
- *      endless 28 s revolution: eased-in angle from elapsed time,
- *      exact pace after the ramp, clean wrap at 2π, and the
- *      folded stack's counter-sway bounded to ±0.06 rad.
- * The WebGL scene, DOM tilt and Leaflet rendering are NOT unit
+ *   4. scroll-driven motion (glass + 3D scroll pass) — reveal
+ *      stagger caps and parallax offsets clamp; one reduced-motion
+ *      gate rules all of it.
+ * The DOM tilt, video playback and Leaflet rendering are NOT unit
  * tested — only the decisions behind them are.
  * Run: `npm run test:motion`. Exits non-zero on failure.
  */
@@ -53,7 +48,7 @@ try {
   const {
     TILT_MAX_DEG,
     MARKER_ANIMATION_MS,
-    heroRenderMode,
+    heroMediaMode,
     tiltEnabled,
     clampTiltDeg,
     tiltFromPointer,
@@ -62,27 +57,13 @@ try {
     easeInOutCubic,
     interpolateLatLng,
     markerPositionAt,
-    HERO_SCROLL_MAX_ROTATION_Y,
-    HERO_SCROLL_MAX_TILT_X,
     REVEAL_STAGGER_STEP_MS,
     REVEAL_STAGGER_MAX_MS,
     PARALLAX_MAX_OFFSET_PX,
     scrollMotionEnabled,
-    heroScrollProgress,
-    heroScrollRotation,
-    heroScrollState,
-    setHeroScrollProgress,
-    getHeroScrollProgress,
     revealDelayMs,
     parallaxOffset,
     parallaxEnabled,
-    TURNTABLE_PERIOD_S,
-    TURNTABLE_ANGULAR_SPEED,
-    TURNTABLE_EASE_IN_S,
-    STACK_SWAY_MAX_RAD,
-    STACK_SWAY_PERIOD_S,
-    turntableAngleAt,
-    stackSwayAngleAt,
   } = motion;
 
   let passed = 0;
@@ -99,15 +80,11 @@ try {
     return Math.abs(a - b) <= eps;
   }
 
-  /* 1. Hero render mode ------------------------------------------ */
-  check("hero: WebGL + motion allowed → canvas",
-    heroRenderMode({ webglSupported: true, prefersReducedMotion: false }) === "canvas");
-  check("hero: no WebGL → static",
-    heroRenderMode({ webglSupported: false, prefersReducedMotion: false }) === "static");
-  check("hero: reduced motion → static even with WebGL",
-    heroRenderMode({ webglSupported: true, prefersReducedMotion: true }) === "static");
-  check("hero: no WebGL + reduced motion → static",
-    heroRenderMode({ webglSupported: false, prefersReducedMotion: true }) === "static");
+  /* 1. Hero media mode ------------------------------------------- */
+  check("hero: motion allowed → video",
+    heroMediaMode({ prefersReducedMotion: false }) === "video");
+  check("hero: reduced motion → poster still, video never mounts",
+    heroMediaMode({ prefersReducedMotion: true }) === "poster");
 
   /* 2. Tilt ------------------------------------------------------- */
   check("tilt: fine pointer + motion allowed → enabled",
@@ -197,50 +174,6 @@ try {
   check("scroll gate: reduced motion → everything off",
     scrollMotionEnabled({ prefersReducedMotion: true }) === false);
 
-  check("hero progress: top at viewport top → 0",
-    heroScrollProgress({ heroTop: 0, heroHeight: 600 }) === 0);
-  check("hero progress: hero still below the fold line → 0",
-    heroScrollProgress({ heroTop: 240, heroHeight: 600 }) === 0);
-  check("hero progress: half scrolled → 0.5",
-    near(heroScrollProgress({ heroTop: -300, heroHeight: 600 }), 0.5));
-  check("hero progress: fully scrolled → 1",
-    heroScrollProgress({ heroTop: -600, heroHeight: 600 }) === 1);
-  check("hero progress: overscroll clamps to 1",
-    heroScrollProgress({ heroTop: -2400, heroHeight: 600 }) === 1);
-  check("hero progress: zero height → 0",
-    heroScrollProgress({ heroTop: -300, heroHeight: 0 }) === 0);
-  check("hero progress: NaN inputs → 0",
-    heroScrollProgress({ heroTop: Number.NaN, heroHeight: 600 }) === 0 &&
-    heroScrollProgress({ heroTop: -300, heroHeight: Number.NaN }) === 0);
-
-  check("hero rotation caps: 0.55 rad Y, slight X tilt",
-    HERO_SCROLL_MAX_ROTATION_Y === 0.55 && HERO_SCROLL_MAX_TILT_X > 0 && HERO_SCROLL_MAX_TILT_X <= 0.15);
-  const rot0 = heroScrollRotation(0);
-  const rotMid = heroScrollRotation(0.5);
-  const rotFull = heroScrollRotation(1);
-  check("hero rotation: 0 at rest",
-    rot0.rotationY === 0 && rot0.rotationX === 0);
-  check("hero rotation: half progress → half rotation",
-    near(rotMid.rotationY, HERO_SCROLL_MAX_ROTATION_Y / 2) &&
-    near(rotMid.rotationX, HERO_SCROLL_MAX_TILT_X / 2));
-  check("hero rotation: full progress → the caps",
-    rotFull.rotationY === HERO_SCROLL_MAX_ROTATION_Y &&
-    rotFull.rotationX === HERO_SCROLL_MAX_TILT_X);
-  check("hero rotation: out-of-range progress clamps",
-    heroScrollRotation(7).rotationY === HERO_SCROLL_MAX_ROTATION_Y &&
-    heroScrollRotation(-2).rotationY === 0 &&
-    heroScrollRotation(Number.NaN).rotationY === 0);
-
-  setHeroScrollProgress(0.3);
-  check("hero channel: write then read",
-    getHeroScrollProgress() === 0.3 && heroScrollState.progress === 0.3);
-  setHeroScrollProgress(2);
-  check("hero channel: writes clamp above 1", getHeroScrollProgress() === 1);
-  setHeroScrollProgress(-1);
-  check("hero channel: writes clamp below 0", getHeroScrollProgress() === 0);
-  setHeroScrollProgress(Number.NaN);
-  check("hero channel: NaN write → 0", getHeroScrollProgress() === 0);
-  setHeroScrollProgress(0);
 
   check("reveal stagger: first block is immediate", revealDelayMs(0) === 0);
   check("reveal stagger: steps of 120ms",
@@ -269,74 +202,6 @@ try {
     parallaxEnabled({ prefersReducedMotion: false, targetCount: 3 }) === true &&
     parallaxEnabled({ prefersReducedMotion: true, targetCount: 3 }) === false &&
     parallaxEnabled({ prefersReducedMotion: false, targetCount: 0 }) === false);
-
-  /* 5. Hero turntable (owner's reference videos) ------------------- */
-  check("turntable: one revolution every 28 s",
-    TURNTABLE_PERIOD_S === 28);
-  check("turntable: full pace is 2π/28 ≈ 0.224 rad/s",
-    near(TURNTABLE_ANGULAR_SPEED, (Math.PI * 2) / 28, 1e-12) &&
-    TURNTABLE_ANGULAR_SPEED > 0.22 && TURNTABLE_ANGULAR_SPEED < 0.23);
-  check("turntable: ease-in lasts 1.5 s", TURNTABLE_EASE_IN_S === 1.5);
-
-  check("turntable: at rest on load (t = 0, negative, NaN → 0)",
-    turntableAngleAt(0) === 0 &&
-    turntableAngleAt(-4) === 0 &&
-    turntableAngleAt(Number.NaN) === 0);
-
-  // During the ramp the angle trails full pace: angle = ω·t²/(2T).
-  const rampMid = turntableAngleAt(TURNTABLE_EASE_IN_S / 2);
-  check("turntable: mid-ramp angle is the integrated ramp, behind full pace",
-    near(rampMid, TURNTABLE_ANGULAR_SPEED * 0.1875, 1e-9) &&
-    rampMid > 0 && rampMid < TURNTABLE_ANGULAR_SPEED * (TURNTABLE_EASE_IN_S / 2));
-  // At the end of the ramp the shirt has covered half the ramp's
-  // full-pace distance: angle = ω·T/2.
-  check("turntable: end of ramp → ω·T/2",
-    near(turntableAngleAt(TURNTABLE_EASE_IN_S), TURNTABLE_ANGULAR_SPEED * 0.75, 1e-9));
-
-  // After the ramp the pace is exact: one second adds exactly ω.
-  check("turntable: steady pace after the ramp (1 s adds ω)",
-    near(
-      turntableAngleAt(TURNTABLE_EASE_IN_S + 2) -
-        turntableAngleAt(TURNTABLE_EASE_IN_S + 1),
-      TURNTABLE_ANGULAR_SPEED,
-      1e-9,
-    ));
-  // Half a period after the ramp the shirt shows its back (+π).
-  check("turntable: half a period after the ramp → ramp angle + π",
-    near(
-      turntableAngleAt(TURNTABLE_EASE_IN_S + TURNTABLE_PERIOD_S / 2),
-      turntableAngleAt(TURNTABLE_EASE_IN_S) + Math.PI,
-      1e-6,
-    ));
-  // A full period later the angle wraps back to the same heading.
-  check("turntable: full period wraps to the same heading",
-    near(
-      turntableAngleAt(TURNTABLE_EASE_IN_S + TURNTABLE_PERIOD_S),
-      turntableAngleAt(TURNTABLE_EASE_IN_S),
-      1e-6,
-    ));
-  // The angle is always a valid heading, however long the page lives.
-  check("turntable: angle stays inside [0, 2π) forever",
-    [3, 29.5, 100, 10000, 123456.7].every((t) => {
-      const a = turntableAngleAt(t);
-      return a >= 0 && a < Math.PI * 2;
-    }));
-
-  check("turntable: no-ramp option → exact pace from t = 0",
-    near(turntableAngleAt(14, { easeInS: 0 }), Math.PI, 1e-9));
-  check("turntable: custom period respected",
-    near(turntableAngleAt(5, { periodS: 10, easeInS: 0 }), Math.PI, 1e-9));
-
-  check("stack sway: bounded by ±0.06 rad on a 90 s cycle",
-    STACK_SWAY_MAX_RAD === 0.06 && STACK_SWAY_PERIOD_S === 90);
-  check("stack sway: rest at 0, peaks at quarter period, back through 0 at half",
-    stackSwayAngleAt(0) === 0 &&
-    near(stackSwayAngleAt(STACK_SWAY_PERIOD_S / 4), 0.06, 1e-9) &&
-    near(stackSwayAngleAt(STACK_SWAY_PERIOD_S / 2), 0, 1e-9) &&
-    near(stackSwayAngleAt((3 * STACK_SWAY_PERIOD_S) / 4), -0.06, 1e-9));
-  check("stack sway: never exceeds its bound; NaN → rest",
-    [1, 7.3, 41, 88, 500].every((t) => Math.abs(stackSwayAngleAt(t)) <= 0.06) &&
-    stackSwayAngleAt(Number.NaN) === 0);
 
   console.log(`\n${passed} passed, ${failures.length} failed`);
   if (failures.length > 0) process.exit(1);

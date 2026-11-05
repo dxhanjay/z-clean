@@ -1331,52 +1331,56 @@ phase; the dashboard cards are unchanged too.
 
 ## Phase 5 — 3D experience (Scope M)
 
-The premium-motion layer: a real-time 3D hero, CSS-3D garment
-cards, and gentle motion on the live tracking map. All of it is
+The premium-motion layer: the hero film (the owner's animated
+video — it replaced the real-time 3D hero on 2026-11-05, see
+below), CSS-3D garment cards, a glass + 3D scroll ambience, and
+gentle motion on the live tracking map. All of it is
 progressive enhancement over the Phase A design — every surface
 keeps a complete static presentation, and the booking, dashboard
 and order flows are untouched by it. The pure motion RULES live
 in `src/lib/motion.ts` (tests: `scripts/test-motion.mjs`, wired
 into `npm test`); components own only the side effects.
 
-### The 3D hero (homepage only)
+### The hero film (homepage only) — owner's video, 2026-11-05
 
-`src/components/HeroShowcase.tsx` renders the static photo
-composition (`HeroVisual`) by default — that is the server
-render, the loading state, and the permanent presentation for
-two of the three fallback cases below. Only when the capability
-rule in `src/lib/motion.ts` (`heroRenderMode`) says yes does it
-mount `HeroScene3D` (React Three Fiber), lazy-loaded via
-`next/dynamic` with `ssr: false`:
+The owner decided the procedural WebGL shirt should be replaced
+by his own animated video: *"Use this animated video instead of
+that 3d models used in main website."* The hero is now that
+film — a freshly pressed white shirt turning slowly on its
+hanger — served from `public/hero-shirt.mp4` (720×1280
+portrait, 10 s, H.264, ~684 KB, no audio) with
+`public/hero-shirt-poster.jpg` as its poster frame (1.2 s).
+
+`src/components/HeroShowcase.tsx` presents it as a portrait
+showcase card (aspect 4/5, glass-strong frame in the Phase A /
+glass language) in the hero's visual slot:
 
 | Condition | Hero shown |
 |---|---|
-| WebGL available + motion allowed | 3D scene |
-| `prefers-reduced-motion: reduce` | Static composition |
-| WebGL unavailable / context fails | Static composition |
-| Scene chunk loading or throws | Static composition (error boundary + `onError` fallback) |
+| Motion allowed | The autoplaying, muted, looping video (client-mounted) |
+| `prefers-reduced-motion: reduce` | The poster frame as a still image — the video never mounts |
+| Server render / no JS | The poster frame as a still image |
 
-The scene itself is a stylised real-time interpretation of the
-owner's reference board: **one pristine white dress shirt**
-floating upright — collar band and leaves, a buttoned front
-placket, long sleeves angled gently down, a chest pocket —
-beside a neat **folded-garment stack**, over a soft pedestal
-glow on the hero's pastel backdrop, with sparse drifting
-particles, slow levitation, a subtle sway, and damped
-pointer-parallax. Lighting is image-based (see the realism
-pass below) plus three directional lights (no shadow maps;
-the ground shadow is drei `ContactShadows`).
+The server renders the poster `<img>` (fast first paint, no
+layout shift); on mount, motion-allowed visitors swap it for
+the `<video>` (same poster on the element, so the swap is
+seamless). The film is decorative — the headline carries the
+meaning — so the video is `aria-hidden` with a screen-reader
+description beside it. The two honest annotation chips from
+the earlier compositions ("Tough stain? We treat it with
+care", "Every garment inspected by hand") are retained at the
+frame's corners, clear of the turning shirt.
 
-**Licence: every mesh is procedural geometry** built in
-`src/components/HeroScene3D.tsx` (parametric cloth panels,
-swept tube sleeves, rounded boxes) with cloth-like physical
-materials. There are **no model files, no image textures and
-no external assets**; the only textures are canvases generated
-at runtime (a cotton-weave pattern, radial gradients for the
-particle sprite and ground glow, and the studio backdrop
-gradient). Nothing was taken from the reference site.
+The WebGL scene this replaced (`HeroScene3D`, its realism
+rebuild, the turntable and the hero scroll-response plumbing)
+is **retired and deleted**, not dormant: the three.js stack
+(`three`, `@react-three/fiber`, `@react-three/drei`,
+`@types/three`) is uninstalled, and no chunk in the current
+build references it. Homepage First Load JS went 118 → 116 kB
+and the hero page payload dropped accordingly. The scene's
+history is preserved in the subsections below and the git log.
 
-### Realism pass (2026-11-05)
+### Realism pass (2026-11-05) — retired with the scene
 
 The owner's verdict on the first scene was "cartoon" — a flat
 extruded silhouette under flat lights. The rebuild keeps the
@@ -1436,6 +1440,14 @@ shirt and the rendering:
   pass grew the lazy 3D chunks by ~9 kB total (~966 kB raw
   across the same five files); `/` First Load JS is unchanged
   at 117 kB.
+
+> **Amendment (2026-11-05, hero video):** the three.js stack
+> described in this section was removed entirely when the
+> scene retired — `three`, `@react-three/fiber`,
+> `@react-three/drei` and `@types/three` are uninstalled, a
+> sweep of the current build finds no three.js code in any
+> chunk, and homepage First Load JS went 118 → 116 kB behind
+> the much lighter video showcase.
 
 ### Interactive garment cards (CSS 3D, no WebGL)
 
@@ -1513,24 +1525,23 @@ their surfaces stay crisp and solid.
   every `[data-parallax]` layer (the four orbs, the hero's two
   soft blobs) by scrollY × speed (0.05–0.11), clamped to
   ±480px by `parallaxOffset`.
-- **Hero scroll response** — `HeroShowcase` publishes hero
-  scroll progress (0–1, from its wrapper rect) into the
-  `heroScrollState` channel in `src/lib/motion.ts`; the hero
-  scene's frame loop damps toward it and adds up to +0.55 rad
-  of Y rotation and a slight X lean (`heroScrollRotation`) as
-  the hero scrolls away.
+- **Hero scroll response** — the 3D garment turned as the
+  hero scrolled away, via a scroll-progress channel in
+  `src/lib/motion.ts`. **Removed with the scene (2026-11-05):**
+  that channel and the rotation helpers served only the WebGL
+  garment, so the plumbing and its tests were retired with
+  it; the video hero needs no scroll coupling.
 - **Reduced motion** collapses all of it: no orb drift, no
-  parallax listener, reveals render in their final state, the
-  hero progress channel stays 0. The pure rules
-  (`scrollMotionEnabled`, `heroScrollProgress`,
-  `heroScrollRotation`, `revealDelayMs`, `parallaxOffset`,
-  `parallaxEnabled`) are unit-tested in
+  parallax listener, reveals render in their final state. The
+  pure rules (`scrollMotionEnabled`, `revealDelayMs`,
+  `parallaxOffset`, `parallaxEnabled`) are unit-tested in
   `scripts/test-motion.mjs`.
 - **Cost**: homepage First Load JS 117 → 118 kB (+1 kB) in the
-  production build; no new dependencies; the three.js chunks
-  are untouched and still homepage-lazy only.
+  production build; no new dependencies. (The three.js chunks
+  mentioned here have since been removed entirely with the
+  retired scene — see the hero-film section above.)
 
-### Turntable pass — the hero shirt revolves (2026-11-05)
+### Turntable pass — the hero shirt revolves (2026-11-05) — retired with the scene
 
 Owner's reference videos set the signature motion: a product
 turntable in a glass showcase — slow, continuous, premium. The
@@ -1558,6 +1569,13 @@ hero scene now runs it:
 - **Tests/cost**: 15 new assertions in `scripts/test-motion.mjs`
   (76 in the suite; 941 total); no new dependencies and no
   measurable bundle change.
+
+> **Retired (2026-11-05):** the turntable turned the
+> procedural shirt; the owner's supplied video — itself a
+> shirt revolving on a hanger — now does this job as real
+> footage. `turntableAngleAt` / `stackSwayAngleAt` and their
+> assertions were removed with the scene (motion suite
+> 76 → 43; project total 941 → 908, all remaining green).
 
 ## Setup
 

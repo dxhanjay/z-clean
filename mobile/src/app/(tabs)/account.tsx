@@ -12,10 +12,11 @@ import {
 } from "../../components/ui";
 import { useAuth } from "../../context/AuthContext";
 import { API_BASE_URL } from "../../lib/config";
+import { roleLabel } from "../../lib/roles";
 
 /** Account — who you're signed in as, role, sign out, useful links. */
 export default function AccountScreen() {
-  const { user, isAdmin, profileName, signOut } = useAuth();
+  const { user, isAdmin, role, profileName, signOut } = useAuth();
 
   if (!user) {
     return (
@@ -35,7 +36,7 @@ export default function AccountScreen() {
         <Text style={styles.muted}>Email</Text>
         <Text style={{ fontWeight: "700" }}>{user.email}</Text>
         <Text style={styles.muted}>Role</Text>
-        <Text style={{ fontWeight: "700" }}>{isAdmin ? "Admin" : "Customer"}</Text>
+        <Text style={{ fontWeight: "700" }}>{roleLabel(role)}</Text>
       </Card>
       {isAdmin && (
         <GhostButton label="Open the web admin" onPress={() => void Linking.openURL(`${API_BASE_URL}/admin`)} />

@@ -456,6 +456,20 @@ export const closeDaySchema = z.object({
 
 export type CloseDayInput = z.infer<typeof closeDaySchema>;
 
+/* Delta 1 — tiered roles + customer management. */
+
+export const roleChangeSchema = z.object({
+  role: z.enum(["customer", "ops_manager", "admin", "super_admin"]),
+});
+
+export type RoleChangeInput = z.infer<typeof roleChangeSchema>;
+
+export const customerDisabledSchema = z.object({
+  disabled: z.boolean(),
+});
+
+export type CustomerDisabledInput = z.infer<typeof customerDisabledSchema>;
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type ContactInput = z.infer<typeof contactSchema>;

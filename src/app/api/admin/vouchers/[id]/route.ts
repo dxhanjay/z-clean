@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAdminGate } from "@/lib/admin";
+import { getAdminGate, roleGateError } from "@/lib/admin";
 import { logAudit } from "@/lib/audit";
 import { voucherActionSchema } from "@/lib/validation";
 import { rowToVoucher, VOUCHER_COLUMNS, type VoucherRow } from "@/lib/vouchers-server";
@@ -118,6 +118,14 @@ export async function PATCH(
     );
   }
   const input = parsed.data;
+
+  // Delta 1 role split: ISSUING a voucher is a desk action (any admin
+  // tier); VOIDING one — cancel or expire — destroys value and needs
+  // the admin tier or above.
+  if (input.action !== "issue") {
+    const roleErr = roleGateError(gate, "admin");
+    if (roleErr) return roleErr;
+  }
 
   const { data: existing, error: loadError } = await supabase
     .from("gift_vouchers")

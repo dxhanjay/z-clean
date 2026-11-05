@@ -3,6 +3,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import AdminNotificationBell from "@/components/admin/AdminNotificationBell";
+import { roleLabel, roleLevel } from "@/lib/roles";
 
 /**
  * Admin console shell (Gentelella-style redesign — an original
@@ -28,6 +30,8 @@ interface MenuItem {
   label: string;
   icon: ReactNode;
   exact?: boolean;
+  /** Delta 1: hide below this role level (src/lib/roles.ts). */
+  minLevel?: number;
 }
 
 interface MenuGroup {
@@ -89,6 +93,16 @@ const MENU: MenuGroup[] = [
           </I>
         ),
       },
+      {
+        href: "/admin/notifications",
+        label: "Notifications",
+        icon: (
+          <I>
+            <path d="M18.5 15.5h-13l1.7-2.6V10a4.8 4.8 0 0 1 9.6 0v2.9z" />
+            <path d="M10 18.5a2.1 2.1 0 0 0 4 0" />
+          </I>
+        ),
+      },
     ],
   },
   {
@@ -118,6 +132,18 @@ const MENU: MenuGroup[] = [
         ),
       },
       {
+        href: "/admin/customers",
+        label: "Customers",
+        icon: (
+          <I>
+            <circle cx="10" cy="8" r="3.4" />
+            <path d="M4 19.6c.7-3 3-4.8 6-4.8s5.3 1.8 6 4.8" />
+            <path d="M16.4 5.4a3.4 3.4 0 0 1 .6 6.7" />
+            <path d="M18.6 15.2c1.3.8 2.1 2.1 2.4 4" />
+          </I>
+        ),
+      },
+      {
         href: "/admin/vouchers",
         label: "Vouchers",
         icon: (
@@ -135,6 +161,7 @@ const MENU: MenuGroup[] = [
       {
         href: "/admin/pricing",
         label: "Pricing",
+        minLevel: 2,
         icon: (
           <I>
             <path d="M3.5 3.5H12l8.5 8.5-8.5 8.5L3.5 12z" />
@@ -145,6 +172,7 @@ const MENU: MenuGroup[] = [
       {
         href: "/admin/settings",
         label: "Settings",
+        minLevel: 2,
         icon: (
           <I>
             <path d="M4 7.2h9.5M17.8 7.2H20M4 16.8h3.8M12.2 16.8H20" />
@@ -161,6 +189,7 @@ const MENU: MenuGroup[] = [
       {
         href: "/admin/finance",
         label: "Finance",
+        minLevel: 2,
         icon: (
           <I>
             <rect x="2.5" y="6" width="19" height="12" rx="2" />
@@ -172,6 +201,7 @@ const MENU: MenuGroup[] = [
       {
         href: "/admin/reports",
         label: "Reports",
+        minLevel: 2,
         icon: (
           <I>
             <path d="M4 4v16h16" />
@@ -210,14 +240,23 @@ function initialsOf(email: string | null): string {
 
 function SidebarContent({
   email,
+  role,
   pathname,
   full,
 }: {
   email: string | null;
+  /** Delta 1: the signed-in tier — drives the profile label and
+   *  which menu sections exist (server still enforces every call). */
+  role: string | null;
   pathname: string;
   /** true inside the mobile drawer: always show labels, full width. */
   full?: boolean;
 }) {
+  const level = roleLevel(role);
+  const visibleMenu = MENU.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => level >= (item.minLevel ?? 0)),
+  })).filter((group) => group.items.length > 0);
   const labelCls = full ? "" : "hidden lg:inline";
   const groupHeadingCls = full ? "" : "hidden lg:block";
   const rowJustify = full ? "justify-start" : "justify-center lg:justify-start";
@@ -258,14 +297,14 @@ function SidebarContent({
             {email ?? "Demo mode"}
           </span>
           <span className="block text-xs text-white/55">
-            {email ? "Administrator" : "Not signed in"}
+            {email ? roleLabel(role ?? "admin") : "Not signed in"}
           </span>
         </span>
       </div>
 
       {/* Grouped menu */}
       <nav aria-label="Admin sections" className={`flex-1 overflow-y-auto py-4 ${navPadX}`}>
-        {MENU.map((group) => (
+        {visibleMenu.map((group) => (
           <div key={group.heading} className="mb-4 last:mb-0">
             <p
               className={`px-2 pb-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-white/40 ${groupHeadingCls}`}
@@ -329,10 +368,16 @@ function SidebarContent({
 
 export default function AdminShell({
   email,
+  role = null,
+  showBell = false,
   mfaWarning = false,
   children,
 }: {
   email: string | null;
+  /** Delta 1: the signed-in admin tier (display + menu filtering). */
+  role?: string | null;
+  /** Delta 1: render the notifications bell (live admins only). */
+  showBell?: boolean;
   /** Live admin with NO verified MFA factor (P0): slim banner. */
   mfaWarning?: boolean;
   children: ReactNode;
@@ -382,7 +427,7 @@ export default function AdminShell({
     <div className="min-h-screen bg-admin-panel">
       {/* Fixed sidebar: icon rail on md, full on lg+ */}
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[72px] bg-admin-sidebar md:block lg:w-[232px]">
-        <SidebarContent email={email} pathname={pathname} />
+        <SidebarContent email={email} role={role} pathname={pathname} />
       </aside>
 
       {/* Mobile drawer */}
@@ -395,7 +440,7 @@ export default function AdminShell({
             onClick={() => setDrawerOpen(false)}
           />
           <aside className="absolute inset-y-0 left-0 w-[264px] bg-admin-sidebar shadow-2xl">
-            <SidebarContent email={email} pathname={pathname} full />
+            <SidebarContent email={email} role={role} pathname={pathname} full />
           </aside>
         </div>
       )}
@@ -431,6 +476,7 @@ export default function AdminShell({
             >
               View storefront
             </Link>
+            {showBell && <AdminNotificationBell />}
             {email && (
               <span className="hidden max-w-[230px] truncate rounded-full bg-brand-50 px-3 py-1.5 text-xs font-bold text-brand-700 min-[420px]:block">
                 {email}

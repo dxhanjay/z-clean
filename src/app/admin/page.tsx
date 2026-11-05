@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getAdminGate } from "@/lib/admin";
 import AdminDashboard from "@/components/admin/AdminDashboard";
+import AdminCharts from "@/components/admin/AdminCharts";
 import AdminSectionHeader from "@/components/admin/AdminSectionHeader";
 
 export const metadata: Metadata = {
@@ -25,6 +26,7 @@ export default async function AdminPage() {
         subtitle="The day at a glance — orders, collections, and what needs your attention."
       />
       <AdminDashboard mode={mode} />
+      <AdminCharts mode={mode} />
     </>
   );
 }

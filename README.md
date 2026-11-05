@@ -782,6 +782,109 @@ A maintenance-pack release (no business-logic changes):
   listing materials, permission review) — itemised in
   `mobile/README.md` → "Store readiness".
 
+## Delta 1 — admin extensions (tiered roles, charts, customers, notifications)
+
+Four additions on top of the P0/P1 base. **Deployment order matters:
+run `supabase/schema_v7.sql` BEFORE deploying this code** — the new
+routes read `profiles.disabled` and the new `user_role` enum values.
+The schema is additive and idempotent; it also promotes the e2e test
+admin to `super_admin` so role management has a first owner.
+
+### Tiered admin roles (`src/lib/roles.ts`)
+
+`profiles.role` is now a four-tier ladder —
+`customer (0) < ops_manager (1) < admin (2) < super_admin (3)`.
+`getAdminGate()` (src/lib/admin.ts) still admits every admin tier,
+exactly as it admitted `admin` before; individual routes add a
+minimum via `roleGateError(gate, min)`, which answers
+`403 { error: "FORBIDDEN_ROLE" }` below the tier. RLS needed no
+policy changes: every policy calls `public.is_admin()`, and
+schema_v7 redefines that one helper to recognize all three admin
+tiers. The web shell and the mobile app read the same role only to
+decide what to SHOW (Finance / Reports / Pricing / Settings are
+hidden for ops_manager).
+
+| Surface | ops_manager | admin | super_admin |
+| --- | :---: | :---: | :---: |
+| All admin GETs (queue, stages, reports, finance views, closings view) | ✓ | ✓ | ✓ |
+| Order status PATCH, handovers, regenerate OTP | ✓ | ✓ | ✓ |
+| Desk payments POST, refund REQUEST, voucher redeem | ✓ | ✓ | ✓ |
+| Voucher issue | ✓ | ✓ | ✓ |
+| Pricing PATCH, settings PATCH | — | ✓ | ✓ |
+| Employees / branches create & edit | — | ✓ | ✓ |
+| Expenses create & delete, close-day POST | — | ✓ | ✓ |
+| Refund approve / reject / process | — | ✓ | ✓ |
+| Voucher create, voucher cancel / expire (void) | — | ✓ | ✓ |
+| Customer disable / enable | — | ✓ | ✓ |
+| Team list (Settings → Team & Roles, read-only) | — | ✓ | ✓ |
+| **Role changes** (`PATCH /api/admin/users/[id]`) | — | — | ✓ |
+| MFA enrolment | self-service for every tier (unchanged) | | |
+
+Role-change guardrails (pure, unit-tested — `canChangeRole` in
+src/lib/roles.ts): only a super_admin may change a role; nobody may
+demote themselves (`409 SELF_DEMOTION`); the last super_admin cannot
+be demoted (`409 LAST_SUPER_ADMIN`). Every change is audit-logged as
+`user.role_change { from, to }`.
+
+New endpoints: `GET /api/admin/users?q=` (admin+; emails merged from
+Supabase Auth via the service-role client, null when unavailable) and
+`PATCH /api/admin/users/[id] { role }` (super_admin only).
+
+### Dashboard charts
+
+`GET /api/admin/analytics?days=14` (any tier, days clamps 1–90)
+returns an IST-day series — orders placed plus revenue collected,
+where revenue is the staff ledger's `payment` entries — and a
+current status breakdown. The bucketing is pure
+(`src/lib/analytics.ts`) and the dashboard renders it as
+dependency-free SVG (revenue area chart, orders bar chart, status
+bars). Demo mode computes the identical series from the demo stores.
+The mobile admin home shows the same endpoint as a 7-day summary
+card with mini bars.
+
+### Customer Management
+
+`GET /api/admin/customers?q=&page=&pageSize=` (any tier) and
+`GET /api/admin/customers/[id]` aggregate through the service-role
+client (the email lives in Supabase Auth, not profiles; the caller is
+gated first). **Lifetime spend is ledger-consistent**: the sum of
+`computeOrderFinance(...).effectivePaidPaise` over the customer's
+non-cancelled orders — collected money, never order totals
+(src/lib/customers-server.ts). The detail view adds addresses, the
+last 20 orders, totals, and active vouchers (linked by
+`issued_to_phone` = the customer's phone — vouchers have no customer
+FK). `PATCH /api/admin/customers/[id] { disabled }` (admin+) flips
+`profiles.disabled`, audit-logged as `customer.disable` /
+`customer.enable`.
+
+**Disabled-account effect:** a disabled customer can still sign in
+and read their history and support pages, but `POST /api/orders`
+and `POST /api/pickups` answer `403 { error: "ACCOUNT_DISABLED" }`.
+Guests are unaffected (they have no account to disable).
+
+Web: `/admin/customers` + `/admin/customers/[id]`; mobile:
+Customers list + detail under the admin home (disable toggle is
+admin-tier only).
+
+### Admin notifications (derived — no new tables)
+
+`GET /api/admin/notifications` (any tier) derives the attention list
+on every read from bounded aggregates; `src/lib/notifications.ts`
+holds the rules: refunds `requested` (medium) and `approved` >24h
+unprocessed (high); orders stuck — PLACED / PICKUP_SCHEDULED >24h
+(medium), PICKED_UP / RECEIVED / IN_PROCESS >72h (high), READY >48h
+(medium); live orders with `payment_status = 'failed'` (high);
+guest pickup requests (no account) older than 24h (low); active
+vouchers expiring within 7 days (low); yesterday's cash day
+unclosed despite cash activity (medium). Sorted severity-then-
+recency, capped at 50, with `{ total, high, medium, low }` counts.
+The web shell's topbar bell badges the high count; `/admin/notifications`
+and the mobile notifications screen show the full list. Nothing is
+stored, so items clear themselves when the underlying work is done.
+
+Tests: `npm run test:roles`, `npm run test:analytics`,
+`npm run test:notifications` (wired into `npm test`).
+
 ## Setup
 
 ```bash
@@ -806,12 +909,18 @@ cp .env.example .env.local   # fill in your Supabase + Razorpay (test) keys
    Finally, for P0 hardening (the `rate_limits` table + `rate_limit_hit()`
    function and the two orders reporting indexes), run
    `supabase/schema_v6.sql` — also additive and safe to re-run.
+   Finally, for Delta 1 (the `ops_manager` / `super_admin` role tiers,
+   `profiles.disabled`, and the tier-aware `is_admin()`), run
+   `supabase/schema_v7.sql` — additive and safe to re-run, and it must
+   be applied BEFORE deploying the Delta 1 code.
 2. In Supabase Auth settings, set the Site URL to your app URL
    (e.g. `http://localhost:3000` in development), and add
    `<site-url>/reset-password` to the Redirect URLs allow list so
    password-reset links land on the reset page.
 3. To make a user an admin, update their row:
    `update profiles set role = 'admin' where id = '<auth-user-id>';`
+   (Delta 1: roles can afterwards be managed in the admin panel —
+   Settings → Team & Roles — by a `super_admin` account.)
 
 ## Run
 

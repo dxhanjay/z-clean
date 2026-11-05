@@ -66,6 +66,9 @@ function RootNavigator() {
       <Stack.Screen name="admin-reports" options={{ title: "Admin — reports", ...adminHeader }} />
       <Stack.Screen name="admin-pricing" options={{ title: "Admin — pricing", ...adminHeader }} />
       <Stack.Screen name="admin-settings" options={{ title: "Admin — settings", ...adminHeader }} />
+      <Stack.Screen name="admin-customers" options={{ title: "Admin — customers", ...adminHeader }} />
+      <Stack.Screen name="admin-customer/[id]" options={{ title: "Admin — customer", ...adminHeader }} />
+      <Stack.Screen name="admin-notifications" options={{ title: "Admin — notifications", ...adminHeader }} />
     </Stack>
   );
 }

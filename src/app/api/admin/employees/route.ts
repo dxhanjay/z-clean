@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAdminGate } from "@/lib/admin";
+import { getAdminGate, roleGateError } from "@/lib/admin";
 import { logAudit } from "@/lib/audit";
 import { employeeCreateSchema } from "@/lib/validation";
 import { suggestNextEmployeeCode, type Employee, type StaffRole } from "@/lib/org";
@@ -125,6 +125,8 @@ export async function POST(request: Request) {
   if (gate.kind === "forbidden") {
     return NextResponse.json({ error: "Admin access required." }, { status: 403 });
   }
+  const roleErr = roleGateError(gate, "admin");
+  if (roleErr) return roleErr;
 
   let body: unknown;
   try {

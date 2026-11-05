@@ -14,8 +14,11 @@ import AdminShell from "@/components/admin/AdminShell";
  *   and without the demo flag renders a configuration-error screen —
  *   demo data is never presented as if it were real.
  * - LIVE MODE: a signed-in user is required (else redirect to /login),
- *   and profiles.role must be 'admin' — anyone else gets a plain 403
- *   screen and the children never render.
+ *   and profiles.role must be an admin tier (Delta 1: ops_manager,
+ *   admin or super_admin — see src/lib/roles.ts) — anyone else gets a
+ *   plain 403 screen and the children never render. The gate result
+ *   also hands the shell the caller's tier (menu filtering + the
+ *   notifications bell).
  * - MFA (P0): a signed-in admin WITH a verified TOTP factor whose
  *   session is still AAL1 is redirected to /auth/mfa to step up.
  *   Admins with NO factor are never locked out — the shell shows a
@@ -81,6 +84,8 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   return (
     <AdminShell
       email={gate.kind === "ok" ? gate.user.email ?? null : null}
+      role={gate.kind === "ok" ? gate.role : gate.kind === "demo" ? "admin" : null}
+      showBell={gate.kind === "ok"}
       mfaWarning={mfaWarning}
     >
       {gate.kind === "demo" && (

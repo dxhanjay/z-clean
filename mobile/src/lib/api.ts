@@ -1,8 +1,12 @@
 import { API_BASE_URL } from "./config";
 import { supabase } from "./supabase";
 import type {
+  AdminCustomerDetailData,
+  AdminCustomersPage,
+  AdminNotificationsData,
   AdminOrderDetail,
   AdminOrderSummary,
+  AnalyticsData,
   Branch,
   CashClosing,
   CustomerOrderDetail,
@@ -456,4 +460,41 @@ export async function patchSettings(values: Record<string, string | null>): Prom
     body: JSON.stringify({ values }),
   });
   return data.settings ?? [];
+}
+
+/* ------------- Delta 1 — analytics, customers, notifications ------------- */
+
+export async function fetchAnalytics(days: number): Promise<AnalyticsData> {
+  return apiFetch<AnalyticsData>(`/api/admin/analytics?days=${days}`);
+}
+
+export async function fetchAdminCustomers(params?: {
+  q?: string;
+  page?: number;
+  pageSize?: number;
+}): Promise<AdminCustomersPage> {
+  const query = new URLSearchParams();
+  if (params?.q) query.set("q", params.q);
+  if (params?.page) query.set("page", String(params.page));
+  if (params?.pageSize) query.set("pageSize", String(params.pageSize));
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return apiFetch<AdminCustomersPage>(`/api/admin/customers${suffix}`);
+}
+
+export async function fetchAdminCustomer(id: string): Promise<AdminCustomerDetailData> {
+  return apiFetch<AdminCustomerDetailData>(`/api/admin/customers/${id}`);
+}
+
+export async function patchCustomerDisabled(
+  id: string,
+  disabled: boolean,
+): Promise<{ customer: { id: string; disabled: boolean } }> {
+  return apiFetch(`/api/admin/customers/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ disabled }),
+  });
+}
+
+export async function fetchAdminNotifications(): Promise<AdminNotificationsData> {
+  return apiFetch<AdminNotificationsData>("/api/admin/notifications");
 }

@@ -26,6 +26,7 @@ import { pickupSlotIso } from "@/lib/slot-time";
 import { generateOtp } from "@/lib/handovers";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { notConfiguredResponse } from "@/lib/api-errors";
+import { isAccountDisabled } from "@/lib/roles";
 
 /**
  * POST /api/orders — place an order (Phase 3).
@@ -125,6 +126,27 @@ export async function POST(request: Request) {
     }
     userId = auth.user.id;
     userEmail = auth.user.email ?? null;
+  }
+
+  // Disabled accounts (Delta 1): an admin can disable a customer
+  // (PATCH /api/admin/customers/[id]). They may still sign in and
+  // read their history, but they cannot place new orders.
+  if (supabase && userId) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("disabled")
+      .eq("id", userId)
+      .maybeSingle();
+    if (isAccountDisabled(profile)) {
+      return NextResponse.json(
+        {
+          error: "ACCOUNT_DISABLED",
+          message:
+            "This account has been disabled and cannot place orders. Please contact Z-clean support if you think this is a mistake.",
+        },
+        { status: 403 },
+      );
+    }
   }
 
   // Rate limit (P0): order placement is capped per signed-in user

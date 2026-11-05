@@ -472,6 +472,88 @@ export interface SettingRow {
   updated_at?: string;
 }
 
+/* ---------------- Delta 1: analytics, customers, notifications -------- */
+
+export interface AnalyticsDay {
+  date: string;
+  orders: number;
+  revenuePaise: number;
+}
+
+export interface AnalyticsData {
+  mode: string;
+  days: number;
+  series: AnalyticsDay[];
+  statusCounts: { status: string; count: number }[];
+}
+
+export interface AdminCustomerRow {
+  id: string;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  role: string;
+  disabled: boolean;
+  createdAt: string;
+  ordersCount: number;
+  lifetimeSpendPaise: number;
+  outstandingPaise?: number;
+  lastOrderAt: string | null;
+}
+
+export interface AdminCustomersPage {
+  mode: string;
+  customers: AdminCustomerRow[];
+  page: number;
+  pageSize: number;
+  total: number;
+}
+
+export interface AdminCustomerDetailData {
+  mode: string;
+  customer: AdminCustomerRow & { outstandingPaise: number };
+  addresses: {
+    id: string;
+    label: string;
+    line: string;
+    area: string | null;
+    city: string;
+    pincode: string;
+  }[];
+  orders: {
+    id: string;
+    status: string;
+    paymentStatus: string;
+    totalPaise: number;
+    itemCount: number;
+    createdAt: string;
+  }[];
+  vouchers: {
+    id: string;
+    code: string;
+    kind: string;
+    status: string;
+    balancePaise: number | null;
+    validUntil: string | null;
+  }[];
+}
+
+export interface AdminNotificationItem {
+  id: string;
+  kind: string;
+  severity: "high" | "medium" | "low";
+  title: string;
+  detail: string;
+  href: string;
+  at: string;
+}
+
+export interface AdminNotificationsData {
+  mode: string;
+  items: AdminNotificationItem[];
+  counts: { total: number; high: number; medium: number; low: number };
+}
+
 export interface PlaceOrderResult {
   mode: string;
   orderId: string;

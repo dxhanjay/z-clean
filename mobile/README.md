@@ -105,6 +105,26 @@ npx expo export         # production bundle check
 server re-computes every order total and rejects mismatches, so the
 two must stay in lock-step.
 
+## Delta 1 — roles, customers, notifications in-app
+
+- **Tiered roles** — `src/lib/roles.ts` mirrors the web ladder
+  (customer 0 < ops_manager 1 < admin 2 < super_admin 3). AuthContext
+  exposes `role` / `roleLevel`; the Admin tab now opens for every
+  admin tier, and the admin home hides Finance / Expenses / Reports /
+  Pricing / Settings below the admin tier (the API enforces the same
+  minimums server-side with `403 FORBIDDEN_ROLE`).
+- **Admin home** — header shows the caller's tier label, and a
+  "Last 7 days" card (orders + collected revenue with mini bars)
+  reads `GET /api/admin/analytics?days=7`; a high-priority alert
+  count links through to Notifications.
+- **Customers** — list (search + pagination) and detail (profile,
+  addresses, recent orders, phone-linked vouchers) over
+  `/api/admin/customers`; the disable/enable switch shows for the
+  admin tier and up.
+- **Notifications** — read-only list over
+  `GET /api/admin/notifications`; tapping an item deep-links to the
+  order, finance, vouchers or queue section it belongs to.
+
 ## Not yet
 
 - Push notifications and online (Razorpay) payment in-app.

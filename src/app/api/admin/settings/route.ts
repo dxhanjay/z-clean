@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAdminGate } from "@/lib/admin";
+import { getAdminGate, roleGateError } from "@/lib/admin";
 import { logAudit } from "@/lib/audit";
 import { settingsUpdateSchema } from "@/lib/validation";
 
@@ -62,6 +62,8 @@ export async function PATCH(request: Request) {
   const err = gateError(gate);
   if (err) return err;
   if (gate.kind !== "ok") return NextResponse.json({ error: "Admin access required." }, { status: 403 });
+  const roleErr = roleGateError(gate, "admin");
+  if (roleErr) return roleErr;
   const { supabase, user } = gate;
 
   let body: unknown;

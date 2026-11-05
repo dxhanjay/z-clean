@@ -6,6 +6,7 @@ import { isPincodeServiceable } from "@/lib/pricing";
 import { pickupSlotIso } from "@/lib/slot-time";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { demoOrNotConfigured } from "@/lib/api-errors";
+import { isAccountDisabled } from "@/lib/roles";
 
 /**
  * POST /api/pickups — schedule a pickup (Phase 2).
@@ -78,6 +79,27 @@ export async function POST(request: Request) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // Disabled accounts (Delta 1): signed-in customers an admin has
+  // disabled cannot request pickups either. Guests have no account
+  // to disable and are unaffected.
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("disabled")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (isAccountDisabled(profile)) {
+      return NextResponse.json(
+        {
+          error: "ACCOUNT_DISABLED",
+          message:
+            "This account has been disabled and cannot request pickups. Please contact Z-clean support if you think this is a mistake.",
+        },
+        { status: 403 },
+      );
+    }
+  }
 
   const slotIso = pickupSlotIso(data.pickupDate, data.pickupSlot);
 

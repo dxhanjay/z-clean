@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { supabase } from "../lib/supabase";
+import { isAdminTier, roleLevel } from "../lib/roles";
 
 /**
  * Auth state for the app (Mobile Phase 1).
@@ -18,12 +19,20 @@ import { supabase } from "../lib/supabase";
  * from the database — the same source the web gate uses; it only
  * controls what the app SHOWS. The server re-checks the role on
  * every admin API call, so a tampered client gains nothing.
+ *
+ * Delta 1: the raw tier (`role`) and its numeric `roleLevel` are
+ * exposed alongside the boolean — ops_manager (1) sees operations,
+ * admin (2)+ also sees Finance / Reports / Pricing / Settings.
  */
 interface AuthState {
   loading: boolean;
   session: Session | null;
   user: User | null;
   isAdmin: boolean;
+  /** Raw profiles.role ('customer' | 'ops_manager' | 'admin' | 'super_admin'). */
+  role: string | null;
+  /** Numeric tier: customer 0, ops_manager 1, admin 2, super_admin 3. */
+  roleLevel: number;
   profileName: string | null;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (
@@ -41,6 +50,8 @@ const AuthContext = createContext<AuthState>({
   session: null,
   user: null,
   isAdmin: false,
+  role: null,
+  roleLevel: 0,
   profileName: null,
   signIn: async () => ({ error: "Not ready" }),
   signUp: async () => ({ error: "Not ready", needsConfirmation: false }),
@@ -52,11 +63,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [role, setRole] = useState<string | null>(null);
   const [profileName, setProfileName] = useState<string | null>(null);
 
   const loadProfile = useCallback(async (userId: string | null) => {
     if (!userId) {
       setIsAdmin(false);
+      setRole(null);
       setProfileName(null);
       return;
     }
@@ -65,7 +78,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select("role, name")
       .eq("id", userId)
       .maybeSingle();
-    setIsAdmin(data?.role === "admin");
+    setRole(data?.role ?? null);
+    setIsAdmin(isAdminTier(data?.role));
     setProfileName(data?.name ?? null);
   }, []);
 
@@ -126,13 +140,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       user: session?.user ?? null,
       isAdmin,
+      role,
+      roleLevel: roleLevel(role),
       profileName,
       signIn,
       signUp,
       signOut,
       refreshProfile,
     }),
-    [loading, session, isAdmin, profileName, signIn, signUp, signOut, refreshProfile],
+    [loading, session, isAdmin, role, profileName, signIn, signUp, signOut, refreshProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

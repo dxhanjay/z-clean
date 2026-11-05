@@ -35,7 +35,10 @@
     "test:handovers": "node scripts/test-handovers.mjs",
     "test:finance": "node scripts/test-finance.mjs",
     "test:ratelimit": "node scripts/test-ratelimit.mjs",
-    "test": "npm run test:totals && npm run test:flow && npm run test:retry && npm run test:org && npm run test:vouchers && npm run test:handovers && npm run test:finance && npm run test:ratelimit"
+    "test:roles": "node scripts/test-roles.mjs",
+    "test:analytics": "node scripts/test-analytics.mjs",
+    "test:notifications": "node scripts/test-notifications.mjs",
+    "test": "npm run test:totals && npm run test:flow && npm run test:retry && npm run test:org && npm run test:vouchers && npm run test:handovers && npm run test:finance && npm run test:ratelimit && npm run test:roles && npm run test:analytics && npm run test:notifications"
   },
   "version": "0.1.0"
 }

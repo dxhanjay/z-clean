@@ -4,10 +4,18 @@ import { router, useFocusEffect, type Href } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { ErrorBlock, GhostButton, Screen, SkeletonRows } from "../components/ui";
 import { useAuth } from "../context/AuthContext";
-import { fetchAdminOrders, fetchFinanceOverview, fetchOutstanding } from "../lib/api";
+import {
+  fetchAdminNotifications,
+  fetchAdminOrders,
+  fetchAnalytics,
+  fetchFinanceOverview,
+  fetchOutstanding,
+} from "../lib/api";
 import { adminTheme, brand, WEB_ADMIN_URL } from "../lib/config";
 import { istToday } from "../lib/finance";
 import { formatPaise } from "../lib/format";
+import { roleLabel } from "../lib/roles";
+import type { AnalyticsDay } from "../lib/types";
 
 /**
  * Admin dashboard home (admin redesign) — this screen used to be the
@@ -42,20 +50,28 @@ function istDateOf(iso: string): string {
   }).format(new Date(iso));
 }
 
+/**
+ * Menu with Delta 1 tier visibility: items carrying minLevel 2
+ * (Finance, Reports, Pricing, Settings, Expenses) are hidden for
+ * ops_manager accounts — the same sections the web shell hides, and
+ * the API would answer 403 FORBIDDEN_ROLE for their mutations.
+ */
 const MENU_GROUPS: {
   heading: string;
-  items: { label: string; monogram: string; note: string; href: Href }[];
+  items: { label: string; monogram: string; note: string; href: Href; minLevel?: number }[];
 }[] = [
   {
     heading: "Main",
     items: [
       { label: "Order queue", monogram: "OQ", note: "Every order and pickup request", href: "/admin" },
       { label: "Stage queues", monogram: "SQ", note: "Who is waiting at each handover point, per employee", href: "/admin-stages" },
+      { label: "Notifications", monogram: "NT", note: "Refunds waiting, stuck orders, failed payments, expiring vouchers", href: "/admin-notifications" },
     ],
   },
   {
     heading: "Management",
     items: [
+      { label: "Customers", monogram: "CU", note: "Accounts, order history, lifetime spend, disable / enable", href: "/admin-customers" },
       { label: "Branches & plants", monogram: "BR", note: "Plants, collection centers and branches", href: "/admin-branches" },
       { label: "Employees & roles", monogram: "EM", note: "Staff records across the 12-role matrix", href: "/admin-employees" },
       { label: "Gift vouchers", monogram: "GV", note: "Campaigns, prepaid cards, issue / cancel / expire, history", href: "/admin-vouchers" },
@@ -64,16 +80,16 @@ const MENU_GROUPS: {
   {
     heading: "Catalogue & Config",
     items: [
-      { label: "Pricing editor", monogram: "PR", note: "Prices and express multipliers — live at checkout on save", href: "/admin-pricing" },
-      { label: "Business settings", monogram: "ST", note: "Phone, WhatsApp, delivery thresholds and more", href: "/admin-settings" },
+      { label: "Pricing editor", monogram: "PR", note: "Prices and express multipliers — live at checkout on save", href: "/admin-pricing", minLevel: 2 },
+      { label: "Business settings", monogram: "ST", note: "Phone, WhatsApp, delivery thresholds and more", href: "/admin-settings", minLevel: 2 },
     ],
   },
   {
     heading: "Finance",
     items: [
-      { label: "Finance", monogram: "FI", note: "Day summary, cash closing, outstanding balances, refund queue", href: "/admin-finance" },
-      { label: "Expenses", monogram: "EX", note: "The spend ledger behind the sales-vs-expense report", href: "/admin-expenses" },
-      { label: "Reports & analytics", monogram: "RP", note: "Sales, aging, employee performance, vouchers, retention", href: "/admin-reports" },
+      { label: "Finance", monogram: "FI", note: "Day summary, cash closing, outstanding balances, refund queue", href: "/admin-finance", minLevel: 2 },
+      { label: "Expenses", monogram: "EX", note: "The spend ledger behind the sales-vs-expense report", href: "/admin-expenses", minLevel: 2 },
+      { label: "Reports & analytics", monogram: "RP", note: "Sales, aging, employee performance, vouchers, retention", href: "/admin-reports", minLevel: 2 },
     ],
   },
 ];
@@ -89,17 +105,22 @@ function StatTile({ label, value, sub }: { label: string; value: string; sub: st
 }
 
 export default function AdminMoreScreen() {
-  const { user, profileName } = useAuth();
+  const { user, profileName, role, roleLevel } = useAuth();
   const [stats, setStats] = useState<DashStats | null>(null);
+  const [week, setWeek] = useState<AnalyticsDay[] | null>(null);
+  const [highCount, setHighCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const [orders, overview, outstanding] = await Promise.all([
-        fetchAdminOrders(),
-        fetchFinanceOverview(istToday()),
-        fetchOutstanding(),
-      ]);
+      const [orders, overview, outstanding, analytics, notifications] =
+        await Promise.all([
+          fetchAdminOrders(),
+          fetchFinanceOverview(istToday()),
+          fetchOutstanding(),
+          fetchAnalytics(7).catch(() => null),
+          fetchAdminNotifications().catch(() => null),
+        ]);
       const today = istToday();
       setStats({
         ordersToday: orders.filter((o) => istDateOf(o.created_at) === today).length,
@@ -108,6 +129,8 @@ export default function AdminMoreScreen() {
         outstandingPaise: outstanding.reduce((s, r) => s + r.outstandingPaise, 0),
         outstandingCount: outstanding.length,
       });
+      setWeek(analytics?.series ?? null);
+      setHighCount(notifications?.counts.high ?? 0);
       setError(null);
     } catch {
       setError("Could not load the dashboard figures.");
@@ -123,6 +146,16 @@ export default function AdminMoreScreen() {
 
   const displayName = profileName ?? user?.email ?? "Admin";
 
+  // Delta 1: sections above the caller's tier are not rendered.
+  const visibleGroups = MENU_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => roleLevel >= (item.minLevel ?? 0)),
+  })).filter((group) => group.items.length > 0);
+
+  const weekOrders = week?.reduce((s, d) => s + d.orders, 0) ?? 0;
+  const weekRevenue = week?.reduce((s, d) => s + d.revenuePaise, 0) ?? 0;
+  const weekMax = Math.max(1, ...(week ?? []).map((d) => d.orders));
+
   return (
     <Screen admin>
       {/* Slate header block */}
@@ -130,7 +163,7 @@ export default function AdminMoreScreen() {
         <Text style={dash.headerTitle}>Z-clean Admin</Text>
         <Text style={dash.headerName}>{displayName}</Text>
         {profileName && user?.email ? <Text style={dash.headerEmail}>{user.email}</Text> : null}
-        <Text style={dash.headerRole}>Administrator</Text>
+        <Text style={dash.headerRole}>{roleLabel(role)}</Text>
       </View>
 
       {/* Stat tiles */}
@@ -167,8 +200,44 @@ export default function AdminMoreScreen() {
         </View>
       )}
 
+      {/* Last 7 days (Delta 1 — same analytics endpoint as the web charts) */}
+      {week ? (
+        <View style={dash.weekCard}>
+          <View style={dash.weekHead}>
+            <Text style={dash.weekTitle}>Last 7 days</Text>
+            {highCount > 0 ? (
+              <Pressable onPress={() => router.push("/admin-notifications")}>
+                <Text style={dash.weekAlert}>
+                  {highCount} high-priority alert{highCount === 1 ? "" : "s"}
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
+          <Text style={dash.weekFigures}>
+            {weekOrders} order{weekOrders === 1 ? "" : "s"} · {formatPaise(weekRevenue)} collected
+          </Text>
+          <View style={dash.weekBars}>
+            {week.map((d) => (
+              <View key={d.date} style={dash.weekBarCol}>
+                <View style={dash.weekBarTrack}>
+                  <View
+                    style={[
+                      dash.weekBarFill,
+                      { height: `${Math.max(4, (d.orders / weekMax) * 100)}%` },
+                    ]}
+                  />
+                </View>
+                <Text style={dash.weekBarLabel}>
+                  {d.date.slice(8)}/{d.date.slice(5, 7)}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      ) : null}
+
       {/* Grouped menu */}
-      {MENU_GROUPS.map((group) => (
+      {visibleGroups.map((group) => (
         <View key={group.heading} style={dash.group}>
           <Text style={dash.groupHeading}>{group.heading}</Text>
           <View style={dash.groupCard}>
@@ -281,6 +350,36 @@ const dash = StyleSheet.create({
   menuLabel: { fontSize: 15, fontWeight: "700", color: brand.ink },
   menuNote: { fontSize: 12.5, color: adminTheme.muted, lineHeight: 17 },
   chevron: { fontSize: 22, color: adminTheme.muted, fontWeight: "600" },
+  weekCard: {
+    backgroundColor: brand.white,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: adminTheme.cardBorder,
+    padding: 14,
+    gap: 8,
+  },
+  weekHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  weekTitle: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: adminTheme.muted,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  weekAlert: { fontSize: 12.5, fontWeight: "700", color: "#b91c1c" },
+  weekFigures: { fontSize: 15, fontWeight: "700", color: adminTheme.heading },
+  weekBars: { flexDirection: "row", gap: 8, alignItems: "flex-end" },
+  weekBarCol: { flex: 1, alignItems: "center", gap: 4 },
+  weekBarTrack: {
+    width: "100%",
+    height: 56,
+    justifyContent: "flex-end",
+    backgroundColor: adminTheme.panelBg,
+    borderRadius: 6,
+    overflow: "hidden",
+  },
+  weekBarFill: { width: "100%", backgroundColor: adminTheme.accent, borderRadius: 6 },
+  weekBarLabel: { fontSize: 10.5, color: adminTheme.muted, fontWeight: "600" },
   webCard: {
     backgroundColor: brand.white,
     borderRadius: 14,

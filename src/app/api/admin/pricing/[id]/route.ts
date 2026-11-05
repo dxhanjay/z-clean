@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAdminGate } from "@/lib/admin";
+import { getAdminGate, roleGateError } from "@/lib/admin";
 import { logAudit } from "@/lib/audit";
 import { UNIT_LABELS } from "@/lib/catalogue-server";
 import { pricingUpdateSchema } from "@/lib/validation";
@@ -33,6 +33,8 @@ export async function PATCH(
   if (gate.kind === "forbidden") {
     return NextResponse.json({ error: "Admin access required." }, { status: 403 });
   }
+  const roleErr = roleGateError(gate, "admin");
+  if (roleErr) return roleErr;
   const { supabase, user } = gate;
   const { id } = await params;
 

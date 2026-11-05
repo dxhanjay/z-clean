@@ -138,8 +138,14 @@ one:
   map at all.
 - **The rider marker** sits on the last position the assigned
   rider's phone genuinely reported via the staff web app. It is
-  never animated, interpolated or advanced along the route; a
-  stale position is labelled with its last-seen time instead.
+  never advanced along the route or projected forward; a stale
+  position is labelled with its last-seen time instead.
+  *(Phase 5 amendment: when a NEW genuine report arrives, the
+  marker now glides between the two recorded positions over
+  ~1 s as a purely visual transition — it still never goes
+  beyond the newest report, and it snaps instead of gliding
+  for first fixes, long jumps, and reduced-motion visitors.
+  See the Phase 5 note below.)*
 - **The route line and "Estimated arrival"** come from the OSRM
   public router for that exact rider position and the customer's
   geocoded address, and are shown only when OSRM returns them —
@@ -150,3 +156,31 @@ one:
   and handover records — including the documented drying
   derivation (drying completes with the plant's single Processing
   handover; it is never staged as a step the data can't see).
+
+## Phase 5 note — the 3D hero (2026-11-05)
+
+The owner's reference board (received during the Phase 5 build)
+shows a pristine white dress shirt floating upright over a
+folded stack in a cool blue-grey studio. What shipped is a
+stylised **real-time interpretation** of that board, not a copy
+of any asset in it:
+
+- **The shirt is procedural geometry** — an extruded front
+  silhouette with a collar band and leaves, a buttoned placket,
+  angled sleeves and a pocket, in pearlescent cloth materials
+  (sheen + clearcoat). The folded stack is rounded slabs in the
+  site's own pastel palette. No model file, photo, or texture
+  from the reference (or anywhere else) is used; the only
+  generated textures are runtime canvas gradients.
+- **The stage matches the site's own hero**, not the board's
+  studio: the canvas is transparent over the existing pastel
+  gradient, grounded by a soft pedestal glow and contact
+  shadows.
+- **Motion follows the board's mood, not its letter**: slow
+  levitation, a gentle sway and pointer-parallax instead of any
+  copied animation, and only for visitors who can run WebGL and
+  have not asked for reduced motion — everyone else keeps the
+  Phase A photo composition, unchanged.
+- The reference's other garments (hoodies, hanging rails) were
+  deliberately not reproduced: the board's hero is ONE shirt,
+  and the scene keeps that single, readable hero object.

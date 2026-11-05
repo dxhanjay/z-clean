@@ -1,6 +1,6 @@
 import Link from "next/link";
 import CtaBand from "@/components/CtaBand";
-import HeroVisual from "@/components/HeroVisual";
+import HeroShowcase from "@/components/HeroShowcase";
 import HomeServices from "@/components/HomeServices";
 import Marquee from "@/components/Marquee";
 import Reveal from "@/components/Reveal";
@@ -124,7 +124,7 @@ export default function HomePage() {
                 </Link>
               </div>
             </div>
-            <HeroVisual />
+            <HeroShowcase />
           </div>
 
           {/* Trust strip — service facts only, no invented volumes. */}

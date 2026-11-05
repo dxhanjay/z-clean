@@ -1329,6 +1329,99 @@ the status history ride along on their stages, as before.
 Statuses, OTPs, payments and reviews are untouched by this
 phase; the dashboard cards are unchanged too.
 
+## Phase 5 — 3D experience (Scope M)
+
+The premium-motion layer: a real-time 3D hero, CSS-3D garment
+cards, and gentle motion on the live tracking map. All of it is
+progressive enhancement over the Phase A design — every surface
+keeps a complete static presentation, and the booking, dashboard
+and order flows are untouched by it. The pure motion RULES live
+in `src/lib/motion.ts` (tests: `scripts/test-motion.mjs`, wired
+into `npm test`); components own only the side effects.
+
+### The 3D hero (homepage only)
+
+`src/components/HeroShowcase.tsx` renders the static photo
+composition (`HeroVisual`) by default — that is the server
+render, the loading state, and the permanent presentation for
+two of the three fallback cases below. Only when the capability
+rule in `src/lib/motion.ts` (`heroRenderMode`) says yes does it
+mount `HeroScene3D` (React Three Fiber), lazy-loaded via
+`next/dynamic` with `ssr: false`:
+
+| Condition | Hero shown |
+|---|---|
+| WebGL available + motion allowed | 3D scene |
+| `prefers-reduced-motion: reduce` | Static composition |
+| WebGL unavailable / context fails | Static composition |
+| Scene chunk loading or throws | Static composition (error boundary + `onError` fallback) |
+
+The scene itself is a stylised real-time interpretation of the
+owner's reference board: **one pristine white dress shirt**
+floating upright — collar band and leaves, a buttoned front
+placket, long sleeves angled gently down, a chest pocket —
+beside a neat **folded-garment stack**, over a soft pedestal
+glow on the hero's pastel backdrop, with sparse drifting
+particles, slow levitation, a subtle sway, and damped
+pointer-parallax. Lighting is three directional lights + ambient
+(no shadow maps; the ground shadow is drei `ContactShadows`).
+
+**Licence: every mesh is procedural geometry** built in
+`src/components/HeroScene3D.tsx` (an extruded shirt silhouette,
+cylinders, rounded boxes) with cloth-like physical materials
+(sheen + a touch of clearcoat). There are **no model files, no
+image textures and no external assets**; the only textures are
+canvas radial gradients generated at runtime (particle sprite,
+ground glow). Nothing was taken from the reference site.
+
+### Performance contract (verified in the production build)
+
+- three.js ships in **its own lazy chunks** (five files, listed
+  in `react-loadable-manifest.json` against
+  `HeroShowcase.tsx -> ./HeroScene3D`). A manifest sweep after
+  the Phase 5 build confirmed **none of the 104 routes' initial
+  bundles contains any of them** — `/order`, `/dashboard` and
+  `/orders/[id]` First Load JS are byte-for-byte the Phase D
+  numbers (140 / 136 / 200 kB); `/` rises 107 → 117 kB, which is
+  the showcase/tilt/motion code itself, not three.js. The served
+  homepage HTML references no 3D chunk at all.
+- The canvas is `pointer-events: none` (parallax reads a window
+  listener), so it can never block the hero CTAs.
+- DPR is capped at 2 (1.5 on small screens); the render loop
+  pauses when the hero scrolls off-screen or the tab hides
+  (IntersectionObserver + visibilitychange → `frameloop`).
+- Geometry counts are tiny (one extruded silhouette, ~20 small
+  meshes, 110 points).
+
+### Interactive garment cards (CSS 3D, no WebGL)
+
+`ServiceCard` — the shared garment card on the homepage and the
+services index — is wrapped in `src/components/motion/Tilt.tsx`:
+a fine pointer tips the card toward the cursor (clamped to
+±8° by `tiltFromPointer`) and sweeps a soft sheen across it.
+Touch/coarse pointers and reduced-motion visitors get exactly
+the Phase A card; the tilt writes styles directly to the DOM
+node (no re-render per move), the sheen overlay is
+pointer-events-none, and keyboard focus is unchanged.
+
+### Tracking motion (Phase D map)
+
+- When a **new real position** arrives, the rider marker now
+  **glides** from the previous recorded position to the new one
+  over ~1 s (`planMarkerTransition` / `markerPositionAt` in
+  `src/lib/motion.ts`). It is a visual transition between two
+  genuine reports only: it never goes beyond the newest
+  recorded point, never follows the route, and it **snaps**
+  instead for a first fix, a near-identical point, a jump over
+  1.5 km, or a reduced-motion visitor.
+- The route line draws itself on (dash-offset) the first time
+  each OSRM geometry appears; reduced-motion skips the draw-on.
+- The rider pin carries a soft pulse ring **only while the card
+  is LIVE** — stale and waiting states never pulse.
+- Everything else about Phase D is unchanged: the visibility
+  states, stale threshold (3 minutes), merge semantics
+  (newer `recordedAt` wins) and chip hide-rules are byte-identical.
+
 ## Setup
 
 ```bash

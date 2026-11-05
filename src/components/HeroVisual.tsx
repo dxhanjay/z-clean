@@ -11,7 +11,7 @@ import { aboutImages, heroImages } from "@/lib/media";
  * `.zc-float` in globals.css).
  */
 
-function AnnotationChip({
+export function AnnotationChip({
   text,
   className,
 }: {

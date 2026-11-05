@@ -2,11 +2,15 @@ import Link from "next/link";
 import type { Service } from "@/lib/services";
 import { serviceImages } from "@/lib/media";
 import { formatInr } from "@/lib/pricing";
+import Tilt from "@/components/motion/Tilt";
 
 /**
  * Service card (Phase A redesign) — floating garment card in the new
  * language: oversized radius, soft shadow, a small coloured corner
- * tab, and a hover lift. `fromPriceInr` is optional: the homepage
+ * tab, and a hover lift. Phase 5 wraps it in the Tilt shell:
+ * a fine pointer tips the card in CSS 3D with a sheen sweep
+ * (rules in src/lib/motion.ts; touch and reduced-motion visitors
+ * get the Phase A card exactly as before). `fromPriceInr` is optional: the homepage
  * passes the live catalogue's lowest rate for the service ("From
  * ₹X"); surfaces that don't load the catalogue (the services index)
  * omit it and show the priced-by unit exactly as before.
@@ -57,6 +61,7 @@ export default function ServiceCard({
 }) {
   const image = serviceImages[service.slug];
   return (
+    <Tilt className="relative h-full rounded-[2rem]">
     <article className="group relative flex h-full flex-col overflow-hidden rounded-[2rem] bg-white shadow-soft ring-1 ring-mist-200/70 transition-all duration-300 hover:-translate-y-1 hover:shadow-soft-lg">
       {image ? (
         <div className="relative overflow-hidden">
@@ -98,5 +103,6 @@ export default function ServiceCard({
         </Link>
       </div>
     </article>
+    </Tilt>
   );
 }

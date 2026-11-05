@@ -232,6 +232,39 @@ body {
   transform: scaleX(1);
 }
 
+/* ---- Phase 5: card tilt shell + live rider-pin pulse ---- */
+
+/* Tilt.tsx writes the transform inline; this transition is what
+   makes the tip (and the settle on pointer-leave) feel damped
+   instead of rigid. */
+.zc-tilt {
+  transition: transform 160ms ease-out;
+  will-change: transform;
+}
+
+/* Expanding ring behind the rider's pin, LIVE state only (the
+   tracking card mounts it solely while the feed is fresh — stale
+   and waiting states never pulse). Purely decorative emphasis of
+   a real state; the pin's position is untouched by it. */
+@keyframes zc-pin-pulse {
+  from {
+    transform: scale(0.55);
+    opacity: 0.55;
+  }
+  to {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+}
+.zc-pin-pulse {
+  position: absolute;
+  inset: -7px;
+  border-radius: 9999px;
+  background: rgb(47 150 135 / 0.35);
+  animation: zc-pin-pulse 1.8s ease-out infinite;
+  pointer-events: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -242,8 +275,15 @@ body {
   .skeleton,
   .page-enter,
   .zc-float,
-  .zc-float-slow {
+  .zc-float-slow,
+  .zc-pin-pulse {
     animation: none;
+  }
+  .zc-pin-pulse {
+    opacity: 0;
+  }
+  .zc-tilt {
+    transition: none;
   }
   .btn-press {
     transition: none;

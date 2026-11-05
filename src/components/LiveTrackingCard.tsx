@@ -260,6 +260,7 @@ export default function LiveTrackingCard({
                 facility={feed.facility}
                 routeLine={routeLine}
                 riderLabel={name ? `${name} (your rider)` : "Your rider"}
+                pulse={state.kind === "live"}
               />
             </div>
           </div>

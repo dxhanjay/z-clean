@@ -3,6 +3,49 @@
 All notable changes to Z-clean. (This file was started at Delta 1;
 earlier history lives in the README's phase sections and the git log.)
 
+## Phase 5 — 3D experience, Scope M (2026-11-05)
+
+### Added
+- **3D hero (homepage only)** — `HeroScene3D` (three +
+  @react-three/fiber + @react-three/drei): a stylised real-time
+  interpretation of the owner's reference board. One pristine
+  white dress shirt floats upright (extruded silhouette, collar
+  band + leaves, buttoned placket, angled long sleeves, chest
+  pocket; pearlescent cloth via sheen + clearcoat physical
+  materials) beside a folded-garment stack, on a pastel studio
+  stage with a pedestal glow, contact shadows, sparse particles,
+  slow levitation and damped pointer-parallax. **All geometry is
+  procedural — no model files, no textures, no external assets.**
+- **Capability gate** — `HeroShowcase` + `heroRenderMode`
+  (`src/lib/motion.ts`): the static Phase A composition remains
+  the default and the fallback for reduced-motion visitors,
+  WebGL-less devices, chunk loading, and any scene error
+  (error boundary + Canvas `onError`).
+- **Card tilt** — `ServiceCard` wrapped in
+  `src/components/motion/Tilt.tsx`: fine-pointer CSS 3D tilt
+  (±8° clamp) + sheen sweep; disabled for coarse pointers and
+  reduced motion; focus behaviour unchanged.
+- **Tracking motion** — the rider marker glides ~1 s between
+  the previous and newest RECORDED positions
+  (`planMarkerTransition` / `markerPositionAt`), snapping for
+  first fixes, sub-metre steps, >1.5 km jumps and reduced
+  motion; the OSRM route line draws on when new geometry
+  appears; the rider pin pulses only in the LIVE state.
+- **Tests** — `scripts/test-motion.mjs` (32 assertions: hero
+  mode matrix, tilt geometry/clamps, glide planning, easing and
+  interpolation bounds), wired in as `test:motion`. Full suite:
+  897 passed, 0 failed (865 baseline untouched).
+
+### Performance
+- three.js ships in five lazy chunks bound to
+  `HeroShowcase.tsx -> ./HeroScene3D` in the loadable manifest;
+  verified that **no route's initial bundle** (104 checked)
+  contains any of them. First Load JS: `/order` 140 kB,
+  `/dashboard` 136 kB, `/orders/[id]` 200 kB — all unchanged;
+  `/` 107 → 117 kB (showcase/tilt/motion code only). Canvas is
+  pointer-events:none, DPR-capped (≤2, ≤1.5 small screens), and
+  its render loop pauses off-screen / on hidden tabs.
+
 ## Geocode fallback ladder + tracking-feed healing (2026-11-05)
 
 Fixed the destination pin that never appeared: the geocoder

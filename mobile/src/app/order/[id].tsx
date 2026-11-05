@@ -3,6 +3,7 @@ import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
+import ReviewCard from "../../components/ReviewCard";
 import SupportCard from "../../components/SupportCard";
 import {
   Badge,
@@ -237,6 +238,10 @@ export default function OrderDetailScreen() {
           onPress={() => void Linking.openURL(`${API_BASE_URL}/orders/${order.id}/receipt`)}
         />
       </Card>
+
+      {order.status === "DELIVERED" ? (
+        <ReviewCard orderId={order.id} existingReview={order.review ?? null} />
+      ) : null}
 
       <SupportCard orderRef={order.id.slice(0, 8).toUpperCase()} />
     </Screen>

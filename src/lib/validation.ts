@@ -487,6 +487,33 @@ export const pushUnregisterSchema = z.object({
 
 export type PushUnregisterInput = z.infer<typeof pushUnregisterSchema>;
 
+/* Delta 3 — customer reviews. Bounds mirror the DB checks in
+   supabase/schema_v9.sql (rating 1–5, text 3–1000 chars); one review
+   per order is the unique(order_id) constraint, mapped to
+   409 ALREADY_REVIEWED by the route. */
+
+export const reviewCreateSchema = z.object({
+  orderId: z.string().uuid("That order reference is not valid."),
+  rating: z
+    .number()
+    .int("Please choose a star rating.")
+    .min(1, "Please choose a star rating.")
+    .max(5, "Ratings go up to 5 stars."),
+  text: z
+    .string()
+    .trim()
+    .min(3, "Please write a few words about your order.")
+    .max(1000, "Reviews are limited to 1000 characters."),
+});
+
+export type ReviewCreateInput = z.infer<typeof reviewCreateSchema>;
+
+export const reviewModerationSchema = z.object({
+  approved: z.boolean(),
+});
+
+export type ReviewModerationInput = z.infer<typeof reviewModerationSchema>;
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type ContactInput = z.infer<typeof contactSchema>;

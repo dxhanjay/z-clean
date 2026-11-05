@@ -7,6 +7,7 @@ import { businessSettings, hasRazorpayPaymentLink } from "@/lib/config";
 import { isPaymentRetryEligible } from "@/lib/payment-retry";
 import { loadRazorpayScript } from "@/lib/razorpay-checkout";
 import OrderTimeline, { type TimelineEvent } from "@/components/OrderTimeline";
+import ReviewForm from "@/components/ReviewForm";
 import { Skeleton, SkeletonText } from "@/components/Skeleton";
 import {
   getDemoOrder,
@@ -57,6 +58,14 @@ interface LiveOrder {
   created_at: string;
   addresses: { line: string; area: string | null; city: string; pincode: string } | null;
   items: LiveOrderItem[];
+  /** Delta 3: the owner's own review of this order, or null. */
+  review?: {
+    id: string;
+    rating: number;
+    text: string;
+    approved: boolean;
+    createdAt: string;
+  } | null;
   /** Phase 9 money summary (null until schema v5 data is composed). */
   finance?: {
     effectivePaidPaise: number;
@@ -530,6 +539,21 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             ))}
           </ol>
         </div>
+      )}
+
+      {state === "live" && status === "DELIVERED" && (
+        <ReviewForm
+          orderId={orderId}
+          existingReview={
+            liveOrder!.review
+              ? {
+                  rating: liveOrder!.review.rating,
+                  text: liveOrder!.review.text,
+                  approved: liveOrder!.review.approved,
+                }
+              : null
+          }
+        />
       )}
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px]">

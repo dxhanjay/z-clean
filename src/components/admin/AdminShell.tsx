@@ -103,6 +103,15 @@ const MENU: MenuGroup[] = [
           </I>
         ),
       },
+      {
+        href: "/admin/reviews",
+        label: "Reviews",
+        icon: (
+          <I>
+            <path d="M12 3.6l2.5 5.1 5.6.8-4 4 1 5.6-5.1-2.7-5.1 2.7 1-5.6-4-4 5.6-.8z" />
+          </I>
+        ),
+      },
     ],
   },
   {

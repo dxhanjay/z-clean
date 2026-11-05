@@ -3,6 +3,46 @@
 All notable changes to Z-clean. (This file was started at Delta 1;
 earlier history lives in the README's phase sections and the git log.)
 
+## Delta 3 — Laundra fidelity pass, real reviews & blog (2026-11-05)
+
+Requires `supabase/schema_v9.sql` (apply before deploying). Design
+comparison: `FIDELITY_NOTES.md`.
+
+### Added
+- **Reviews system** — `reviews` table (schema_v9: one per order,
+  owner + DELIVERED insert policy, approved-only public reads,
+  admin moderation). `POST /api/reviews`
+  (409 ALREADY_REVIEWED / 422 ORDER_NOT_DELIVERED), public
+  `GET /api/reviews/approved` (first name + area only, latest 12),
+  admin `GET /api/admin/reviews` + `PATCH`/`DELETE
+  /api/admin/reviews/[id]` (admin tier, audit-logged
+  review.approve / review.reject / review.delete) and the
+  `/admin/reviews` moderation page (nav entry "Reviews").
+  `GET /api/orders/[id]` now returns the owner's `review`.
+- **Review prompts** — web order page (`ReviewForm`) and mobile
+  order screen (`ReviewCard`) on DELIVERED orders, with a
+  thank-you state that discloses the moderation step.
+- **Homepage Testimonials** — renders approved reviews only;
+  **hidden entirely while there are none**. No seed/placeholder
+  testimonials exist anywhere.
+- **Blog** — `src/content/blog.ts` with three original articles
+  (silk & festive wear care; wash & fold vs wash & iron vs dry
+  cleaning; monsoon laundry guide), `/blog` + `/blog/[slug]`
+  (SSG), homepage blog section, header + footer Blog links.
+- **Homepage teasers** — pricing teaser fed by the DB-first
+  storefront catalogue, FAQ teaser sharing `src/lib/faqs.ts` with
+  the FAQ page, hero trust strip of service facts.
+- **Tests** — `test:reviews` (28) and `test:blog` (48, incl. the
+  fabricated-claims guard); suite total 602, all green.
+
+### Changed
+- Homepage rhythm/scale pass (see FIDELITY_NOTES.md): larger hero
+  headline, numbered why-choose-us cards, one section padding and
+  heading scale with eyebrows, homepage marked `force-dynamic`.
+- Footer: Blog link, opening-hours line (when configured), and an
+  "Areas we serve" strip (13 areas with pincodes).
+- Header nav: Blog added; desktop gap tightened to fit.
+
 ## Delta 2 — Push notifications & in-app support (2026-11-05)
 
 Requires `supabase/schema_v8.sql` (apply before deploying).

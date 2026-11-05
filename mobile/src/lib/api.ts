@@ -16,6 +16,7 @@ import type {
   GiftVoucher,
   MyOrderSummary,
   OrderPaymentsView,
+  OrderReview,
   OutstandingRow,
   PlaceOrderResult,
   PricingGroup,
@@ -153,6 +154,26 @@ export async function fetchMyOrders(): Promise<MyOrderSummary[]> {
 export async function fetchOrderDetail(id: string): Promise<CustomerOrderDetail> {
   const data = await apiFetch<{ mode: string; order: CustomerOrderDetail }>(`/api/orders/${id}`);
   return data.order;
+}
+
+/* ---------------- Reviews (Delta 3) ---------------- */
+
+/**
+ * Submit a review for a DELIVERED order (POST /api/reviews). The
+ * review is created UNAPPROVED — staff moderation publishes it.
+ * Throws ApiError with code "ALREADY_REVIEWED" (409) or
+ * "ORDER_NOT_DELIVERED" (422) from the server's integrity checks.
+ */
+export async function submitReview(
+  orderId: string,
+  rating: number,
+  text: string,
+): Promise<OrderReview> {
+  const data = await apiFetch<{ mode: string; review: OrderReview }>("/api/reviews", {
+    method: "POST",
+    body: JSON.stringify({ orderId, rating, text }),
+  });
+  return data.review;
 }
 
 /* ---------------- Admin ---------------- */

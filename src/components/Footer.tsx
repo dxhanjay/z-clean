@@ -2,6 +2,7 @@ import Link from "next/link";
 import { businessSettings } from "@/lib/config";
 import { getBusinessSettings } from "@/lib/business-settings";
 import { services } from "@/lib/services";
+import { DEMO_CITY, serviceAreas } from "@/lib/pricing";
 
 export default async function Footer() {
   // Phone comes from the owner-editable settings table when configured
@@ -43,6 +44,7 @@ export default async function Footer() {
             <li><Link href="/about" className="hover:text-brand-700">About us</Link></li>
             <li><Link href="/process" className="hover:text-brand-700">How it works</Link></li>
             <li><Link href="/pricing" className="hover:text-brand-700">Pricing</Link></li>
+            <li><Link href="/blog" className="hover:text-brand-700">Blog</Link></li>
             <li><Link href="/faq" className="hover:text-brand-700">FAQ</Link></li>
             <li><Link href="/dashboard" className="hover:text-brand-700">My orders</Link></li>
             <li><Link href="/privacy" className="hover:text-brand-700">Privacy policy</Link></li>
@@ -64,7 +66,33 @@ export default async function Footer() {
             ) : (
               <li>Contact details will be published here at launch.</li>
             )}
-            <li>{businessSettings.serviceAreasNote}</li>
+            {businessSettings.openingHours ? (
+              <li>Open: {businessSettings.openingHours}</li>
+            ) : null}
+            <li>
+              Serving {serviceAreas.length} areas across {DEMO_CITY} — see
+              the full list below.
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      {/* Areas served — the same 13 areas the booking flow gates on
+          (src/lib/pricing.ts mirrors the service_areas table). */}
+      <div className="border-t border-brand-100">
+        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+          <p className="text-sm font-bold uppercase tracking-wide text-ink-900">
+            Areas we serve in {DEMO_CITY}
+          </p>
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {serviceAreas.map((a) => (
+              <li
+                key={`${a.area}-${a.pincode}`}
+                className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-ink-700"
+              >
+                {a.area} · {a.pincode}
+              </li>
+            ))}
           </ul>
         </div>
       </div>

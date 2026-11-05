@@ -7,6 +7,7 @@ const navLinks = [
   { href: "/process", label: "How It Works" },
   { href: "/about", label: "About" },
   { href: "/faq", label: "FAQ" },
+  { href: "/blog", label: "Blog" },
   { href: "/contact", label: "Contact" },
 ];
 
@@ -22,7 +23,7 @@ export default function Header() {
           Z<span className="text-brand-600">-clean</span>
         </Link>
 
-        <nav aria-label="Primary" className="hidden items-center gap-6 lg:flex">
+        <nav aria-label="Primary" className="hidden items-center gap-5 lg:flex xl:gap-6">
           {navLinks.map((link) => (
             <Link
               key={link.href}

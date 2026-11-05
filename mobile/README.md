@@ -148,6 +148,19 @@ two must stay in lock-step.
   owner sets one). WhatsApp/email text is pre-filled with the order
   reference when opened from an order.
 
+## Delta 3 — order reviews in-app
+
+- The order tracking screen shows a **review card** on DELIVERED
+  orders (`src/components/ReviewCard.tsx`): star picker + text,
+  submitted via `submitReview` in `src/lib/api.ts` to
+  `POST /api/reviews`. `GET /api/orders/[id]` now carries the
+  customer's own `review` (`OrderReview` in `src/lib/types.ts`), so
+  an already-reviewed order shows the thank-you state instead —
+  including the note that reviews are checked by the team before
+  they appear on the website (staff moderation, web README
+  "Delta 3"). A 409 ALREADY_REVIEWED (e.g. reviewed on the web
+  first) resolves to the same grateful state.
+
 ## Not yet
 
 - Online (Razorpay) payment in-app.

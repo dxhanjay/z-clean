@@ -39,6 +39,15 @@ export interface OrderFinance {
   refunds: OrderFinancePayment[];
 }
 
+/** The signed-in customer's own review of an order (Delta 3). */
+export interface OrderReview {
+  id: string;
+  rating: number;
+  text: string;
+  approved: boolean;
+  createdAt: string;
+}
+
 export interface CustomerOrderDetail {
   id: string;
   status: string;
@@ -60,6 +69,8 @@ export interface CustomerOrderDetail {
   qr_payload: string | null;
   delivery_fee_paise: number;
   finance: OrderFinance | null;
+  /** Delta 3: the customer's review of this order, or null. */
+  review: OrderReview | null;
   handover_milestones: {
     pointId: string;
     label: string;

@@ -64,6 +64,26 @@ export async function GET(
     .eq("order_id", id)
     .order("created_at", { ascending: true });
 
+  // Delta 3: the owner's own review of this order (RLS scopes the read
+  // to them), so the order page can show the review form — or the
+  // thank-you state — without a second request. Null until reviewed.
+  // A missing reviews table (schema_v9 not yet applied) simply reads
+  // as "no review yet".
+  const { data: reviewRow } = await supabase
+    .from("reviews")
+    .select("id, rating, text, approved, created_at")
+    .eq("order_id", id)
+    .maybeSingle();
+  const review = reviewRow
+    ? {
+        id: reviewRow.id as string,
+        rating: reviewRow.rating as number,
+        text: reviewRow.text as string,
+        approved: reviewRow.approved as boolean,
+        createdAt: reviewRow.created_at as string,
+      }
+    : null;
+
   // total = subtotal − coupon discount − voucher (promo) discount + fee.
   // A prepaid gift card is a payment, not a discount: it never enters
   // this identity.
@@ -201,6 +221,7 @@ export async function GET(
     mode: "live",
     order: {
       ...orderRest,
+      review,
       finance: financeBlock,
       qr_payload: qrToken ? qrPayload(qrToken) : null,
       pickup_otp: order.pickup_otp_used_at ? null : order.pickup_otp,

@@ -973,6 +973,78 @@ pre-filled with the order reference.
 Tests: `npm run test:push` (token validation, chunking, message
 building, pruning decisions, status copy — wired into `npm test`).
 
+## Delta 3 — Laundra fidelity pass, real reviews & blog
+
+**Requires `supabase/schema_v9.sql`** (apply before deploying).
+The design comparison behind this delta is in `FIDELITY_NOTES.md`.
+
+### Fidelity pass (homepage + shared chrome)
+
+The homepage now follows the reference's section rhythm end to end —
+hero → trust strip → about → why-choose-us → services → how it works
+→ care process → pricing teaser → testimonials → blog → FAQ teaser →
+CTA — with one typography/spacing scale throughout (section padding
+`py-16 sm:py-20`, `text-3xl sm:text-4xl` section headings under small
+uppercase eyebrows) and the existing shared `Reveal` scroll animation
+on every section. The hero headline steps up to `text-5xl/6xl` and
+gains a **trust strip of service facts only** (areas served from
+`serviceAreas`, free pickup & delivery ≥ ₹299, regular & express,
+pay online or on delivery) — where the reference shows volume stats,
+we show facts; there are no invented numbers anywhere on the page.
+The **pricing teaser** reads the same DB-first catalogue as the
+pricing page (`loadStorefrontCatalogue`), so admin price edits move
+it too. The **FAQ teaser** and the `/faq` page now share one source
+(`src/lib/faqs.ts`). The footer gained a Blog link, opening hours
+(only when the owner configures them), and an **Areas we serve**
+strip listing the 13 Bokaro Steel City areas with pincodes — the
+same list the booking flow gates on.
+
+### Reviews — testimonials that are earned, not written
+
+`reviews` (schema_v9) is the ONLY source of testimonials:
+
+- **Write** — `POST /api/reviews` (signed-in, cookie or Bearer): the
+  order must belong to the caller and be `DELIVERED`
+  (`422 ORDER_NOT_DELIVERED`), one review per order
+  (`409 ALREADY_REVIEWED` from the `unique(order_id)` constraint),
+  rating 1–5 and text 3–1000 chars (`reviewCreateSchema`, mirroring
+  the DB CHECKs). RLS enforces the same rules again at the database.
+  Reviews are born `approved = false`.
+- **Publish** — staff moderation at `/admin/reviews`: the list
+  (`GET /api/admin/reviews?filter=pending|approved|all`, any admin
+  tier) plus `PATCH` (approve/un-approve) and `DELETE` on
+  `/api/admin/reviews/[id]`, mutations admin-tier only and
+  audit-logged (`review.approve` / `review.reject` / `review.delete`).
+  In demo mode the queue shows an explainer, never sample reviews.
+- **Read** — the homepage Testimonials section and
+  `GET /api/reviews/approved` show the latest 12 approved reviews
+  with FIRST NAME + delivery AREA only (never email/phone). **Zero
+  approved reviews → the section does not render at all.** There is
+  no seed data and no placeholder content on this path.
+- **Prompts** — `GET /api/orders/[id]` now includes the owner's own
+  `review` (or null); the web order page and the mobile order screen
+  show the form (stars + text) on DELIVERED orders and a thank-you
+  state afterwards that says plainly the review is checked by the
+  team before it appears on the website.
+
+### Blog
+
+Three original articles in `src/content/blog.ts` (typed structured
+blocks rendered by `src/components/BlogBody.tsx` — no new
+dependencies): silk saree & festive wear care (2026-11-10), wash &
+fold vs wash & iron vs dry cleaning (2026-11-06), and a monsoon
+laundry guide for Jharkhand's rains (2026-11-02). Content rule: only
+facts already true on this site (services, approved prices, areas,
+process) may be stated about Z-clean — no invented statistics or
+customer stories; `test:blog` greps for fabricated-claim phrasing.
+Pages: `/blog`, `/blog/[slug]` (SSG, with related-service CTA), a
+homepage section with the latest three, and Blog links in the header
+nav and footer.
+
+Tests: `npm run test:reviews` (28 — eligibility, byline privacy,
+stars, DTO joins) and `npm run test:blog` (48 — content contract +
+integrity guard), wired into `npm test`.
+
 ## Setup
 
 ```bash
@@ -1004,6 +1076,10 @@ cp .env.example .env.local   # fill in your Supabase + Razorpay (test) keys
    Finally, for Delta 2 (the `push_tokens` table for push
    notifications), run `supabase/schema_v8.sql` — additive and safe
    to re-run, and it must be applied BEFORE deploying the Delta 2
+   code.
+   Finally, for Delta 3 (the `reviews` table behind customer
+   testimonials), run `supabase/schema_v9.sql` — additive and safe
+   to re-run, and it must be applied BEFORE deploying the Delta 3
    code.
 2. In Supabase Auth settings, set the Site URL to your app URL
    (e.g. `http://localhost:3000` in development), and add

@@ -1098,10 +1098,29 @@ schema_v9).
 3. The rider opens the email, sets a password on
    `/staff/set-password` (same machinery as password reset), and can
    sign in at `/staff`.
-4. Re-inviting a linked employee is a no-op ("already linked"). If
-   the email already belongs to an existing account (e.g. they are
-   also a customer), that account is linked instead and the UI says
-   so — no second account is created.
+4. Re-inviting a linked employee cannot send a second invite
+   (Supabase will not invite an existing user twice), so the
+   endpoint instead emails a fresh **password-set link** (a
+   password-recovery email landing on the same
+   `/staff/set-password` page) and returns state `reset_sent`; the
+   Employees row shows a **Send password-set link** button for
+   linked staff. "Already linked" survives only as the fallback
+   when no email address exists for the linked account. If the
+   email already belongs to an existing account (e.g. they are
+   also a customer), that account is linked instead and the UI
+   says so — no second account is created.
+
+**Troubleshooting — "This invite link is not valid":** invite
+links are **single-use**. The moment one is opened, Supabase
+consumes it; reopening the same email link afterwards reports it
+expired. If a rider lands on the invalid screen (expired link, or
+one consumed by an earlier open), do not forward the old email —
+in Employees, click **Send password-set link** on their row to
+email a fresh one. (The landing pages establish the session from
+the link's URL fragment themselves — see
+`src/lib/link-session.ts` — because the PKCE-pinned browser
+client cannot consume the implicit-flow tokens GoTrue redirects
+with; that mismatch was the 2026-11-05 invite bug.)
 
 **One manual setup step:** `https://<your-domain>/staff/set-password`
 must be added to the Supabase Auth **Redirect URLs** allowlist

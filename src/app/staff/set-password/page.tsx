@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { parseLinkHash, resolveLinkSession } from "@/lib/link-session";
 import { newPasswordSchema } from "@/lib/validation";
 
 const inputClass =
@@ -17,11 +18,19 @@ type Phase = "checking" | "ready" | "invalid" | "done";
  * inviteUserByEmail with redirectTo = .../staff/set-password).
  *
  * The invite link carries a session exactly like a recovery link, so
- * this page mirrors /reset-password: detect the session, then set
- * the password through auth.updateUser. The employee record was
+ * this page mirrors /reset-password: establish the session, then
+ * set the password through auth.updateUser. The employee record was
  * already linked (employees.user_id + profiles.role='staff') by the
  * invite endpoint, so once the password is set the rider can open
  * /staff and see their assignments.
+ *
+ * Session establishment is NOT just "wait for the client": GoTrue
+ * verifies the link and redirects back with implicit-flow tokens in
+ * the URL fragment, but the @supabase/ssr browser client is pinned
+ * to PKCE and refuses implicit callbacks — so this page resolves
+ * the fragment itself via src/lib/link-session.ts (existing session
+ * → form; fragment tokens → auth.setSession; error fragment or
+ * nothing → invalid). See that module for the full post-mortem.
  *
  * SETUP: this URL must be on the Supabase Auth redirect allowlist
  * (Authentication → URL Configuration), the same place /reset-password
@@ -37,32 +46,73 @@ export default function StaffSetPasswordPage() {
 
   useEffect(() => {
     if (!configured) return;
-    let settled = false;
+    let cancelled = false;
     const supabase = createClient();
+    const hash = window.location.hash;
 
     const markReady = () => {
-      if (!settled) {
-        settled = true;
-        setPhase("ready");
-      }
+      if (!cancelled) setPhase("ready");
     };
-
-    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY" || session) markReady();
-    });
-
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) markReady();
-    });
-
-    const timer = setTimeout(() => {
-      if (!settled) {
-        settled = true;
+    const markInvalid = () => {
+      if (!cancelled) {
         setPhase((current) => (current === "checking" ? "invalid" : current));
       }
-    }, 3000);
+    };
+    const stripFragment = () => {
+      window.history.replaceState(
+        null,
+        "",
+        window.location.pathname + window.location.search,
+      );
+    };
+
+    // An error fragment (error=access_denied&error_code=otp_expired…)
+    // means the link failed — show the invalid state directly,
+    // without waiting on any session machinery.
+    if (parseLinkHash(hash).hasError) {
+      stripFragment();
+      setPhase("invalid");
+      return;
+    }
+
+    // Belt and braces: a PKCE ?code= exchange completing after first
+    // paint, or any other sign-in, still unlocks the form.
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) markReady();
+    });
+
+    void (async () => {
+      const { data } = await supabase.auth.getSession();
+      if (cancelled) return;
+      const action = resolveLinkSession({
+        hasSession: !!data.session,
+        hash,
+      });
+      if (action.kind === "ready") {
+        markReady();
+        return;
+      }
+      if (action.kind === "invalid") {
+        markInvalid();
+        return;
+      }
+      // Implicit-flow tokens from the invite link: the PKCE browser
+      // client will not consume these itself, so hand them over.
+      const { data: established, error } = await supabase.auth.setSession({
+        access_token: action.accessToken,
+        refresh_token: action.refreshToken,
+      });
+      // The tokens are single-use secrets — get them out of the URL.
+      stripFragment();
+      if (cancelled) return;
+      if (!error && established.session) markReady();
+      else markInvalid();
+    })();
+
+    const timer = setTimeout(markInvalid, 5000);
 
     return () => {
+      cancelled = true;
       sub.subscription.unsubscribe();
       clearTimeout(timer);
     };

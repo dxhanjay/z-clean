@@ -21,8 +21,17 @@ import { logAudit } from "@/lib/audit";
  *      & Roles. 'staff' never passes the admin gate — every staff
  *      power comes from order assignments.
  *
- * Idempotent-ish, per spec: an employee who is already linked returns
- * state "already_linked" (no second invite is sent). If the email
+ * Idempotent-ish, per spec: an employee who is already linked cannot
+ * be re-invited (Supabase will not invite an existing user twice),
+ * so this endpoint instead sends a password-RECOVERY email through
+ * the service-role client, landing on the same /staff/set-password
+ * page, and returns state "reset_sent". That doubles as the
+ * operational "resend my link" path: invite links are single-use,
+ * so when one expires — or was consumed before the rider finished
+ * (the 2026-11-05 incident) — the office clicks Invite again and
+ * the rider gets a fresh password-set email. Only when no email
+ * address can be found for the linked account does the endpoint
+ * fall back to the old no-op state "already_linked". If the email
  * already belongs to an EXISTING auth user (a customer account, say),
  * Supabase refuses a fresh invite — we then link that existing user
  * instead and say so (state "linked_existing"); they sign in with
@@ -68,12 +77,61 @@ export async function POST(
   }
 
   if (employee.user_id) {
+    // Already linked — a second invite is impossible, so send a
+    // password-set (recovery) email instead; see the header comment.
+    // The recipient is the linked AUTH user's email (authoritative —
+    // that is the account the password will be set on), falling back
+    // to the employee record's email if the lookup fails.
+    const admin = createAdminClient();
+    if (!admin) {
+      return NextResponse.json(
+        { error: "NOT_CONFIGURED", message: "Server configuration error." },
+        { status: 503 },
+      );
+    }
+    const { data: linkedUser } = await admin.auth.admin.getUserById(
+      employee.user_id,
+    );
+    const linkedEmail =
+      linkedUser?.user?.email?.trim() ||
+      ((employee.email as string | null)?.trim() ?? "");
+    if (!linkedEmail) {
+      // No address anywhere to send to — keep the honest no-op.
+      return NextResponse.json({
+        mode: "live",
+        state: "already_linked",
+        employeeId: id,
+        userId: employee.user_id,
+        message: `${employee.full_name} already has staff app access.`,
+      });
+    }
+    const { error: resetError } = await admin.auth.resetPasswordForEmail(
+      linkedEmail,
+      { redirectTo: `${getSiteUrl(request)}/staff/set-password` },
+    );
+    if (resetError) {
+      return NextResponse.json(
+        {
+          error: `The password-set email could not be sent: ${resetError.message}`,
+          code: "RESET_FAILED",
+        },
+        { status: 502 },
+      );
+    }
+    await logAudit(supabase, {
+      actorUserId: user.id,
+      actorLabel: user.email ?? null,
+      action: "employee.invite",
+      entity: "employees",
+      entityId: id,
+      details: { state: "reset_sent", email: linkedEmail, userId: employee.user_id },
+    });
     return NextResponse.json({
       mode: "live",
-      state: "already_linked",
+      state: "reset_sent",
       employeeId: id,
       userId: employee.user_id,
-      message: `${employee.full_name} already has staff app access.`,
+      message: `Staff login already exists for ${employee.full_name} — a password-set link was sent to ${linkedEmail}.`,
     });
   }
 

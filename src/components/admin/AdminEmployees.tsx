@@ -310,8 +310,11 @@ export default function AdminEmployees({ mode }: { mode: "live" | "demo" }) {
    * Staff app access (Staff Web App phase): invite POSTs to
    * /api/admin/employees/[id]/invite, which emails the employee a
    * set-password link and links their account (role 'staff'). The
-   * three honest states: linked (nothing to do), no email on file
-   * (cannot invite — say so), or invitable.
+   * three honest states: linked (with a "Send password-set link"
+   * resend — the endpoint answers state "reset_sent" and emails a
+   * fresh password-set link, because invite links are single-use),
+   * no email on file (cannot invite — say so), or invitable. The
+   * server's `message` is shown verbatim as feedback in every case.
    */
   async function inviteToStaffApp(emp: Employee) {
     setFeedback(null);
@@ -341,8 +344,19 @@ export default function AdminEmployees({ mode }: { mode: "live" | "demo" }) {
     if (mode !== "live") return null;
     if (emp.userId) {
       return (
-        <span className="inline-flex min-h-[44px] items-center rounded-full bg-green-50 px-4 py-2 text-sm font-bold text-green-800">
-          Staff app linked
+        <span className="inline-flex flex-wrap items-center gap-2">
+          <span className="inline-flex min-h-[44px] items-center rounded-full bg-green-50 px-4 py-2 text-sm font-bold text-green-800">
+            Staff app linked
+          </span>
+          <button
+            type="button"
+            disabled={inviteBusyId === emp.id}
+            onClick={() => void inviteToStaffApp(emp)}
+            title="Email this employee a fresh password-set link (invite links are single-use)."
+            className="min-h-[44px] rounded-full border border-brand-600 px-4 py-2 text-sm font-bold text-brand-700 hover:bg-brand-50 disabled:opacity-60"
+          >
+            {inviteBusyId === emp.id ? "Sending…" : "Send password-set link"}
+          </button>
         </span>
       );
     }

@@ -3,6 +3,47 @@
 All notable changes to Z-clean. (This file was started at Delta 1;
 earlier history lives in the README's phase sections and the git log.)
 
+## Link-session fix: staff invite / password reset landings (2026-11-05)
+
+Fixed a live bug: a staff invite link verified successfully at
+Supabase yet `/staff/set-password` showed "This invite link is not
+valid", and reopening the email link reported `otp_expired`.
+
+Root cause: GoTrue redirects verified email links back with
+implicit-flow tokens in the URL fragment, but the @supabase/ssr
+browser client is pinned to `flowType: "pkce"` and auth-js refuses
+implicit callbacks ("Not a valid PKCE flow url.") — so the session
+never reached `getSession()`/`onAuthStateChange`, while the
+single-use token was already consumed. Both landing pages only
+waited on the client and timed out into the invalid state.
+
+### Fixed
+- **Emailed-link pages resolve the fragment themselves** — new
+  pure helper `src/lib/link-session.ts`
+  (`parseLinkHash`/`resolveLinkSession`), used by both
+  `/staff/set-password` and `/reset-password` (the latter shared
+  the flaw for implicit-flow links, e.g. resets sent by the
+  service-role admin client): existing session → form; fragment
+  tokens → `auth.setSession()` (fragment stripped from the URL
+  afterwards); error fragment → invalid state immediately;
+  nothing usable → invalid after a grace period.
+- **Invite endpoint resend path** — `POST
+  /api/admin/employees/[id]/invite` for an already-linked employee
+  now sends a password-recovery email via the service-role client
+  (`resetPasswordForEmail`, redirect to `/staff/set-password`) and
+  returns state `reset_sent`, audit-logged like the invite;
+  `already_linked` remains only when no email exists for the
+  linked account. Employees UI: linked staff gain a **Send
+  password-set link** button (the endpoint's message is shown as
+  feedback, as before).
+
+### Tests
+- New `scripts/test-link-session.mjs` (`npm run
+  test:link-session`, wired into `npm test`): 16 checks over the
+  resolver — session → ready, tokens → set-session (incl. decoding),
+  error fragment → invalid (incl. precedence over a session),
+  partial/absent tokens → invalid, parser shape.
+
 ## Staff Web App + live tracking backend (2026-11-05)
 
 Schema: `supabase/schema_v10.sql` (written, applied separately).

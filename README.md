@@ -1076,6 +1076,117 @@ mobile app are untouched.
   customer counts are fabricated social proof and were NOT adopted;
   trust elements remain computed service facts only.
 
+## Staff Web App + live tracking backend (schema_v10)
+
+The field side of Z-clean: riders work from a mobile-first web app
+at `/staff` (no separate native app), and the office runs it from
+the existing admin console. Design: `STAFF_APP_SPEC.md` in the
+project root. Migration: `supabase/schema_v10.sql` (apply after
+schema_v9).
+
+### How a rider gets access (the invite lifecycle)
+
+1. The employee record needs an **email address** (Employees →
+   Edit). Without one, the invite button honestly says so — there
+   is nowhere to send the invite.
+2. An admin-tier user clicks **Invite to staff app** on the employee
+   (`POST /api/admin/employees/[id]/invite`). Supabase Auth emails
+   an invite link (`inviteUserByEmail`, service role) whose redirect
+   lands on **`/staff/set-password`**; the endpoint simultaneously
+   links the account: `employees.user_id` = the new user and
+   `profiles.role = 'staff'`.
+3. The rider opens the email, sets a password on
+   `/staff/set-password` (same machinery as password reset), and can
+   sign in at `/staff`.
+4. Re-inviting a linked employee is a no-op ("already linked"). If
+   the email already belongs to an existing account (e.g. they are
+   also a customer), that account is linked instead and the UI says
+   so — no second account is created.
+
+**One manual setup step:** `https://<your-domain>/staff/set-password`
+must be added to the Supabase Auth **Redirect URLs** allowlist
+(Authentication → URL Configuration), exactly like `/reset-password`
+was — otherwise invite links land on the site root.
+
+### Rounds: assignments
+
+- On the admin order page, the **Rider assignments** card assigns
+  the order's **pickup** and **delivery** legs (`POST/PATCH
+  /api/admin/orders/[id]/assignments`, ops_manager+). Only active
+  employees holding the leg's handover-chain role are eligible
+  (pickup → `picker`; delivery → `delivery_staff` or
+  `transporter_outbound`) — the rule is the pure
+  `canAssignEmployee` in `src/lib/tracking.ts`, re-checked on save.
+- One ACTIVE assignment per (order, leg) is enforced in the
+  database by a partial unique index; reassigning completes the old
+  row and inserts the new one. An assignment closes when its leg's
+  handover completes, or by an admin override ("Close" — for a leg
+  that will not run; normal completion stays handover-driven).
+- In `/staff`, a rider sees **only their own** active assignments
+  ("My rounds", auto-refreshing). Admin tiers get a read-only
+  support view of all rounds. Each round shows the address, a
+  Google Maps **Navigate** deep link, **Call customer**, the item
+  count, the slot, and — on delivery legs — the COD amount still to
+  collect from the finance ledger.
+
+### Location sharing — and its honest limit
+
+- The rider taps **Start sharing** on a round. The staff app uses
+  the browser Geolocation API (`watchPosition`), thinned by the
+  shared throttle (at most one ping per 15 s, only after moving
+  25 m, plus a 2-minute heartbeat) and POSTed to
+  `POST /api/tracking/ping`.
+- **Foreground only.** A web page cannot track in the background:
+  closing the tab or locking the phone pauses updates, and the
+  panel says exactly that ("keep this tab open"), requests a screen
+  Wake Lock while sharing, and explains every permission state in
+  plain language. There is no background tracking claim anywhere.
+- Authorization is **assignment-based, never role-based**: a ping
+  is accepted only when the assignment exists, belongs to the
+  caller's linked employee record, and is still active
+  (`canPingAssignment`). `rider_locations` has NO client insert
+  policy — rows are written by the API through the service role
+  only after those checks pass — and the endpoint is rate-limited
+  (12/min/user). Admins cannot ping: support view is read-only.
+- `GET /api/tracking/[orderId]` (order owner or admin tier) returns
+  the latest position, the current assignment, and coordinates for
+  the customer map (Phase D): the facility pin (the assigned
+  rider's branch `lat/lng`, set on the branch in the admin console;
+  fallback: any active pinned branch, plants first) and the
+  destination pin (the order address's geocoded `lat/lng`).
+
+### Doorstep handovers from the staff app
+
+`POST /api/staff/tasks/[assignmentId]/handover` completes the leg's
+OTP point — the rider types the **customer's 6-digit code** (QR
+scanning is not offered: the web app has no camera-scan pattern,
+and the OTP is the customer's proof either way). The assignment
+fixes the point and the receiving employee (the rider themselves);
+everything else — sequence, role eligibility, OTP attempts and
+lockout, status effects, COD cash semantics, notifications — runs
+through the SAME shared flow as the admin console
+(`src/lib/handovers-server.ts`, extracted from the admin route;
+the state machine is not forked). On delivery legs the rider ticks
+"I collected ₹X in cash" when they took the COD balance.
+
+### Roles & schema (schema_v10)
+
+- `profiles.role` gains **`'staff'`**. It is deliberately NOT an
+  admin tier: `is_admin()` is untouched, the admin gate still
+  rejects staff, and every staff capability derives from
+  assignments. A staffer's admin-API calls return 403.
+- New tables: `order_assignments`, `rider_locations` (RLS:
+  positions readable by the order's owner, admin tiers, or the
+  rider who recorded them; both are in the `supabase_realtime`
+  publication for the Phase D live map).
+- `addresses` and `branches` gain `lat`/`lng` pins. Address pins
+  are filled by a fire-and-forget **Nominatim (OpenStreetMap)**
+  geocode when an address is written (saved-address create and
+  order placement), cached on the row; failures leave the pin null
+  and never block the write. (The original schema's unused
+  `addresses.latitude/longitude` columns are left in place; reads
+  prefer the new pair and fall back to the legacy one.)
+
 ## Setup
 
 ```bash

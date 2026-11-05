@@ -27,6 +27,7 @@ import { generateOtp } from "@/lib/handovers";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { notConfiguredResponse } from "@/lib/api-errors";
 import { isAccountDisabled } from "@/lib/roles";
+import { scheduleGeocode } from "@/lib/tracking-server";
 
 /**
  * POST /api/orders — place an order (Phase 3).
@@ -299,6 +300,15 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+
+  // Geocode cache for the tracking map (Staff Web App phase):
+  // fire-and-forget — never blocks or fails the order.
+  scheduleGeocode(address.id as string, {
+    line: data.addressLine,
+    area: data.area,
+    city: data.city,
+    pincode: data.pincode,
+  });
 
   const isCod = data.paymentMethod === "cod";
   const initialStatus = nothingDue || isCod ? "PICKUP_SCHEDULED" : "PAYMENT_PENDING";

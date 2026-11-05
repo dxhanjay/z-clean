@@ -39,6 +39,8 @@ interface BranchFormState {
   pincode: string;
   managerEmployeeId: string;
   active: boolean;
+  lat: string;
+  lng: string;
 }
 
 const EMPTY_FORM: BranchFormState = {
@@ -49,6 +51,8 @@ const EMPTY_FORM: BranchFormState = {
   pincode: "",
   managerEmployeeId: "",
   active: true,
+  lat: "",
+  lng: "",
 };
 
 export default function AdminBranches({ mode }: { mode: "live" | "demo" }) {
@@ -123,6 +127,8 @@ export default function AdminBranches({ mode }: { mode: "live" | "demo" }) {
       pincode: branch.pincode ?? "",
       managerEmployeeId: branch.managerEmployeeId ?? "",
       active: branch.active,
+      lat: branch.lat !== null && branch.lat !== undefined ? String(branch.lat) : "",
+      lng: branch.lng !== null && branch.lng !== undefined ? String(branch.lng) : "",
     });
     setFieldErrors({});
     setFormError(null);
@@ -148,6 +154,32 @@ export default function AdminBranches({ mode }: { mode: "live" | "demo" }) {
       setFieldErrors(validation.errors);
       return;
     }
+    // Facility pin (schema_v10): both coordinates or neither, and
+    // each must be a real point on the globe.
+    const latText = form.lat.trim();
+    const lngText = form.lng.trim();
+    let pinLat: number | null = null;
+    let pinLng: number | null = null;
+    if (latText !== "" || lngText !== "") {
+      const latNum = Number(latText);
+      const lngNum = Number(lngText);
+      if (
+        latText === "" ||
+        lngText === "" ||
+        !Number.isFinite(latNum) ||
+        !Number.isFinite(lngNum) ||
+        Math.abs(latNum) > 90 ||
+        Math.abs(lngNum) > 180
+      ) {
+        setFieldErrors({
+          lat: "Enter both latitude and longitude as valid map coordinates, or leave both blank.",
+        });
+        return;
+      }
+      pinLat = latNum;
+      pinLng = lngNum;
+    }
+
     setFieldErrors({});
     setBusy(true);
     try {
@@ -159,6 +191,8 @@ export default function AdminBranches({ mode }: { mode: "live" | "demo" }) {
         pincode: form.pincode.trim(),
         managerEmployeeId: form.managerEmployeeId || null,
         active: form.active,
+        lat: pinLat,
+        lng: pinLng,
       };
 
       if (mode === "demo") {
@@ -172,6 +206,8 @@ export default function AdminBranches({ mode }: { mode: "live" | "demo" }) {
             pincode: payload.pincode || null,
             managerEmployeeId: payload.managerEmployeeId,
             active: payload.active,
+            lat: payload.lat,
+            lng: payload.lng,
             createdAt: new Date().toISOString(),
           };
           await saveDemo([...branches, branch]);
@@ -189,6 +225,8 @@ export default function AdminBranches({ mode }: { mode: "live" | "demo" }) {
                     pincode: payload.pincode || null,
                     managerEmployeeId: payload.managerEmployeeId,
                     active: payload.active,
+                    lat: payload.lat,
+                    lng: payload.lng,
                   }
                 : b,
             ),
@@ -348,6 +386,31 @@ export default function AdminBranches({ mode }: { mode: "live" | "demo" }) {
               className={inputClass}
             />
             {fieldErrors.pincode && <span className="text-xs font-semibold text-red-700">{fieldErrors.pincode}</span>}
+          </label>
+          <label className={labelClass}>
+            <span className={labelTextClass}>Map latitude (optional)</span>
+            <input
+              value={form.lat}
+              onChange={(e) => setForm({ ...form, lat: e.target.value })}
+              inputMode="decimal"
+              placeholder="e.g. 23.6693"
+              className={inputClass}
+            />
+            {fieldErrors.lat && <span className="text-xs font-semibold text-red-700">{fieldErrors.lat}</span>}
+          </label>
+          <label className={labelClass}>
+            <span className={labelTextClass}>Map longitude (optional)</span>
+            <input
+              value={form.lng}
+              onChange={(e) => setForm({ ...form, lng: e.target.value })}
+              inputMode="decimal"
+              placeholder="e.g. 86.1511"
+              className={inputClass}
+            />
+            <span className="text-xs text-ink-500">
+              The facility pin on the customer tracking map. In Google Maps,
+              right-click the exact spot to copy its coordinates.
+            </span>
           </label>
           <label className={labelClass}>
             <span className={labelTextClass}>Manager (optional)</span>

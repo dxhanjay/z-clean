@@ -37,7 +37,7 @@ export async function GET() {
   const { data: branches, error } = await supabase
     .from("branches")
     .select(
-      "id, name, type, address, area, pincode, manager_employee_id, active, created_at",
+      "id, name, type, address, area, pincode, manager_employee_id, active, created_at, lat, lng",
     )
     .order("created_at", { ascending: true });
   if (error) {
@@ -66,6 +66,8 @@ export async function GET() {
         : null,
       active: b.active,
       createdAt: b.created_at,
+      lat: b.lat !== null && b.lat !== undefined ? Number(b.lat) : null,
+      lng: b.lng !== null && b.lng !== undefined ? Number(b.lng) : null,
     })),
   });
 }
@@ -119,8 +121,10 @@ export async function POST(request: Request) {
       pincode: input.pincode?.trim() ? input.pincode.trim() : null,
       manager_employee_id: input.managerEmployeeId ?? null,
       active: input.active ?? true,
+      lat: input.lat ?? null,
+      lng: input.lng ?? null,
     })
-    .select("id, name, type, address, area, pincode, manager_employee_id, active, created_at")
+    .select("id, name, type, address, area, pincode, manager_employee_id, active, created_at, lat, lng")
     .single();
   if (error || !branch) {
     return NextResponse.json(
@@ -158,6 +162,8 @@ export async function POST(request: Request) {
         managerEmployeeId: branch.manager_employee_id,
         active: branch.active,
         createdAt: branch.created_at,
+        lat: branch.lat !== null && branch.lat !== undefined ? Number(branch.lat) : null,
+        lng: branch.lng !== null && branch.lng !== undefined ? Number(branch.lng) : null,
       },
     },
     { status: 201 },

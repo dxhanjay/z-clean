@@ -55,7 +55,7 @@ export async function PATCH(
 
   const { data: existing, error: loadError } = await supabase
     .from("branches")
-    .select("id, name, type, address, area, pincode, manager_employee_id, active")
+    .select("id, name, type, address, area, pincode, manager_employee_id, active, lat, lng")
     .eq("id", id)
     .maybeSingle();
   if (loadError || !existing) {
@@ -84,6 +84,20 @@ export async function PATCH(
   if (input.managerEmployeeId !== undefined)
     setField("manager_employee_id", input.managerEmployeeId, existing.manager_employee_id);
   if (input.active !== undefined) setField("active", input.active, existing.active);
+  // Facility pin for the tracking map (schema_v10) — numeric columns,
+  // so compare as numbers to catch real changes only.
+  if (input.lat !== undefined)
+    setField(
+      "lat",
+      input.lat,
+      existing.lat !== null && existing.lat !== undefined ? Number(existing.lat) : null,
+    );
+  if (input.lng !== undefined)
+    setField(
+      "lng",
+      input.lng,
+      existing.lng !== null && existing.lng !== undefined ? Number(existing.lng) : null,
+    );
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json(

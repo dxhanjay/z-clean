@@ -3,6 +3,7 @@ import { resolveRequestAuth } from "@/lib/supabase/request-auth";
 import { addressSchema } from "@/lib/validation";
 import { isPincodeServiceable } from "@/lib/pricing";
 import { demoOrNotConfigured, notConfiguredResponse } from "@/lib/api-errors";
+import { scheduleGeocode } from "@/lib/tracking-server";
 
 /**
  * /api/addresses — saved customer addresses (Phase 2).
@@ -110,6 +111,16 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+
+  // Geocode cache for the tracking map (Staff Web App phase):
+  // fire-and-forget — a geocoder failure leaves lat/lng null and
+  // never affects the saved address.
+  scheduleGeocode(row.id as string, {
+    line: parsed.data.line,
+    area: parsed.data.area,
+    city: parsed.data.city,
+    pincode: parsed.data.pincode,
+  });
 
   return NextResponse.json({ mode: "live", address: row }, { status: 201 });
 }

@@ -78,6 +78,9 @@ export default function AdminEmployees({ mode }: { mode: "live" | "demo" }) {
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<EmployeeFormState>(EMPTY_FORM);
+  // Staff Web App invite (Staff Web App phase) — which employee's
+  // invite is in flight, if any.
+  const [inviteBusyId, setInviteBusyId] = useState<string | null>(null);
 
   const loadLive = useCallback(async () => {
     try {
@@ -301,6 +304,68 @@ export default function AdminEmployees({ mode }: { mode: "live" | "demo" }) {
     } finally {
       setBusy(false);
     }
+  }
+
+  /**
+   * Staff app access (Staff Web App phase): invite POSTs to
+   * /api/admin/employees/[id]/invite, which emails the employee a
+   * set-password link and links their account (role 'staff'). The
+   * three honest states: linked (nothing to do), no email on file
+   * (cannot invite — say so), or invitable.
+   */
+  async function inviteToStaffApp(emp: Employee) {
+    setFeedback(null);
+    setFormError(null);
+    setInviteBusyId(emp.id);
+    try {
+      const res = await fetch(`/api/admin/employees/${emp.id}/invite`, {
+        method: "POST",
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        setFormError(json?.error ?? "Could not send the staff app invite.");
+        return;
+      }
+      setFeedback(
+        json?.message ?? `${emp.fullName} has been invited to the staff app.`,
+      );
+      await loadLive();
+    } catch {
+      setFormError("Could not send the staff app invite. Please try again.");
+    } finally {
+      setInviteBusyId(null);
+    }
+  }
+
+  function staffAppAction(emp: Employee) {
+    if (mode !== "live") return null;
+    if (emp.userId) {
+      return (
+        <span className="inline-flex min-h-[44px] items-center rounded-full bg-green-50 px-4 py-2 text-sm font-bold text-green-800">
+          Staff app linked
+        </span>
+      );
+    }
+    if (!emp.email) {
+      return (
+        <span
+          className="inline-flex min-h-[44px] items-center rounded-full bg-ink-500/10 px-4 py-2 text-sm font-bold text-ink-500"
+          title="Add an email address to this employee (Edit) before inviting them."
+        >
+          Invite needs an email
+        </span>
+      );
+    }
+    return (
+      <button
+        type="button"
+        disabled={inviteBusyId === emp.id}
+        onClick={() => void inviteToStaffApp(emp)}
+        className="min-h-[44px] rounded-full border border-brand-600 px-4 py-2 text-sm font-bold text-brand-700 hover:bg-brand-50 disabled:opacity-60"
+      >
+        {inviteBusyId === emp.id ? "Inviting…" : "Invite to staff app"}
+      </button>
+    );
   }
 
   function statusPill(emp: Employee) {
@@ -592,7 +657,7 @@ export default function AdminEmployees({ mode }: { mode: "live" | "demo" }) {
                   {emp.branchName ?? "No unit assigned"}
                   {emp.managerName ? ` · Reports to ${emp.managerName}` : ""}
                 </p>
-                <div className="mt-3 flex gap-2">
+                <div className="mt-3 flex flex-wrap gap-2">
                   <button
                     type="button"
                     onClick={() => openEdit(emp)}
@@ -608,6 +673,7 @@ export default function AdminEmployees({ mode }: { mode: "live" | "demo" }) {
                   >
                     {emp.employmentStatus === "active" ? "Deactivate" : "Activate"}
                   </button>
+                  {staffAppAction(emp)}
                 </div>
               </li>
             ))}
@@ -638,7 +704,7 @@ export default function AdminEmployees({ mode }: { mode: "live" | "demo" }) {
                     <td className="px-4 py-3 text-ink-700">{emp.branchName ?? "—"}</td>
                     <td className="px-4 py-3">{statusPill(emp)}</td>
                     <td className="px-4 py-3">
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <button
                           type="button"
                           onClick={() => openEdit(emp)}
@@ -654,6 +720,7 @@ export default function AdminEmployees({ mode }: { mode: "live" | "demo" }) {
                         >
                           {emp.employmentStatus === "active" ? "Deactivate" : "Activate"}
                         </button>
+                        {staffAppAction(emp)}
                       </div>
                     </td>
                   </tr>

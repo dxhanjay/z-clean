@@ -14,6 +14,7 @@ import AdminHandovers, {
   type OtpStateView,
 } from "@/components/admin/AdminHandovers";
 import AdminOrderPayments from "@/components/admin/AdminOrderPayments";
+import AdminOrderAssignments from "@/components/admin/AdminOrderAssignments";
 import { Skeleton, SkeletonText } from "@/components/Skeleton";
 import {
   completedPointIds,
@@ -619,6 +620,8 @@ export default function AdminOrderDetail({
               else void loadLive();
             }}
           />
+
+          <AdminOrderAssignments orderId={detail.id} mode={mode} />
 
           <AdminOrderPayments
             orderId={detail.id}

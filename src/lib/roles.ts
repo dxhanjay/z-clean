@@ -6,6 +6,10 @@
  * signed-in account may do in the admin panel:
  *
  *   customer (0)    — storefront only; the admin gate rejects them.
+ *   staff (0)       — Staff Web App (schema_v10): a rider/field
+ *                     account linked to an employee record. NOT an
+ *                     admin tier — the gate rejects it too; staff
+ *                     powers are assignment-based (src/lib/tracking.ts).
  *   ops_manager (1) — day-to-day operations: queues, order status,
  *                     handovers, voucher redemption, desk payments,
  *                     refund REQUESTS, closings VIEW, reports.
@@ -25,6 +29,7 @@
 
 export const USER_ROLES = [
   "customer",
+  "staff",
   "ops_manager",
   "admin",
   "super_admin",
@@ -34,6 +39,12 @@ export type UserRole = (typeof USER_ROLES)[number];
 
 export const ROLE_LEVEL: Record<UserRole, number> = {
   customer: 0,
+  // Staff (rider / field) — the Staff Web App identity (schema_v10).
+  // Level 0 like a customer and deliberately NOT an admin tier:
+  // is_admin() in the database does not know this value, the admin
+  // gate rejects it, and every staff power comes from an order
+  // ASSIGNMENT (src/lib/tracking.ts), never from this role alone.
+  staff: 0,
   ops_manager: 1,
   admin: 2,
   super_admin: 3,
@@ -41,6 +52,7 @@ export const ROLE_LEVEL: Record<UserRole, number> = {
 
 export const ROLE_LABELS: Record<UserRole, string> = {
   customer: "Customer",
+  staff: "Staff (rider / field)",
   ops_manager: "Operations Manager",
   admin: "Admin",
   super_admin: "Super Admin",

@@ -3,6 +3,76 @@
 All notable changes to Z-clean. (This file was started at Delta 1;
 earlier history lives in the README's phase sections and the git log.)
 
+## Staff Web App + live tracking backend (2026-11-05)
+
+Schema: `supabase/schema_v10.sql` (written, applied separately).
+Spec: `STAFF_APP_SPEC.md`. README section: "Staff Web App + live
+tracking backend". Tests: 701 passed, 0 failed (602 baseline + 99
+new in `scripts/test-tracking.mjs`).
+
+### Added
+- **Staff role** — `profiles.role` gains `'staff'`. It is NOT an
+  admin tier: `is_admin()` untouched, admin gate still rejects it;
+  all staff power derives from assignments.
+- **`/staff` web app** (mobile-first, pastel tool shell) — "My
+  rounds" list (own active assignments only; admin tiers get a
+  read-only support view), round detail with address, Google Maps
+  Navigate deep link, call-customer, COD-due banner, a Share
+  Location panel (Geolocation `watchPosition`, 15 s / 25 m
+  throttle + 2-min heartbeat, Wake Lock attempt, plain-language
+  permission states, explicit "keep this tab open" copy), and an
+  OTP handover panel with done states. `/staff/set-password` is
+  the invite landing page (reset-password machinery; sits outside
+  the gated staff shell by design — invite sessions arrive in the
+  URL hash). **Setup:** add the URL to the Supabase Auth redirect
+  allowlist.
+- **Invite lifecycle** — `POST /api/admin/employees/[id]/invite`
+  (admin tier): `inviteUserByEmail` via the service role → links
+  `employees.user_id` + sets `profiles.role='staff'`, audit-logged.
+  Honest states: no email on file (422 `NO_EMAIL`), already linked
+  (no-op), email already has an account (that account is linked
+  instead, and the UI says so). "Invite to staff app" button on
+  Employees with linked / needs-email states.
+- **Assignments** — `order_assignments` (one ACTIVE per order+leg,
+  partial unique index). `GET/POST/PATCH
+  /api/admin/orders/[id]/assignments` (view: any admin tier;
+  assign/reassign/close: ops_manager+). Eligibility is the leg's
+  handover-chain role on an active employee (`canAssignEmployee`).
+  Rider assignments card on the admin order detail.
+- **Tracking APIs** — `GET /api/staff/tasks` (assignment-scoped),
+  `POST /api/tracking/ping` (assignment-checked via
+  `canPingAssignment`, rate-limited 12/min/user, service-role
+  insert — `rider_locations` has no client write policy),
+  `POST /api/staff/tasks/[assignmentId]/handover`,
+  `GET /api/tracking/[orderId]` (owner-or-admin feed for the
+  Phase D customer map). `rider_locations` joins the
+  `supabase_realtime` publication.
+- **Geocoding** — fire-and-forget Nominatim on address create and
+  order placement; pins cached on `addresses.lat/lng`; failures
+  silent-null, never block the write.
+- **Branch facility pin** — `branches.lat/lng`, editable in the
+  Branches admin form/API; feeds the tracking endpoint's facility
+  coordinates.
+- **Pure lib** `src/lib/tracking.ts` — leg mapping, assignment
+  rules, ping predicate, coordinate/accuracy validation, haversine
+  + ETA (Phase D), send throttle, geocode shaping.
+
+### Changed
+- **Shared handover flow** — the admin handover route's engine was
+  extracted verbatim into `src/lib/handovers-server.ts`
+  (`completeHandover`); the admin route is now a thin wrapper with
+  identical behaviour, and the staff handover route runs the same
+  flow (assignment-scoped, service role) instead of forking the
+  state machine.
+- **SiteChrome** — storefront header/footer skipped under `/staff`
+  (except the invite landing page, which keeps the familiar frame).
+
+### Notes
+- Location sharing is **foreground-only** by platform reality; the
+  UI states this plainly and never claims background tracking.
+- The legacy unused `addresses.latitude/longitude` columns remain;
+  reads prefer `lat/lng` and fall back to them.
+
 ## Phase A — Premium website redesign (CleanPro language) (2026-11-05)
 
 Design comparison: `FIDELITY_NOTES.md` (Phase A section). Web only —

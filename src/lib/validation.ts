@@ -206,6 +206,17 @@ const optionalEmail = z
   .or(z.literal(""));
 const optionalUuid = z.string().uuid().nullable().optional();
 
+/** WGS84 coordinate fields (Staff Web App phase: branch facility pin,
+ *  tracking pings). Range-checked here and again in src/lib/tracking.ts. */
+export const latitudeField = z
+  .number()
+  .min(-90, "Latitude must be between -90 and 90")
+  .max(90, "Latitude must be between -90 and 90");
+export const longitudeField = z
+  .number()
+  .min(-180, "Longitude must be between -180 and 180")
+  .max(180, "Longitude must be between -180 and 180");
+
 export const branchCreateSchema = z.object({
   name: z.string().trim().min(2, "Enter the branch / plant / center name").max(120),
   type: branchTypeEnum,
@@ -214,6 +225,9 @@ export const branchCreateSchema = z.object({
   pincode: optionalPincode,
   managerEmployeeId: optionalUuid,
   active: z.boolean().optional(),
+  /** Facility pin for the customer tracking map (schema_v10). */
+  lat: latitudeField.nullable().optional(),
+  lng: longitudeField.nullable().optional(),
 });
 
 export const branchUpdateSchema = branchCreateSchema.partial();
@@ -513,6 +527,61 @@ export const reviewModerationSchema = z.object({
 });
 
 export type ReviewModerationInput = z.infer<typeof reviewModerationSchema>;
+
+/* ------------------------------------------------------------------ */
+/* Staff Web App — assignments, location pings, staff handovers.       */
+/* The RULES (who may be assigned, who may ping, OTP verification)     */
+/* live in src/lib/tracking.ts + src/lib/handovers.ts; these schemas   */
+/* only shape the request bodies. Coordinate RANGES are validated      */
+/* here as well as in tracking.ts (defence in depth at the boundary).  */
+/* ------------------------------------------------------------------ */
+
+export const assignmentCreateSchema = z.object({
+  leg: z.enum(["pickup", "delivery"]),
+  employeeId: z.string().uuid("Choose the employee to assign"),
+});
+
+export type AssignmentCreateInput = z.infer<typeof assignmentCreateSchema>;
+
+export const assignmentUpdateSchema = z
+  .object({
+    assignmentId: z.string().uuid("That assignment reference is not valid."),
+    /** Reassign the leg to another employee (completes the old row). */
+    employeeId: z.string().uuid("Choose the employee to assign").optional(),
+    /** "complete" closes the assignment without a handover (admin override). */
+    action: z.enum(["complete"]).optional(),
+  })
+  .refine((v) => Boolean(v.employeeId) || v.action === "complete", {
+    message: "Send either a new employeeId (reassign) or action: \"complete\".",
+  });
+
+export type AssignmentUpdateInput = z.infer<typeof assignmentUpdateSchema>;
+
+export const trackingPingSchema = z.object({
+  assignmentId: z.string().uuid("That assignment reference is not valid."),
+  lat: latitudeField,
+  lng: longitudeField,
+  accuracyM: z.number().min(0).max(100_000).optional(),
+});
+
+export type TrackingPingInput = z.infer<typeof trackingPingSchema>;
+
+export const staffHandoverSchema = z.object({
+  /** The customer's 6-digit OTP for this leg's doorstep point. */
+  otp: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, "Enter the customer's 6-digit OTP"),
+  /** Physical count handed over; defaults to the order's item count. */
+  quantity: z.number().int().min(0).max(100_000).optional(),
+  /** Delivery leg only: the rider collected the COD balance in cash. */
+  codCollected: z.boolean().optional(),
+  /** Staff report: something from the bag is missing (flag, not a block). */
+  missingItem: z.boolean().optional(),
+  note: z.string().trim().max(500).optional().or(z.literal("")),
+});
+
+export type StaffHandoverInput = z.infer<typeof staffHandoverSchema>;
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;

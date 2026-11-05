@@ -310,6 +310,9 @@ export interface Branch {
   managerEmployeeId: string | null;
   active: boolean;
   createdAt: string;
+  /** Facility pin for the tracking map (schema_v10); null until set. */
+  lat: number | null;
+  lng: number | null;
 }
 
 export interface Employee {
@@ -339,6 +342,8 @@ export const DEMO_BRANCHES: Branch[] = [
     pincode: "827010",
     managerEmployeeId: "demo-emp-1",
     active: true,
+    lat: null,
+    lng: null,
     createdAt: "2026-11-04T00:00:00.000Z",
   },
   {
@@ -350,6 +355,8 @@ export const DEMO_BRANCHES: Branch[] = [
     pincode: "827004",
     managerEmployeeId: null,
     active: true,
+    lat: null,
+    lng: null,
     createdAt: "2026-11-04T00:00:00.000Z",
   },
 ];

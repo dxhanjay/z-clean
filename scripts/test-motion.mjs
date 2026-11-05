@@ -14,6 +14,10 @@
  *      shared progress channel clamps writes, reveal stagger caps,
  *      and parallax offsets clamp; one reduced-motion gate rules
  *      all of it.
+ *   5. hero turntable (owner's reference videos) — the shirt's
+ *      endless 28 s revolution: eased-in angle from elapsed time,
+ *      exact pace after the ramp, clean wrap at 2π, and the
+ *      folded stack's counter-sway bounded to ±0.06 rad.
  * The WebGL scene, DOM tilt and Leaflet rendering are NOT unit
  * tested — only the decisions behind them are.
  * Run: `npm run test:motion`. Exits non-zero on failure.
@@ -72,6 +76,13 @@ try {
     revealDelayMs,
     parallaxOffset,
     parallaxEnabled,
+    TURNTABLE_PERIOD_S,
+    TURNTABLE_ANGULAR_SPEED,
+    TURNTABLE_EASE_IN_S,
+    STACK_SWAY_MAX_RAD,
+    STACK_SWAY_PERIOD_S,
+    turntableAngleAt,
+    stackSwayAngleAt,
   } = motion;
 
   let passed = 0;
@@ -258,6 +269,74 @@ try {
     parallaxEnabled({ prefersReducedMotion: false, targetCount: 3 }) === true &&
     parallaxEnabled({ prefersReducedMotion: true, targetCount: 3 }) === false &&
     parallaxEnabled({ prefersReducedMotion: false, targetCount: 0 }) === false);
+
+  /* 5. Hero turntable (owner's reference videos) ------------------- */
+  check("turntable: one revolution every 28 s",
+    TURNTABLE_PERIOD_S === 28);
+  check("turntable: full pace is 2π/28 ≈ 0.224 rad/s",
+    near(TURNTABLE_ANGULAR_SPEED, (Math.PI * 2) / 28, 1e-12) &&
+    TURNTABLE_ANGULAR_SPEED > 0.22 && TURNTABLE_ANGULAR_SPEED < 0.23);
+  check("turntable: ease-in lasts 1.5 s", TURNTABLE_EASE_IN_S === 1.5);
+
+  check("turntable: at rest on load (t = 0, negative, NaN → 0)",
+    turntableAngleAt(0) === 0 &&
+    turntableAngleAt(-4) === 0 &&
+    turntableAngleAt(Number.NaN) === 0);
+
+  // During the ramp the angle trails full pace: angle = ω·t²/(2T).
+  const rampMid = turntableAngleAt(TURNTABLE_EASE_IN_S / 2);
+  check("turntable: mid-ramp angle is the integrated ramp, behind full pace",
+    near(rampMid, TURNTABLE_ANGULAR_SPEED * 0.1875, 1e-9) &&
+    rampMid > 0 && rampMid < TURNTABLE_ANGULAR_SPEED * (TURNTABLE_EASE_IN_S / 2));
+  // At the end of the ramp the shirt has covered half the ramp's
+  // full-pace distance: angle = ω·T/2.
+  check("turntable: end of ramp → ω·T/2",
+    near(turntableAngleAt(TURNTABLE_EASE_IN_S), TURNTABLE_ANGULAR_SPEED * 0.75, 1e-9));
+
+  // After the ramp the pace is exact: one second adds exactly ω.
+  check("turntable: steady pace after the ramp (1 s adds ω)",
+    near(
+      turntableAngleAt(TURNTABLE_EASE_IN_S + 2) -
+        turntableAngleAt(TURNTABLE_EASE_IN_S + 1),
+      TURNTABLE_ANGULAR_SPEED,
+      1e-9,
+    ));
+  // Half a period after the ramp the shirt shows its back (+π).
+  check("turntable: half a period after the ramp → ramp angle + π",
+    near(
+      turntableAngleAt(TURNTABLE_EASE_IN_S + TURNTABLE_PERIOD_S / 2),
+      turntableAngleAt(TURNTABLE_EASE_IN_S) + Math.PI,
+      1e-6,
+    ));
+  // A full period later the angle wraps back to the same heading.
+  check("turntable: full period wraps to the same heading",
+    near(
+      turntableAngleAt(TURNTABLE_EASE_IN_S + TURNTABLE_PERIOD_S),
+      turntableAngleAt(TURNTABLE_EASE_IN_S),
+      1e-6,
+    ));
+  // The angle is always a valid heading, however long the page lives.
+  check("turntable: angle stays inside [0, 2π) forever",
+    [3, 29.5, 100, 10000, 123456.7].every((t) => {
+      const a = turntableAngleAt(t);
+      return a >= 0 && a < Math.PI * 2;
+    }));
+
+  check("turntable: no-ramp option → exact pace from t = 0",
+    near(turntableAngleAt(14, { easeInS: 0 }), Math.PI, 1e-9));
+  check("turntable: custom period respected",
+    near(turntableAngleAt(5, { periodS: 10, easeInS: 0 }), Math.PI, 1e-9));
+
+  check("stack sway: bounded by ±0.06 rad on a 90 s cycle",
+    STACK_SWAY_MAX_RAD === 0.06 && STACK_SWAY_PERIOD_S === 90);
+  check("stack sway: rest at 0, peaks at quarter period, back through 0 at half",
+    stackSwayAngleAt(0) === 0 &&
+    near(stackSwayAngleAt(STACK_SWAY_PERIOD_S / 4), 0.06, 1e-9) &&
+    near(stackSwayAngleAt(STACK_SWAY_PERIOD_S / 2), 0, 1e-9) &&
+    near(stackSwayAngleAt((3 * STACK_SWAY_PERIOD_S) / 4), -0.06, 1e-9));
+  check("stack sway: never exceeds its bound; NaN → rest",
+    [1, 7.3, 41, 88, 500].every((t) => Math.abs(stackSwayAngleAt(t)) <= 0.06) &&
+    stackSwayAngleAt(Number.NaN) === 0);
 
   console.log(`\n${passed} passed, ${failures.length} failed`);
   if (failures.length > 0) process.exit(1);

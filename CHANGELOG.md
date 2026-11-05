@@ -3,6 +3,31 @@
 All notable changes to Z-clean. (This file was started at Delta 1;
 earlier history lives in the README's phase sections and the git log.)
 
+## Hero turntable pass (2026-11-05)
+
+Owner's reference videos: the hero garment on a slow product
+turntable — continuous, unhurried, premium.
+
+### Added
+- **Turntable rotation** for the hero shirt (`GarmentGroup`
+  restructured into stage / shirt / stack groups): one full
+  revolution every 28 s (0.224 rad/s) with a 1.5 s velocity
+  ease-in from rest. The angle is a pure function of elapsed
+  clock time — `turntableAngleAt` in `src/lib/motion.ts` §5 —
+  and composes additively with the scroll offset (+0.55 rad
+  max), pointer parallax and idle sway on the shirt's Y axis.
+- **Stack counter-sway**: the folded stack stays world-anchored
+  (no turntable) with a ±0.06 rad counter-drift on a 90 s cycle
+  (`stackSwayAngleAt`), pivoting around its own base.
+- 15 new unit assertions in `scripts/test-motion.mjs` (suite
+  61 → 76; project total 926 → 941, all green). No new
+  dependencies; bundle unchanged.
+
+### Unchanged
+- All motion gates: frameloop pause off-screen / hidden tab
+  freezes the turntable with the clock; reduced-motion keeps
+  the static hero (no turntable); WebGL fallback untouched.
+
 ## Glass + 3D scroll pass (2026-11-05)
 
 Owner request: "Make my website 3d scrollable and glass effect

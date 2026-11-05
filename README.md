@@ -1530,6 +1530,35 @@ their surfaces stay crisp and solid.
   production build; no new dependencies; the three.js chunks
   are untouched and still homepage-lazy only.
 
+### Turntable pass — the hero shirt revolves (2026-11-05)
+
+Owner's reference videos set the signature motion: a product
+turntable in a glass showcase — slow, continuous, premium. The
+hero scene now runs it:
+
+- **Turntable rotation** — the shirt subgroup performs one full
+  revolution every **28 s** (0.224 rad/s), endlessly turning
+  front → side → back → front. The angle is a pure function of
+  the frame clock's elapsed time (`turntableAngleAt`,
+  `src/lib/motion.ts` §5) — never accumulated React/frame
+  state — with a **1.5 s ease-in**: angular velocity ramps
+  linearly from rest, so the shirt never jolts on load, and
+  the angle wraps cleanly at 2π.
+- **Composition** — the shirt's Y rotation is the turntable
+  angle **plus** the existing scroll offset (up to +0.55 rad),
+  pointer parallax and idle sway, all additive; levitation and
+  the shared X lean ride on the stage group as before. The
+  folded stack stays world-anchored beside the turning shirt —
+  no revolution, only a ±0.06 rad counter-sway on a 90 s cycle
+  (`stackSwayAngleAt`).
+- **Gates** — identical to all hero motion: the frameloop
+  pauses off-screen / hidden tab (freezing the clock, hence
+  the turntable), and reduced-motion visitors never mount the
+  scene, so they keep the static front view.
+- **Tests/cost**: 15 new assertions in `scripts/test-motion.mjs`
+  (76 in the suite; 941 total); no new dependencies and no
+  measurable bundle change.
+
 ## Setup
 
 ```bash

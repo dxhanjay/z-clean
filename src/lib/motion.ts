@@ -25,6 +25,13 @@ import { haversineMeters, type LatLng } from "./tracking";
  *      collapses to "no motion" for reduced-motion visitors, and
  *      every number is clamped so a stray scroll value can never
  *      over-rotate, over-drift or hide content.
+ *   5. Hero turntable (owner's reference videos) — the hero shirt
+ *      turns on a slow, endless product turntable while the folded
+ *      stack beside it only breathes a few degrees. The angle is a
+ *      pure function of elapsed time with a gentle velocity ramp
+ *      at load, so the loop is frame-rate independent, wraps
+ *      cleanly, and — like every motion here — never runs at all
+ *      for reduced-motion visitors (the scene is not mounted).
  */
 
 /* ------------------------------------------------------------------ */
@@ -294,4 +301,74 @@ export function parallaxEnabled(input: {
 }): boolean {
   if (!scrollMotionEnabled(input)) return false;
   return Number.isFinite(input.targetCount) && input.targetCount > 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* 5. Hero turntable (owner's reference videos)                        */
+/* ------------------------------------------------------------------ */
+
+/** Seconds per full turntable revolution — slow, showroom pace. */
+export const TURNTABLE_PERIOD_S = 28;
+
+/** Turntable angular speed at full pace, rad/s (≈0.224). */
+export const TURNTABLE_ANGULAR_SPEED = (Math.PI * 2) / TURNTABLE_PERIOD_S;
+
+/** Seconds over which the turntable eases in from rest at load. */
+export const TURNTABLE_EASE_IN_S = 1.5;
+
+/**
+ * Turntable angle (radians, wrapped to [0, 2π)) at an elapsed
+ * time in seconds, derived purely from the clock — never from
+ * accumulated per-frame state, so pausing the render loop (hero
+ * off-screen, tab hidden) pauses the turntable with it.
+ *
+ * Ease-in: the angular velocity ramps linearly from 0 to full
+ * pace over the first `easeInS` seconds, so the shirt never
+ * jolts into motion on load. Integrating that ramp, the angle
+ * trails the full-pace angle by exactly half the ramp: during
+ * the ramp angle = ω·t²/(2T); afterwards angle = ω·(t − T/2).
+ * Non-finite or negative elapsed times sit at the front view.
+ */
+export function turntableAngleAt(
+  elapsedSeconds: number,
+  options?: { periodS?: number; easeInS?: number },
+): number {
+  if (!Number.isFinite(elapsedSeconds) || elapsedSeconds <= 0) return 0;
+  const period =
+    options?.periodS !== undefined &&
+    Number.isFinite(options.periodS) &&
+    options.periodS > 0
+      ? options.periodS
+      : TURNTABLE_PERIOD_S;
+  const easeIn =
+    options?.easeInS !== undefined &&
+    Number.isFinite(options.easeInS) &&
+    options.easeInS >= 0
+      ? options.easeInS
+      : TURNTABLE_EASE_IN_S;
+  const omega = (Math.PI * 2) / period;
+  const t = elapsedSeconds;
+  const effective =
+    easeIn > 0 && t < easeIn ? (t * t) / (2 * easeIn) : t - easeIn / 2;
+  const angle = (omega * effective) % (Math.PI * 2);
+  return angle < 0 ? angle + Math.PI * 2 : angle;
+}
+
+/** The folded stack never turns — it only breathes this far. */
+export const STACK_SWAY_MAX_RAD = 0.06;
+
+/** Seconds per full counter-sway cycle of the folded stack. */
+export const STACK_SWAY_PERIOD_S = 90;
+
+/**
+ * The folded stack's counter-drift: a very slow sinusoid bounded
+ * by ±STACK_SWAY_MAX_RAD, so the stack grounds the composition
+ * while the shirt turns beside it. Non-finite time → at rest.
+ */
+export function stackSwayAngleAt(elapsedSeconds: number): number {
+  if (!Number.isFinite(elapsedSeconds)) return 0;
+  return (
+    STACK_SWAY_MAX_RAD *
+    Math.sin((elapsedSeconds * Math.PI * 2) / STACK_SWAY_PERIOD_S)
+  );
 }

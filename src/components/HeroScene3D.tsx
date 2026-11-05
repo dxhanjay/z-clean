@@ -6,7 +6,12 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { ContactShadows, RoundedBox } from "@react-three/drei";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { AnnotationChip } from "./HeroVisual";
-import { getHeroScrollProgress, heroScrollRotation } from "@/lib/motion";
+import {
+  getHeroScrollProgress,
+  heroScrollRotation,
+  stackSwayAngleAt,
+  turntableAngleAt,
+} from "@/lib/motion";
 
 /**
  * The 3D hero (Phase 5, Scope M — realism pass) — a real-time
@@ -37,6 +42,14 @@ import { getHeroScrollProgress, heroScrollRotation } from "@/lib/motion";
  *     glossy pearl-dome buttons;
  *   - a painted studio backdrop (canvas gradient) behind the
  *     garments, ACES tone mapping, sparse dust motes.
+ *
+ * TURNTABLE (owner's reference videos): the shirt performs a
+ * slow, endless product-turntable revolution — one turn every
+ * 28 s with a 1.5 s ease-in from rest — composed additively
+ * with the scroll response and pointer parallax, while the
+ * folded stack stays anchored with only a ±0.06 rad counter-
+ * sway. The rules live in turntableAngleAt / stackSwayAngleAt
+ * (src/lib/motion.ts §5).
  *
  * ASSET RULE (unchanged): every mesh is procedural geometry and
  * every texture is a runtime-generated canvas. No model files, no
@@ -734,6 +747,8 @@ function DressShirt() {
 /* ------------------------------------------------------------------ */
 
 function FoldedStack() {
+  // Placement + counter-sway live on the wrapper group in
+  // GarmentGroup; this group only builds the stack itself.
   const tex = useFabricTextures();
   // 3 folded garments + 1 striped one (two thin slabs in
   // alternating palette colours — no textures anywhere).
@@ -752,7 +767,7 @@ function FoldedStack() {
     { y: 0.99, h: 0.26, color: "#d7f2ec", x: 0.04, z: 0.02, rotY: 0.1 },
   ];
   return (
-    <group position={[1.72, -2.32, 0.72]}>
+    <group>
       {layers.map((layer, i) => (
         <RoundedBox
           key={i}
@@ -913,11 +928,30 @@ function PedestalGlow() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Rig — levitation + pointer parallax                                 */
+/* Rig — levitation + pointer parallax + turntable                     */
+/*                                                                     */
+/* Three nested groups, one frame loop:                                */
+/*   stage group — levitation (position.y) and the shared X lean       */
+/*     (idle sway + pointer Y + scroll tilt) for the whole             */
+/*     composition;                                                    */
+/*   shirt group — the Y composition: TURNTABLE (the centrepiece,      */
+/*     a slow endless revolution from turntableAngleAt) + scroll       */
+/*     offset (+0.55 max) + pointer parallax + idle sway, so the       */
+/*     shirt turns front → side → back → front like a product          */
+/*     showcase while still answering the visitor;                     */
+/*   stack group — world-anchored beside the shirt: it never           */
+/*     turns, only breathes ±0.06 rad of counter-sway                  */
+/*     (stackSwayAngleAt) around its own base.                         */
+/* Every angle derives from the frame clock — no React state, and      */
+/* the frameloop gates (off-screen / hidden tab) freeze the clock,     */
+/* so the turntable pauses with everything else. Reduced-motion        */
+/* visitors never mount the scene at all (HeroShowcase's rule).        */
 /* ------------------------------------------------------------------ */
 
 function GarmentGroup() {
   const ref = useRef<THREE.Group | null>(null);
+  const shirtRef = useRef<THREE.Group | null>(null);
+  const stackRef = useRef<THREE.Group | null>(null);
   const pointerTarget = useRef({ x: 0, y: 0 });
   const pointerSmooth = useRef({ x: 0, y: 0 });
   const scrollSmooth = useRef(0);
@@ -955,20 +989,37 @@ function GarmentGroup() {
     );
     const scrollRotation = heroScrollRotation(scrollSmooth.current);
     group.position.y = Math.sin(t * 0.55) * 0.09;
-    group.rotation.y =
-      -0.05 + Math.sin(t * 0.22) * 0.07 + pointerSmooth.current.x * 0.16 +
-      scrollRotation.rotationY;
     group.rotation.x =
       Math.sin(t * 0.3) * 0.012 + pointerSmooth.current.y * 0.045 +
       scrollRotation.rotationX;
+    // Turntable (owner's reference videos): the shirt subgroup
+    // carries the full Y composition — the endless revolution
+    // (turntableAngleAt: 28 s per turn, 1.5 s ease-in from rest)
+    // plus the scroll offset, the pointer parallax and the idle
+    // sway that were here before, all composed additively.
+    if (shirtRef.current) {
+      shirtRef.current.rotation.y =
+        turntableAngleAt(t) +
+        scrollRotation.rotationY +
+        pointerSmooth.current.x * 0.16 +
+        Math.sin(t * 0.22) * 0.07 -
+        0.05;
+    }
+    // The stack grounds the composition: no turntable, only its
+    // own very slow counter-drift around its base.
+    if (stackRef.current) {
+      stackRef.current.rotation.y = stackSwayAngleAt(t);
+    }
   });
 
   return (
     <group ref={ref}>
-      <group position={[-0.62, 0.18, 0]}>
+      <group ref={shirtRef} position={[-0.62, 0.18, 0]}>
         <DressShirt />
       </group>
-      <FoldedStack />
+      <group ref={stackRef} position={[1.72, -2.32, 0.72]}>
+        <FoldedStack />
+      </group>
     </group>
   );
 }

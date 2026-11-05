@@ -3,6 +3,46 @@
 All notable changes to Z-clean. (This file was started at Delta 1;
 earlier history lives in the README's phase sections and the git log.)
 
+## Geocode fallback ladder + tracking-feed healing (2026-11-05)
+
+Fixed the destination pin that never appeared: the geocoder
+asked Nominatim one full-address question, and Nominatim has no
+street- or area-level coverage for Bokaro (verified live — even
+"Sector 4, Bokaro Steel City, 827004" returns []), so effectively
+every real address geocoded to null and the customer map had no
+destination, distance or ETA.
+
+### Fixed
+- **Fallback ladder** (`buildGeocodeLadder` /
+  `resolveGeocodeLadder` in `src/lib/tracking.ts`): full address
+  → area → pincode → city, deduped, first hit wins, with the
+  winning precision (`address` / `area` / `pincode` / `city`)
+  carried on the result and logged server-side on every hit.
+  Pincodes DO resolve (827004 → 23.6687, 86.1488), so a Bokaro
+  pin now lands at pincode precision — the customer's area,
+  honestly an estimate for distance/ETA purposes (README,
+  Phase D: "Destination pin precision — said plainly").
+- **Backfill-on-read**: `GET /api/tracking/[orderId]` runs the
+  ladder once (awaited, 3 s per-request timeout, best-effort)
+  when the order's address has no coordinates yet, and persists
+  the hit — healing addresses created before the ladder and any
+  background geocode that was lost. Once coordinates exist the
+  branch never runs again for that address.
+- **`scheduleGeocode` now uses Next's `after()`**: the previous
+  bare un-awaited promise could be frozen by Vercel the moment
+  the response was sent. Route latency is unchanged; the
+  platform now keeps the invocation alive until the walk ends.
+
+### Tests
+- `scripts/test-tracking.mjs` gains 27 assertions: ladder order
+  and exact query strings, dedupe (blank line collapses the
+  address/area rungs; missing parts skip their rungs), first-hit
+  wins and stops the walk, the Bokaro pattern (address + area
+  miss → pincode hit), all-miss → null, precision labels, and
+  malformed/garbage rungs ignored end-to-end through the real
+  response parser. Full suite: 865 passed, 0 failed;
+  `next build` green.
+
 ## Phase D — customer live tracking map (2026-11-05)
 
 The customer order page becomes a real tracking experience, fed

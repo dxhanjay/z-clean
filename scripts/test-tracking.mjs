@@ -12,7 +12,9 @@
  *   5. the ping authorization predicate (canPingAssignment) — the
  *      rule the service-role insert stands behind,
  *   6. the client send-throttle (shouldSendPing),
- *   7. Nominatim query building + response parsing,
+ *   7. Nominatim query building + response parsing, and the
+ *      fallback ladder (order, dedupe, first-hit wins, precision
+ *      labels, malformed rungs ignored),
  *   8. the 'staff' role invariants (exists, but NEVER an admin tier),
  *   9. the zod request schemas for assignments / pings / staff
  *      handovers.
@@ -65,6 +67,8 @@ try {
     shouldSendPing,
     buildGeocodeQuery,
     parseGeocodeResponse,
+    buildGeocodeLadder,
+    resolveGeocodeLadder,
     PING_MIN_INTERVAL_MS,
     PING_MIN_DISTANCE_M,
   } = tracking;
@@ -230,6 +234,94 @@ try {
     eq("geocode parse: garbage entry is null", parseGeocodeResponse([{ lat: "north", lon: "east" }]), null);
     eq("geocode parse: out-of-range is null", parseGeocodeResponse([{ lat: "123", lon: "86" }]), null);
     eq("geocode parse: null body is null", parseGeocodeResponse(null), null);
+  }
+
+  // 7b · The fallback ladder: Bokaro has no Nominatim street/area
+  //      coverage, but its pincodes resolve — so the geocoder walks
+  //      address → area → pincode → city and takes the first hit.
+  const FULL_PARTS = { line: "House 12, Road 3", area: "Sector 4", city: "Bokaro Steel City", pincode: "827004" };
+  {
+    const ladder = buildGeocodeLadder(FULL_PARTS);
+    eq("ladder: full parts give four rungs", ladder.length, 4);
+    eq("ladder: rung order is precision order", ladder.map((r) => r.precision).join(","), "address,area,pincode,city");
+    eq("ladder: address query", ladder[0].query, "House 12, Road 3, Sector 4, Bokaro Steel City, 827004, India");
+    eq("ladder: address rung is buildGeocodeQuery", ladder[0].query, buildGeocodeQuery(FULL_PARTS));
+    eq("ladder: area query drops the line", ladder[1].query, "Sector 4, Bokaro Steel City, 827004, India");
+    eq("ladder: pincode query is pincode + country", ladder[2].query, "827004, India");
+    eq("ladder: city query is city + country", ladder[3].query, "Bokaro Steel City, India");
+  }
+  {
+    // No line: the address and area rungs produce the SAME string —
+    // attempted once, labelled with the more precise rung.
+    const ladder = buildGeocodeLadder({ line: "  ", area: "Sector 4", city: "Bokaro Steel City", pincode: "827004" });
+    eq("ladder: blank line dedupes address/area rungs", ladder.length, 3);
+    eq("ladder: deduped rung keeps the address label", ladder[0].precision, "address");
+    eq("ladder: deduped queries are unique", new Set(ladder.map((r) => r.query)).size, ladder.length);
+  }
+  {
+    // No line and no area: those rungs do not exist at all.
+    const ladder = buildGeocodeLadder({ line: "", area: null, city: "Bokaro Steel City", pincode: "827004" });
+    eq("ladder: no line/area leaves pincode + city", ladder.map((r) => r.precision).join(","), "pincode,city");
+  }
+  {
+    // No pincode: that rung is skipped, the rest keep their order.
+    const ladder = buildGeocodeLadder({ line: "House 1", area: "Sector 4", city: "Bokaro Steel City", pincode: "" });
+    eq("ladder: missing pincode skips its rung", ladder.map((r) => r.precision).join(","), "address,area,city");
+    eq("ladder: all-blank parts give an empty ladder", buildGeocodeLadder({ line: "", area: "", city: "", pincode: "" }).length, 0);
+  }
+  {
+    // First hit wins and stops the walk.
+    const calls = [];
+    const hit = await resolveGeocodeLadder(FULL_PARTS, async (q) => {
+      calls.push(q);
+      return { lat: 23.6693, lng: 86.1511 };
+    });
+    eq("ladder resolve: first hit after one call", calls.length, 1);
+    eq("ladder resolve: first hit precision", hit?.precision, "address");
+    eq("ladder resolve: first hit coords", hit?.lat, 23.6693);
+    eq("ladder resolve: hit records its query", hit?.query, calls[0]);
+  }
+  {
+    // The Bokaro reality: address + area miss, pincode hits.
+    const calls = [];
+    const hit = await resolveGeocodeLadder(FULL_PARTS, async (q) => {
+      calls.push(q);
+      return q === "827004, India" ? { lat: 23.6687, lng: 86.1488 } : null;
+    });
+    eq("ladder resolve: pincode hit precision", hit?.precision, "pincode");
+    eq("ladder resolve: pincode hit coords", hit?.lat, 23.6687);
+    eq("ladder resolve: walk stopped at the hit", calls.length, 3);
+    eq("ladder resolve: walk followed ladder order", calls.join("|"), buildGeocodeLadder(FULL_PARTS).slice(0, 3).map((r) => r.query).join("|"));
+  }
+  {
+    // All miss → null, every rung attempted exactly once.
+    let calls = 0;
+    const hit = await resolveGeocodeLadder(FULL_PARTS, async () => {
+      calls += 1;
+      return null;
+    });
+    eq("ladder resolve: all-miss is null", hit, null);
+    eq("ladder resolve: all-miss tried every rung", calls, 4);
+    // Empty ladder → null without a single lookup.
+    let sparseCalls = 0;
+    const sparseHit = await resolveGeocodeLadder({ line: "", area: "", city: "", pincode: "" }, async () => {
+      sparseCalls += 1;
+      return { lat: 1, lng: 1 };
+    });
+    eq("ladder resolve: empty ladder is null", sparseHit, null);
+    eq("ladder resolve: empty ladder never looks up", sparseCalls, 0);
+  }
+  {
+    // Malformed payloads are ignored rung by rung — a garbage or
+    // empty response is a miss, not a stop and never a pin.
+    const payloads = new Map([
+      ["House 12, Road 3, Sector 4, Bokaro Steel City, 827004, India", [{ lat: "north", lon: "east" }]],
+      ["Sector 4, Bokaro Steel City, 827004, India", []],
+      ["827004, India", [{ lat: "23.6687", lon: "86.1488" }]],
+    ]);
+    const hit = await resolveGeocodeLadder(FULL_PARTS, async (q) => parseGeocodeResponse(payloads.get(q) ?? null));
+    eq("ladder resolve: garbage rungs skipped to the pincode hit", hit?.precision, "pincode");
+    eq("ladder resolve: parsed pincode coords", hit?.lng, 86.1488);
   }
 
   // 8 · The staff role exists but is NEVER an admin tier — the

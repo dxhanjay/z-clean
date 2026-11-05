@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { resolveRequestAuth } from "@/lib/supabase/request-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { geocodeAddress } from "@/lib/tracking-server";
 import { isAdminTier } from "@/lib/roles";
 
 /**
@@ -21,6 +22,11 @@ import { isAdminTier } from "@/lib/roles";
  * staff app: `latestPosition` is null (and `lastPingAt` null) when
  * nobody has pinged — the UI must show "waiting for the rider"
  * rather than inventing a location.
+ *
+ * Destination healing: when the order's address has no geocoded
+ * pin yet, this feed runs the geocode ladder once (best-effort,
+ * short timeout) and persists the result — see the destination
+ * block below. Addresses with coordinates never re-trigger it.
  */
 export async function GET(
   _request: Request,
@@ -163,13 +169,32 @@ export async function GET(
   if (order.address_id) {
     const { data: address } = await admin
       .from("addresses")
-      .select("lat, lng, latitude, longitude")
+      .select("lat, lng, latitude, longitude, line, area, city, pincode")
       .eq("id", order.address_id)
       .maybeSingle();
     const lat = address?.lat ?? address?.latitude ?? null;
     const lng = address?.lng ?? address?.longitude ?? null;
     if (lat !== null && lng !== null && lat !== undefined && lng !== undefined) {
       destination = { lat: Number(lat), lng: Number(lng) };
+    } else if (address) {
+      // Backfill-on-read: this address has no pin yet — it predates
+      // the ladder, or its background geocode was lost. Run the
+      // ladder ONCE, awaited with a short per-request timeout and
+      // fully best-effort: geocodeAddress persists any hit to the
+      // row, so this branch runs at most once per address (the
+      // gate is simply "coords still missing"), and a total miss
+      // leaves the destination null — no pin is ever guessed.
+      const hit = await geocodeAddress(
+        order.address_id,
+        {
+          line: (address.line as string | null) ?? "",
+          area: (address.area as string | null) ?? null,
+          city: (address.city as string | null) ?? "",
+          pincode: (address.pincode as string | null) ?? "",
+        },
+        { timeoutMs: 3000 },
+      );
+      if (hit) destination = { lat: hit.lat, lng: hit.lng };
     }
   }
 

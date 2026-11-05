@@ -1,11 +1,14 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
+import { after } from "next/server";
 import { resolveRequestAuth } from "./supabase/request-auth";
 import { createAdminClient } from "./supabase/admin";
 import { isAdminTier } from "./roles";
 import {
-  buildGeocodeQuery,
   parseGeocodeResponse,
+  resolveGeocodeLadder,
   type AddressParts,
+  type GeocodeHit,
+  type LatLng,
 } from "./tracking";
 
 /**
@@ -120,68 +123,111 @@ export async function getStaffGate(): Promise<StaffGate> {
 }
 
 /* ------------------------------------------------------------------ */
-/* Geocoding — Nominatim, fire-and-forget.                             */
+/* Geocoding — Nominatim, via the fallback ladder.                     */
 /*                                                                     */
-/* One server-side call per new address (the spec's courtesy rule),    */
-/* with an identifying User-Agent per the Nominatim usage policy. A    */
-/* failure — no match, timeout, bad payload — leaves lat/lng null:     */
-/* the order is never blocked and no pin is ever guessed. The write    */
-/* uses the service-role client because it must also work for the      */
-/* order flow's freshly inserted address rows.                         */
+/* One ladder walk per address, ever: the result is cached on the     */
+/* address row, so the sequential requests in a walk (typically       */
+/* three for Bokaro — full-address miss, area miss, pincode hit)      */
+/* happen once per address, with an identifying User-Agent per the    */
+/* Nominatim usage policy. A failure at every rung — no match,        */
+/* timeout, bad payload — leaves lat/lng null: the order is never     */
+/* blocked and no pin is ever guessed. The write uses the             */
+/* service-role client because it must also work for the order        */
+/* flow's freshly inserted address rows.                              */
+/*                                                                     */
+/* The matched PRECISION is logged on every hit (`[geocode] … at      */
+/* pincode precision`) and returned to callers: a pincode hit is a    */
+/* postcode centroid — the customer's AREA, not their doorstep —      */
+/* and anything derived from it (map pin, distance, ETA) is an        */
+/* area estimate. The pure ladder lives in src/lib/tracking.ts.       */
 /* ------------------------------------------------------------------ */
 
 const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
 const GEOCODER_USER_AGENT =
   "Z-clean/1.0 (laundry order tracking; Bokaro Steel City, India)";
+const GEOCODER_TIMEOUT_MS = 8000;
 
-export async function geocodeAddress(
-  addressId: string,
-  parts: AddressParts,
-): Promise<void> {
+/** One Nominatim request. Null for ANY failure — never throws. */
+async function fetchNominatim(
+  query: string,
+  timeoutMs: number,
+): Promise<LatLng | null> {
   try {
-    const admin = createAdminClient();
-    if (!admin) return;
-
-    const query = buildGeocodeQuery(parts);
     const url =
       `${NOMINATIM_URL}?format=jsonv2&limit=1` +
       `&q=${encodeURIComponent(query)}`;
-
     const response = await fetch(url, {
       headers: {
         "User-Agent": GEOCODER_USER_AGENT,
         Accept: "application/json",
       },
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     if (!response.ok) {
-      console.error(
-        `[geocode] Nominatim answered ${response.status} for address ${addressId}`,
-      );
-      return;
+      console.error(`[geocode] Nominatim answered ${response.status} for "${query}"`);
+      return null;
     }
-    const coords = parseGeocodeResponse(await response.json());
-    if (!coords) return;
+    return parseGeocodeResponse(await response.json());
+  } catch (err) {
+    console.error(`[geocode] Nominatim request failed for "${query}":`, err);
+    return null;
+  }
+}
+
+/**
+ * Resolve an address and cache the winning coordinates on its row.
+ * Returns the hit (coords + precision) or null when every ladder
+ * rung missed. Never throws. `timeoutMs` bounds EACH Nominatim
+ * request: the background path uses the default; latency-sensitive
+ * callers (the tracking feed's backfill-on-read) pass a shorter one.
+ */
+export async function geocodeAddress(
+  addressId: string,
+  parts: AddressParts,
+  options?: { timeoutMs?: number },
+): Promise<GeocodeHit | null> {
+  try {
+    const admin = createAdminClient();
+    if (!admin) return null;
+
+    const timeoutMs = options?.timeoutMs ?? GEOCODER_TIMEOUT_MS;
+    const hit = await resolveGeocodeLadder(parts, (query) =>
+      fetchNominatim(query, timeoutMs),
+    );
+    if (!hit) return null;
+
+    console.log(
+      `[geocode] address ${addressId} resolved at ${hit.precision} precision ` +
+        `(${hit.lat}, ${hit.lng}) via "${hit.query}"`,
+    );
 
     const { error } = await admin
       .from("addresses")
-      .update({ lat: coords.lat, lng: coords.lng })
+      .update({ lat: hit.lat, lng: hit.lng })
       .eq("id", addressId);
     if (error) {
       console.error(
         `[geocode] could not store coordinates for address ${addressId}: ${error.message}`,
       );
     }
+    return hit;
   } catch (err) {
     console.error(`[geocode] failed for address ${addressId}:`, err);
+    return null;
   }
 }
 
 /**
- * Fire-and-forget wrapper for request handlers: kick the geocode off
- * and return immediately — the order/address response never waits on
- * the geocoder. `geocodeAddress` swallows its own errors.
+ * Background wrapper for request handlers: the geocode runs via
+ * Next's `after()`, so the order/address response returns
+ * immediately (its latency is unchanged) while the platform keeps
+ * the invocation alive until the ladder walk finishes. A bare
+ * un-awaited promise would NOT be safe here: on Vercel the
+ * invocation can freeze as soon as the response is sent, killing
+ * the walk mid-flight. `geocodeAddress` swallows its own errors.
  */
 export function scheduleGeocode(addressId: string, parts: AddressParts): void {
-  void geocodeAddress(addressId, parts);
+  after(async () => {
+    await geocodeAddress(addressId, parts);
+  });
 }

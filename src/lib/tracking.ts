@@ -19,8 +19,12 @@
  *     (`haversineMeters`) and a conservative ETA estimate for the
  *     customer map (Phase D consumes these).
  *   - Nominatim geocode query/response shaping (`buildGeocodeQuery`,
- *     `parseGeocodeResponse`) — parsing is pure; the HTTP call lives
- *     in src/lib/tracking-server.ts.
+ *     `parseGeocodeResponse`) plus the fallback LADDER
+ *     (`buildGeocodeLadder`, `resolveGeocodeLadder`): full address →
+ *     area → pincode → city, first hit wins. Parsing and ladder
+ *     orchestration are pure (the ladder takes its lookup as an
+ *     injected function); the HTTP call lives in
+ *     src/lib/tracking-server.ts.
  *   - The client-side send throttle (`shouldSendPing`): the staff web
  *     app sends a fix at most every 15 s and only after moving 25 m —
  *     the rule lives here so it is tested, not re-invented in the UI.
@@ -318,4 +322,111 @@ export function parseGeocodeResponse(payload: unknown): LatLng | null {
   const lng = typeof first.lon === "string" ? Number(first.lon) : first.lon;
   if (!isValidCoordinate(lat, lng)) return null;
   return { lat: lat as number, lng: lng as number };
+}
+
+/* ------------------------------------------------------------------ */
+/* The geocode fallback ladder.                                        */
+/*                                                                     */
+/* Nominatim's coverage is uneven: it has NO street- or area-level    */
+/* data for Bokaro (verified live 2026-11-05 — even "Sector 4,        */
+/* Bokaro Steel City, 827004" returns []), but the PINCODE resolves   */
+/* to a centroid (827004 → 23.6687, 86.1488) and the city resolves     */
+/* too. A single full-address query therefore missed for effectively  */
+/* every real address this app serves, and the customer map never     */
+/* got a destination pin. The ladder walks from the most precise      */
+/* query to the least, and the first non-empty answer wins:           */
+/*                                                                     */
+/*   address → area → pincode → city                                   */
+/*                                                                     */
+/* The winning PRECISION travels with the coordinates so callers can  */
+/* be honest about what the pin means: a "pincode" pin marks the      */
+/* customer's AREA (in Bokaro a pincode maps closely to a sector),    */
+/* not their doorstep — distance and ETA derived from it are area     */
+/* estimates, and the UI copy says so.                                */
+/* ------------------------------------------------------------------ */
+
+export type GeocodePrecision = "address" | "area" | "pincode" | "city";
+
+export interface GeocodeAttempt {
+  query: string;
+  precision: GeocodePrecision;
+}
+
+export interface GeocodeHit extends LatLng {
+  precision: GeocodePrecision;
+  /** The exact query that produced the hit (for server logs). */
+  query: string;
+}
+
+function joinGeocodeParts(parts: readonly (string | null | undefined)[]): string {
+  return parts
+    .map((p) => (typeof p === "string" ? p.trim() : ""))
+    .filter(Boolean)
+    .join(", ");
+}
+
+function hasText(value: string | null | undefined): boolean {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+/**
+ * The ladder for an address, most precise first. A rung appears only
+ * when at least one of ITS OWN parts is present (no line and no area
+ * → no "address" rung at all), and identical query strings are
+ * deduped keeping the first — i.e. most precise — occurrence (with
+ * the line blank, the "address" and "area" queries are the same
+ * string; it is attempted once, labelled "address").
+ */
+export function buildGeocodeLadder(address: AddressParts): GeocodeAttempt[] {
+  const rungs: GeocodeAttempt[] = [];
+  if (hasText(address.line) || hasText(address.area)) {
+    rungs.push({ query: buildGeocodeQuery(address), precision: "address" });
+  }
+  if (hasText(address.area)) {
+    rungs.push({
+      query: joinGeocodeParts([address.area, address.city, address.pincode, "India"]),
+      precision: "area",
+    });
+  }
+  if (hasText(address.pincode)) {
+    rungs.push({
+      query: joinGeocodeParts([address.pincode, "India"]),
+      precision: "pincode",
+    });
+  }
+  if (hasText(address.city)) {
+    rungs.push({
+      query: joinGeocodeParts([address.city, "India"]),
+      precision: "city",
+    });
+  }
+  const seen = new Set<string>();
+  return rungs.filter((rung) => {
+    if (seen.has(rung.query)) return false;
+    seen.add(rung.query);
+    return true;
+  });
+}
+
+/**
+ * Walk the ladder with an injected lookup (one Nominatim request per
+ * rung, sequentially, stopping at the first hit). The lookup must
+ * honour the geocoder's contract: return null for ANY failure —
+ * no match, malformed payload, HTTP or network error — and never
+ * throw. Sequential-until-hit is also the Nominatim courtesy rule:
+ * a typical Bokaro address costs three requests (address miss, area
+ * miss, pincode hit) exactly ONCE, because the result is cached on
+ * the address row forever after.
+ */
+export async function resolveGeocodeLadder(
+  address: AddressParts,
+  lookup: (query: string) => Promise<LatLng | null>,
+): Promise<GeocodeHit | null> {
+  for (const attempt of buildGeocodeLadder(address)) {
+    const coords = await lookup(attempt.query);
+    if (coords) {
+      return { ...coords, precision: attempt.precision, query: attempt.query };
+    }
+  }
+  return null;
 }

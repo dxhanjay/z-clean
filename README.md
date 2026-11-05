@@ -1199,12 +1199,21 @@ the state machine is not forked). On delivery legs the rider ticks
   rider who recorded them; both are in the `supabase_realtime`
   publication for the Phase D live map).
 - `addresses` and `branches` gain `lat`/`lng` pins. Address pins
-  are filled by a fire-and-forget **Nominatim (OpenStreetMap)**
-  geocode when an address is written (saved-address create and
-  order placement), cached on the row; failures leave the pin null
-  and never block the write. (The original schema's unused
-  `addresses.latitude/longitude` columns are left in place; reads
-  prefer the new pair and fall back to the legacy one.)
+  are filled by a **Nominatim (OpenStreetMap)** geocode when an
+  address is written (saved-address create and order placement),
+  scheduled with Next's `after()` so the platform keeps the
+  invocation alive until the lookup finishes — the write's own
+  response never waits for it, and failures leave the pin null and
+  never block the write. The geocoder walks a **fallback ladder**
+  (full address → area → pincode → city; first hit wins, result
+  cached on the row) because Nominatim has no street- or
+  area-level coverage for Bokaro — see "Destination pin precision"
+  under Phase D for what that means and how the app stays honest
+  about it. The tracking feed additionally heals a missing pin
+  on read (one best-effort ladder walk, persisted). (The original
+  schema's unused `addresses.latitude/longitude` columns are
+  left in place; reads prefer the new pair and fall back to the
+  legacy one.)
 
 ## Phase D — customer live tracking map
 
@@ -1246,6 +1255,33 @@ paused, with the last-seen time.
 - The route line is the **OSRM** road geometry for the rider's
   current reported position — drawn only when OSRM produced it
   for that exact position, replaced as fresher positions arrive.
+
+### Destination pin precision — said plainly
+
+The destination pin is only as precise as OpenStreetMap's data
+for Bokaro, and that data is thin: Nominatim resolves **no**
+street- or area-level Bokaro address (verified live — "Sector 4,
+Bokaro Steel City, 827004" returns nothing). The geocoder
+therefore walks a fallback ladder — full address, then area,
+then **pincode**, then city — and takes the first hit. In
+practice a Bokaro address lands at **pincode precision**: the
+postcode centroid (827004 → 23.6687, 86.1488). In Bokaro a
+pincode maps closely to a sector, so the pin genuinely marks
+**the customer's area** — but it is NOT their doorstep, and the
+app never pretends otherwise:
+
+- the pin means "your rider is heading to your area";
+- **distance and ETA chips are area estimates**, computed from
+  that pin — ETA is already labelled "Estimated arrival", and no
+  chip ever shows a doorstep-accurate figure the data cannot
+  support;
+- the matched precision is recorded in the server log on every
+  geocode (`[geocode] … at pincode precision`), so what the map
+  is standing on is always auditable.
+
+If Bokaro's OpenStreetMap coverage improves, the same ladder
+starts winning at the address/area rungs automatically — no
+code change, just better data.
 
 ### Live updates: realtime + poll, newest wins
 

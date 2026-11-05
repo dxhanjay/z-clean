@@ -3,6 +3,51 @@
 All notable changes to Z-clean. (This file was started at Delta 1;
 earlier history lives in the README's phase sections and the git log.)
 
+## Phase D — customer live tracking map (2026-11-05)
+
+The customer order page becomes a real tracking experience, fed
+only by positions a rider's phone actually reported.
+
+### Added
+- **Live tracking card** (`src/components/LiveTrackingCard.tsx` +
+  `LiveTrackingMap.tsx`) on `/orders/[id]` in live mode. It renders
+  ONLY while a leg is genuinely live (active assignment + matching
+  order status) — no rider assigned means no card and no fake map.
+  Honest *waiting* state before the first ping; *stale* state
+  (last-seen position, "updates paused") once a ping is 3 minutes
+  old.
+- **Leaflet + OpenStreetMap map** (new dependency `leaflet`
+  ^1.9.4, `@types/leaflet` dev): rider pin on the last real ping
+  (never interpolated), destination pin when the address
+  geocoded, facility pin when a branch has coordinates, and the
+  OSRM route line for the rider's current position.
+- **Live updates**: Supabase Realtime inserts on
+  `rider_locations` (RLS-scoped) merged with a 20 s poll of
+  `GET /api/tracking/[orderId]` — newer `recordedAt` always wins.
+- **Chips**: haversine distance (both points or hidden), OSRM
+  "Estimated arrival" (OSRM answer or hidden), "Updated … ago"
+  ticking from the real ping timestamp.
+- **12-stage presentation timeline**: `OrderTimeline` gains an
+  opt-in `presentation` prop (admin usage unchanged) rendering
+  Order placed → Pickup scheduled → Rider on the way → Picked up
+  → Received at facility → Washing → Drying → Ironing → Quality
+  check → Packed → Out for delivery → Delivered, derived from the
+  canonical status, pickup-assignment activity, and the order's
+  plant handover milestones (`src/lib/tracking-view.ts`).
+  Documented derivation: drying shares the plant's single
+  Processing handover with washing (no separate drying record
+  exists), so it completes at that real event and never shows as
+  the current stage alone.
+
+### Tests
+- New suite `scripts/test-tracking-view.mjs` (`test:tracking-view`,
+  wired into `npm test`): 121 assertions over the card state
+  machine, position merging, realtime-row parsing, chip hide
+  rules and formatting, OSRM parsing, and the 12-stage
+  derivation. Leaflet rendering itself is not unit-tested
+  (DOM/canvas) — the pure decisions behind it are. Full suite:
+  838 passed, 0 failed; `next build` green.
+
 ## Link-session fix: staff invite / password reset landings (2026-11-05)
 
 Fixed a live bug: a staff invite link verified successfully at

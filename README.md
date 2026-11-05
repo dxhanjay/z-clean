@@ -1206,6 +1206,93 @@ the state machine is not forked). On delivery legs the rider ticks
   `addresses.latitude/longitude` columns are left in place; reads
   prefer the new pair and fall back to the legacy one.)
 
+## Phase D — customer live tracking map
+
+The customer half of tracking: the order page
+(`/orders/[id]`, live mode) gains a **Live tracking** card under
+the timeline, driven entirely by the feed described above plus
+Supabase Realtime. The pure decisions live in
+`src/lib/tracking-view.ts` (tests: `scripts/test-tracking-view.mjs`);
+the card is `src/components/LiveTrackingCard.tsx` and the map is
+`src/components/LiveTrackingMap.tsx`.
+
+### When the card exists at all
+
+`trackingCardState` shows the card ONLY while a leg is genuinely
+live — an **active** rider assignment whose leg matches the
+order's lifecycle position (pickup leg while `PLACED` /
+`PICKUP_SCHEDULED`; delivery leg while `OUT_FOR_DELIVERY`). No
+rider assigned, a completed assignment, or a leg/status mismatch
+→ the card renders nothing. Tracking is simply not on offer for
+that order yet; there is **no placeholder map, no stock imagery,
+and no simulated marker anywhere** in the feature. Within a live
+leg: assignment-but-no-ping-yet shows an honest *waiting* state
+("Your rider hasn't started sharing location yet…"); a position
+older than **3 minutes** flips the card to *stale* — the marker
+stays on the last reported spot and the copy says updates are
+paused, with the last-seen time.
+
+### The map
+
+- **Leaflet + OpenStreetMap tiles** (the `leaflet` package,
+  dynamically imported `ssr: false`, so it never enters the
+  page's initial bundle). The map shows **real map data for the
+  order's own Bokaro addresses** — never stock or reference
+  imagery (see `FIDELITY_NOTES.md`).
+- Markers: the rider (exactly on the last real ping — never
+  interpolated or projected forward), the customer's address pin
+  (only when the address geocoded), and the facility pin (only
+  when a branch has owner-set coordinates).
+- The route line is the **OSRM** road geometry for the rider's
+  current reported position — drawn only when OSRM produced it
+  for that exact position, replaced as fresher positions arrive.
+
+### Live updates: realtime + poll, newest wins
+
+Positions merge from two sources by `recordedAt` — whichever is
+newer wins, arrival order is irrelevant (`mergeLatestPosition`):
+
+1. **Supabase Realtime** `INSERT`s on `rider_locations` filtered
+   to this order (RLS scopes the stream to the order's owner).
+2. A **20 s poll** of `GET /api/tracking/[orderId]` as
+   fallback/heartbeat, which also refreshes the assignment, the
+   order-status context and the pins. A 401/403/404 retires the
+   card quietly.
+
+### The chips — real or hidden
+
+- **Distance to you**: haversine between the rider's last ping
+  and the geocoded address — only when BOTH points exist.
+- **Estimated arrival**: OSRM's road duration between the same
+  two points, labelled as an estimate. No OSRM answer (failure,
+  "NoRoute", malformed body) or a missing point → **no chip** —
+  never a guessed number.
+- **Updated … ago**: ticks locally from the last ping's real
+  timestamp.
+
+### The 12-stage timeline
+
+The order page now passes the 12-stage presentation to
+`OrderTimeline` (an opt-in `presentation` prop — the component's
+canonical rail, and the admin order detail that also uses it,
+are unchanged). Stages: Order placed → Pickup scheduled → Rider
+on the way → Picked up → Received at facility → Washing → Drying
+→ Ironing → Quality check → Packed → Out for delivery →
+Delivered. Derivation (`presentationStages`) is real-signal
+only: canonical status for the outer stages; "Rider on the way"
+lights ONLY while a pickup assignment is active; the care stages
+key off the order's recorded plant handover milestones
+(`plant_processing` / `plant_finishing` / `plant_qc` /
+`plant_packing`). One documented wrinkle: the plant records ONE
+Processing handover for the wash cycle and drying is part of
+that cycle (the care process's "Processing" = washed or dry
+cleaned), so **Drying completes together with Washing** at that
+real handover and never poses as the current stage on its own;
+"Ironing" is the chain's Finishing stage. Canonical notes from
+the status history ride along on their stages, as before.
+Statuses, OTPs, payments and reviews are untouched by this
+phase; the dashboard cards are unchanged too.
+
 ## Setup
 
 ```bash

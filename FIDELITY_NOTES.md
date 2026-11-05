@@ -122,3 +122,31 @@ unchanged; this pass is chrome and composition only.
    is a separate later phase, not part of this redesign.
 4. **Admin panel** — untouched (Gentelella stays separate), and
    `mobile/` was not touched in this phase.
+
+## Phase D note — the live map (2026-11-05)
+
+The redesign's tracking references show a polished map panel with
+a route and a driver marker. What shipped in Phase D keeps the
+*shape* (a large rounded map card on the order page, rider/driver
+chips, a stage rail) and replaces every pictured datum with a real
+one:
+
+- **Map imagery**: live OpenStreetMap tiles centred on the order's
+  own Bokaro Steel City geography. The reference's NYC map, its
+  route and its pins were not copied, and no stock/screenshot map
+  image is used anywhere — when there is no live leg, there is no
+  map at all.
+- **The rider marker** sits on the last position the assigned
+  rider's phone genuinely reported via the staff web app. It is
+  never animated, interpolated or advanced along the route; a
+  stale position is labelled with its last-seen time instead.
+- **The route line and "Estimated arrival"** come from the OSRM
+  public router for that exact rider position and the customer's
+  geocoded address, and are shown only when OSRM returns them —
+  the reference's always-present ETA graphic has no counterpart
+  when the data isn't there.
+- **The 12-stage rail** mirrors the references' stage-list shape,
+  but every stage lights from Z-clean's own lifecycle, assignment
+  and handover records — including the documented drying
+  derivation (drying completes with the plant's single Processing
+  handover; it is never staged as a step the data can't see).

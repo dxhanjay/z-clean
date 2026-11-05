@@ -7,6 +7,11 @@ import { businessSettings, hasRazorpayPaymentLink } from "@/lib/config";
 import { isPaymentRetryEligible } from "@/lib/payment-retry";
 import { loadRazorpayScript } from "@/lib/razorpay-checkout";
 import OrderTimeline, { type TimelineEvent } from "@/components/OrderTimeline";
+import LiveTrackingCard from "@/components/LiveTrackingCard";
+import {
+  presentationStages,
+  type TrackingFeed,
+} from "@/lib/tracking-view";
 import ReviewForm from "@/components/ReviewForm";
 import { Skeleton, SkeletonText } from "@/components/Skeleton";
 import {
@@ -146,6 +151,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const { id } = use(params);
   const [demoOrder, setDemoOrder] = useState<DemoOrder | null>(null);
   const [liveOrder, setLiveOrder] = useState<LiveOrder | null>(null);
+  /* Phase D: the tracking feed (rider assignment + latest real
+     position + pins) — best-effort; null simply means the live map
+     card and the "Rider on the way" stage stay off. */
+  const [trackingFeed, setTrackingFeed] = useState<TrackingFeed | null>(null);
   const [state, setState] = useState<"loading" | "demo" | "live" | "missing">("loading");
   const [retryBusy, setRetryBusy] = useState(false);
   const [retryNote, setRetryNote] = useState<{ kind: "info" | "error"; text: string } | null>(null);
@@ -159,6 +168,20 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           if (json.mode === "live") {
             setLiveOrder(json.order as LiveOrder);
             setState("live");
+            // Phase D: fetch the tracking feed alongside. A failure
+            // (or a 404 before assignments existed) is not an error
+            // for the page — tracking just isn't on offer yet.
+            try {
+              const trackRes = await fetch(`/api/tracking/${id}`);
+              if (trackRes.ok) {
+                const trackJson = (await trackRes.json()) as TrackingFeed & {
+                  mode?: string;
+                };
+                if (trackJson.mode === "live") setTrackingFeed(trackJson);
+              }
+            } catch {
+              // Map card stays hidden; the rest of the page is fine.
+            }
             return;
           }
         }
@@ -425,6 +448,34 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const showCodes =
     Boolean(orderQrPayload) && status !== "DELIVERED" && status !== "CANCELLED";
 
+  /* Phase D — the 12-stage presentation for the timeline: canonical
+     statuses + rider-leg activity (from the tracking feed) + care
+     stages from this order's real handover milestones. Derived by
+     the pure `presentationStages`; statuses/OTPs/payments are not
+     affected by it in any way. */
+  const milestoneTimes: Record<string, string> = {};
+  for (const m of milestones) milestoneTimes[m.pointId] = m.at;
+  const statusTimes: Record<string, string> = {};
+  const statusNotes: Record<string, string> = {};
+  for (const h of timelineHistory) {
+    statusTimes[h.status] = h.at;
+    if (h.note) statusNotes[h.status] = h.note;
+  }
+  const pickupAssignment =
+    !isDemo && trackingFeed?.assignment?.leg === "pickup"
+      ? trackingFeed.assignment
+      : null;
+  const stages = presentationStages({
+    status,
+    createdAt: orderCreatedAt,
+    statusTimes,
+    statusNotes,
+    milestoneTimes,
+    completedPointIds: milestones.map((m) => m.pointId),
+    pickupRiderActive: pickupAssignment?.state === "active",
+    pickupAssignedAt: pickupAssignment?.assignedAt ?? null,
+  });
+
   return (
     <section className="mx-auto max-w-4xl px-4 py-14 sm:px-6">
       <p className="text-sm font-semibold text-brand-700">
@@ -452,8 +503,13 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           status={status}
           history={timelineHistory}
           createdAt={orderCreatedAt}
+          presentation={stages}
         />
       </div>
+
+      {state === "live" && (
+        <LiveTrackingCard orderId={orderId} initialFeed={trackingFeed} />
+      )}
 
       {showCodes && orderQrPayload && (
         <div className="mt-6 rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-mist-200/70">

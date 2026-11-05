@@ -259,6 +259,10 @@ try {
   eq("conflict: whitespace coupon ignored", hasVoucherCouponConflict("  ", "ZCGIFT-ABCDEFGH"), false);
 
   // 11 · Checkout schema: voucherCode field + conflict inputs parse.
+  // pickupDate must be >= today per the schema's live-clock refinement —
+  // compute tomorrow dynamically so this fixture never time-bombs.
+  const tmr = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const tmrStr = `${tmr.getFullYear()}-${String(tmr.getMonth() + 1).padStart(2, "0")}-${String(tmr.getDate()).padStart(2, "0")}`;
   const baseOrder = {
     name: "Test Customer",
     phone: "9876543210",
@@ -266,7 +270,7 @@ try {
     area: "Sector 4",
     city: "Bokaro Steel City",
     pincode: "827004",
-    pickupDate: "2026-11-05",
+    pickupDate: tmrStr,
     pickupSlot: "9 AM – 11 AM",
     deliveryType: "regular",
     items: [{ serviceSlug: "dry-cleaning", itemName: "Shirt", qty: 2 }],

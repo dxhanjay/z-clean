@@ -107,7 +107,10 @@ export default function Header() {
                   : "invisible -translate-y-1 opacity-0"
               }`}
             >
-              <div className="glass-strong overflow-hidden rounded-[1.75rem]">
+              {/* Solid panel, NOT glass (owner, Nov 6, 2026): the frosted
+                  panel let the hero headline show through and made the
+                  service names unreadable. */}
+              <div className="overflow-hidden rounded-[1.75rem] border border-ink-900/10 bg-white shadow-[0_28px_70px_rgba(23,43,66,0.28)]">
                 <ul className="grid grid-cols-2 gap-1 p-3">
                   {services.map((service) => (
                     <li key={service.slug}>
@@ -118,7 +121,7 @@ export default function Header() {
                         <span className="block text-sm font-bold text-ink-900">
                           {service.name}
                         </span>
-                        <span className="mt-0.5 block text-xs text-ink-500">
+                        <span className="mt-0.5 block text-xs font-medium text-ink-600">
                           Priced {service.unitLabel}
                         </span>
                       </Link>

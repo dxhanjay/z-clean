@@ -35,7 +35,7 @@ export default function ReviewForm({
 
   if (review) {
     return (
-      <div className="mt-6 rounded-2xl border border-brand-100 p-6">
+      <div className="mt-6 rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-mist-200/70">
         <h2 className="font-bold text-ink-900">Your review</h2>
         <p className="mt-2 text-amber-500" aria-label={`You rated ${review.rating} out of 5`}>
           <span aria-hidden="true" className="text-lg tracking-widest">{starsFor(review.rating)}</span>
@@ -91,7 +91,7 @@ export default function ReviewForm({
   const active = hovered || rating;
 
   return (
-    <div className="mt-6 rounded-2xl border border-brand-100 p-6">
+    <div className="mt-6 rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-mist-200/70">
       <h2 className="font-bold text-ink-900">How did we do?</h2>
       <p className="mt-1.5 text-sm leading-relaxed text-ink-500">
         Your order has been delivered. A few words from you help other

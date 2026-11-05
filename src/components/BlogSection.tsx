@@ -13,7 +13,7 @@ export default function BlogSection() {
   if (posts.length === 0) return null;
 
   return (
-    <section aria-labelledby="blog-heading" className="bg-brand-50">
+    <section aria-labelledby="blog-heading" className="bg-mist-100">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
         <Reveal>
           <div className="flex flex-wrap items-end justify-between gap-4">

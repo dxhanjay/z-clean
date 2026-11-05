@@ -13,7 +13,7 @@ export default function DashboardLoading() {
 
       <div className="mt-8 grid gap-6 sm:grid-cols-3">
         {[0, 1, 2].map((card) => (
-          <div key={card} className="rounded-2xl border border-brand-100 p-6">
+          <div key={card} className="rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-mist-200/70">
             <Skeleton className="h-5 w-32 max-w-full" />
             <SkeletonText lines={2} className="mt-3" />
             <Skeleton className="mt-4 h-10 w-36 rounded-full" />
@@ -25,7 +25,7 @@ export default function DashboardLoading() {
         <Skeleton className="h-6 w-44" />
         <ul className="mt-4 grid gap-3">
           {[0, 1, 2].map((row) => (
-            <li key={row} className="rounded-2xl border border-brand-100 p-4 sm:p-5">
+            <li key={row} className="rounded-[1.5rem] bg-white p-4 shadow-soft-sm ring-1 ring-mist-200/70 sm:p-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <Skeleton className="h-5 w-40 max-w-[55%]" />
                 <Skeleton className="h-6 w-20 rounded-full" />
@@ -38,7 +38,7 @@ export default function DashboardLoading() {
 
       <div className="mt-10 grid gap-6 lg:grid-cols-2">
         {[0, 1].map((panel) => (
-          <div key={panel} className="rounded-2xl border border-brand-100 p-6">
+          <div key={panel} className="rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-mist-200/70">
             <Skeleton className="h-5 w-36 max-w-full" />
             <SkeletonText lines={3} className="mt-3" />
           </div>

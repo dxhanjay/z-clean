@@ -39,23 +39,25 @@ export default async function ServiceDetailPage({
         <Link href="/services" className="text-sm font-semibold text-brand-700 hover:text-brand-800">
           ← All services
         </Link>
-        {image ? (
-          <div className="group mt-6 overflow-hidden rounded-3xl">
-            <img
-              src={image.src}
-              alt={image.alt}
-              className="h-64 w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 sm:h-80"
-            />
-          </div>
-        ) : null}
-        <h1 className="mt-6 text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">
-          {service.name}
-        </h1>
-        <p className="mt-5 text-base leading-relaxed text-ink-700">
-          {service.longDescription}
-        </p>
+        <div className="mt-6 rounded-[2.5rem] bg-pastel-hero p-5 shadow-soft-sm sm:p-7">
+          {image ? (
+            <div className="group overflow-hidden rounded-[2rem] shadow-soft">
+              <img
+                src={image.src}
+                alt={image.alt}
+                className="h-64 w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 sm:h-80"
+              />
+            </div>
+          ) : null}
+          <h1 className="mt-6 px-2 text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">
+            {service.name}
+          </h1>
+          <p className="mt-4 px-2 pb-2 text-base leading-relaxed text-ink-700">
+            {service.longDescription}
+          </p>
+        </div>
 
-        <div className="mt-8 rounded-2xl bg-brand-50 p-6">
+        <div className="mt-8 rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-mist-200/70">
           <h2 className="font-bold text-ink-900">Good to know</h2>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-relaxed text-ink-700">
             {service.goodToKnow.map((item) => (

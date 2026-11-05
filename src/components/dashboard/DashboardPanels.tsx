@@ -60,7 +60,7 @@ function PickupCard({
   serviceSlugs: string[];
 }) {
   return (
-    <li className="rounded-2xl border border-brand-100 p-5">
+    <li className="rounded-[1.5rem] bg-white p-5 shadow-soft-sm ring-1 ring-mist-200/70">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="font-bold text-ink-900">{title}</p>
         <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-bold text-brand-700">
@@ -186,7 +186,7 @@ export default function DashboardPanels({
 
   return (
     <div className="mt-10 grid gap-6 lg:grid-cols-2">
-      <section aria-labelledby="my-pickups" className="rounded-2xl border border-brand-100 p-6">
+      <section aria-labelledby="my-pickups" className="rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-mist-200/70">
         <div className="flex items-center justify-between gap-3">
           <h2 id="my-pickups" className="font-bold text-ink-900">My pickup requests</h2>
           <Link href="/schedule-pickup" className="text-sm font-semibold text-brand-700 hover:underline">
@@ -230,7 +230,7 @@ export default function DashboardPanels({
         )}
       </section>
 
-      <section aria-labelledby="my-addresses" className="rounded-2xl border border-brand-100 p-6">
+      <section aria-labelledby="my-addresses" className="rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-mist-200/70">
         <h2 id="my-addresses" className="font-bold text-ink-900">Saved addresses</h2>
         {hasAddresses && (
           <ul className="mt-4 grid gap-3">
@@ -246,7 +246,7 @@ export default function DashboardPanels({
                   text: `${a.line}, ${a.area}, ${a.city} — ${a.pincode}`,
                 }))
             ).map((row) => (
-              <li key={row.key} className="rounded-xl bg-brand-50 p-4">
+              <li key={row.key} className="rounded-2xl bg-mist-100 p-4">
                 <p className="text-sm font-bold text-ink-900">{row.label}</p>
                 <p className="text-sm text-ink-700">{row.text}</p>
               </li>

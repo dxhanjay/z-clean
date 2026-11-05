@@ -1045,6 +1045,37 @@ Tests: `npm run test:reviews` (28 — eligibility, byline privacy,
 stars, DTO joins) and `npm run test:blog` (48 — content contract +
 integrity guard), wired into `npm test`.
 
+## Phase A — premium website redesign (CleanPro language)
+
+A visual-language pass over the customer website, following the
+owner's CleanPro concept references (design comparison:
+`FIDELITY_NOTES.md`, Phase A section). Chrome and composition only —
+no schema, API, data or behaviour changes; the admin panel and the
+mobile app are untouched.
+
+- **Design tokens** — a pastel `mist` scale and deep-navy aliases, a
+  soft `shadow-soft*` elevation scale, pastel gradient utilities and
+  reduced-motion-safe float animations join the existing teal brand
+  tokens in `globals.css`. The storefront card recipe is now
+  `rounded-[2rem] bg-white shadow-soft ring-1 ring-mist-200/70`.
+- **Header** — glassy sticky bar with a Services dropdown (all 8
+  services), Pricing / Blog / Track / Help, and a **Get the App**
+  pill leading to the new `/app` page (Android: the project's Expo
+  builds page; iOS: App Store release in preparation — stated
+  honestly, no dead badge).
+- **Homepage** — the owner's headline "The New Level of Care for
+  Your Wardrobe" over a pastel gradient, a floating garment
+  composition (`HeroVisual`) in place of the rotating slider, dual
+  CTA (Schedule a Pickup / Track Your Order), and the Delta 3 trust
+  strip restyled as glass fact cards. Homepage service cards now
+  show "From ₹X" from the live catalogue (`HomeServices`).
+- **Dashboard & orders** — floating cards throughout; order cards
+  use the garment-card shape with real quantities, dates, refs and
+  totals from the existing APIs.
+- **Integrity** — the references' star rows, avatar clusters and
+  customer counts are fabricated social proof and were NOT adopted;
+  trust elements remain computed service facts only.
+
 ## Setup
 
 ```bash

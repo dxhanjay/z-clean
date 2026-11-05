@@ -36,7 +36,7 @@ export default async function Testimonials() {
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {reviews.slice(0, 6).map((review, i) => (
             <Reveal key={review.id} delay={(i % 3) * 90} className="h-full">
-              <figure className="flex h-full flex-col rounded-2xl border border-brand-100 bg-brand-50/50 p-6">
+              <figure className="flex h-full flex-col rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-mist-200/70">
                 <p
                   className="text-amber-500"
                   aria-label={`Rated ${review.rating} out of 5`}

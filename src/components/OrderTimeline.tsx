@@ -70,7 +70,7 @@ export default function OrderTimeline({
   };
 
   return (
-    <div className="rounded-2xl border border-brand-100 p-6">
+    <div className="rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-mist-200/70">
       <h2 className="font-bold text-ink-900">Track your order</h2>
       {currentIdx === -1 && (
         <p className="mt-2 text-sm leading-relaxed text-ink-500">

@@ -54,7 +54,8 @@ export default async function PricingTeaser() {
   if (rows.length === 0) return null;
 
   return (
-    <section aria-labelledby="pricing-heading" className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+    <section aria-labelledby="pricing-heading" className="bg-mist-100">
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
       <div className="grid items-start gap-10 lg:grid-cols-5">
         <Reveal className="lg:col-span-2">
           <p className="text-sm font-bold uppercase tracking-widest text-brand-600">
@@ -92,19 +93,19 @@ export default async function PricingTeaser() {
           </Link>
         </Reveal>
         <Reveal delay={120} className="lg:col-span-3">
-          <div className="overflow-hidden rounded-2xl border border-brand-100">
+          <div className="overflow-hidden rounded-[2rem] bg-white shadow-soft ring-1 ring-mist-200/70">
             <table className="w-full text-left text-sm">
               <caption className="sr-only">
                 Popular Z-clean services and their rates
               </caption>
               <thead>
-                <tr className="bg-brand-50 text-xs uppercase tracking-wide text-ink-500">
+                <tr className="bg-mist-100 text-xs uppercase tracking-wide text-ink-500">
                   <th scope="col" className="px-5 py-3 font-bold">Service</th>
                   <th scope="col" className="px-5 py-3 font-bold">Item</th>
                   <th scope="col" className="px-5 py-3 text-right font-bold">Rate</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-brand-50">
+              <tbody className="divide-y divide-mist-100">
                 {rows.map((row) => (
                   <tr key={`${row.service}-${row.item}`}>
                     <td className="px-5 py-3.5 font-semibold text-ink-900">{row.service}</td>
@@ -121,6 +122,7 @@ export default async function PricingTeaser() {
             </table>
           </div>
         </Reveal>
+      </div>
       </div>
     </section>
   );

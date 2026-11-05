@@ -14,6 +14,26 @@
   --color-ink-900: #0f2233;
   --color-ink-700: #33475c;
   --color-ink-500: #64798d;
+  /* Phase A premium redesign: soft pastel sky/mist scale + deep navy.
+     The storefront's new "floating card" language is built on these;
+     the brand teal scale above stays the action accent. ink-900 is
+     already the deep navy used for headings. */
+  --color-mist-50: #f6fafc;
+  --color-mist-100: #eef4f9;
+  --color-mist-200: #dfeaf5;
+  --color-mist-300: #c7dcee;
+  --color-mist-400: #a8c4de;
+  --color-navy-800: #16324f;
+  --color-navy-900: #0f2233;
+  --color-navy-950: #0a1826;
+  /* Very soft, blue-grey shadows for the floating-card language. */
+  --shadow-soft-sm: 0 2px 10px rgb(15 34 51 / 0.05);
+  --shadow-soft: 0 10px 30px -8px rgb(15 34 51 / 0.1),
+    0 2px 6px rgb(15 34 51 / 0.04);
+  --shadow-soft-lg: 0 24px 48px -12px rgb(15 34 51 / 0.14),
+    0 4px 12px rgb(15 34 51 / 0.05);
+  --shadow-soft-xl: 0 36px 70px -18px rgb(15 34 51 / 0.18),
+    0 8px 20px rgb(15 34 51 / 0.06);
   /* Admin console palette (Gentelella-style redesign — original
      implementation in this codebase's Tailwind stack): dark slate
      sidebar, signature green accent, light panel background, white
@@ -125,6 +145,52 @@ body {
   animation: zc-kenburns 6.5s ease-out forwards;
 }
 
+/* ---- Phase A: pastel gradients, glass, floating hero imagery ---- */
+
+/* Full-bleed hero wash: pastel sky melting into white. */
+.bg-pastel-hero {
+  background: linear-gradient(
+    155deg,
+    var(--color-mist-200) 0%,
+    var(--color-mist-100) 46%,
+    #ffffff 100%
+  );
+}
+
+/* Softer section band: mist at the top, white at the bottom. */
+.bg-pastel-band {
+  background: linear-gradient(
+    180deg,
+    var(--color-mist-100) 0%,
+    #ffffff 100%
+  );
+}
+
+/* Translucent white panel used over pastel bands. */
+.glass-panel {
+  background: rgb(255 255 255 / 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+@keyframes zc-float {
+  from {
+    transform: translateY(-6px);
+  }
+  to {
+    transform: translateY(8px);
+  }
+}
+
+/* Gentle levitation for the hero garment composition. Transform-only,
+   and paired with a slower offset variant for layered depth. */
+.zc-float {
+  animation: zc-float 7s ease-in-out infinite alternate;
+}
+.zc-float-slow {
+  animation: zc-float 10s ease-in-out -3s infinite alternate;
+}
+
 /* Marquee strip: seamless loop, pauses on hover. */
 .marquee-track {
   animation: zc-marquee 36s linear infinite;
@@ -174,7 +240,9 @@ body {
   .marquee-track,
   .reveal,
   .skeleton,
-  .page-enter {
+  .page-enter,
+  .zc-float,
+  .zc-float-slow {
     animation: none;
   }
   .btn-press {

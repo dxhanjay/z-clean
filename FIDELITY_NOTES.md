@@ -66,3 +66,59 @@ photos already hotlinked in `src/lib/media.ts` before this delta.
 6. **Reference blog imagery/posts** — our three articles are
    original, with covers drawn only from the imagery already in
    `media.ts`.
+
+---
+
+# Phase A — Premium redesign (CleanPro references, 2026-11-05)
+
+The owner supplied three CleanPro concept screenshots and asked for
+that visual language on the customer website. Only the LANGUAGE was
+adopted — pastel palette, floating garment composition, oversized
+rounded cards — never the reference's brand, copy, prices, or
+claims. The Delta 3 section order, data sources and facts are
+unchanged; this pass is chrome and composition only.
+
+## Design system additions (globals.css)
+
+- Pastel scale `mist-50…400` (#f6fafc → #a8c4de) + `navy-800/900/950`
+  aliases (ink-900 remains the heading navy). Brand teal untouched
+  and still the action accent everywhere.
+- Soft shadow scale `shadow-soft-sm / soft / soft-lg / soft-xl`
+  (blue-grey, diffuse) — the floating-card elevation system.
+- `.bg-pastel-hero` (sky→white 155° wash), `.bg-pastel-band`
+  (mist→white), `.glass-panel` (translucent white + blur).
+- `.zc-float` / `.zc-float-slow` levitation keyframes
+  (transform-only, alternate, disabled under
+  `prefers-reduced-motion`, alongside every older animation).
+- Card recipe used across the storefront: `rounded-[2rem] bg-white
+  shadow-soft ring-1 ring-mist-200/70`, hover lift on link cards.
+
+## Per-page changes
+
+| Surface | Change |
+|---|---|
+| Header | Glassy translucent sticky bar (white/85 + blur, mist border). Nav is now: Services ▾ dropdown (all 8 real services + unit labels, "View all services / How it works" footer), Pricing, Blog, Track (→ /dashboard), Help (→ /faq); pill **Get the App** button → new `/app` page. Mobile strip mirrors the same destinations + About/Contact. The old header "Schedule Pickup" button moved out — the hero + CTA band carry that action. |
+| `/app` (new) | Honest download page: Android card links to the project's stable Expo builds page; iOS card says the App Store release is being prepared and points to the web app (no dead store badge). Three real app-capability points (stage tracking, QR/OTP codes in pocket, quick booking). |
+| Home hero | Rebuilt: pastel gradient with soft halo blobs; owner's headline "The New Level of Care for Your Wardrobe" (Care in brand teal); original support copy; dual CTA — Schedule a Pickup (primary) + Track Your Order (glass). Right: new `HeroVisual` floating composition (main garment photo levitating, overlapping handover photo card, folded-laundry glass chip, two annotation chips with honest care lines: "Tough stain? We treat it with care" / "Every garment inspected by hand"). The rotating `HeroSlider` was removed. Trust strip restyled as four glass fact cards — same computed facts as Delta 3. |
+| Home sections | Marquee recolored to mist/navy. About collage: rounded-[2rem] + soft shadows. Why-choose-us: pastel band, white floating numbered cards, image card rounded/shadowed. Services: new async `HomeServices` grid — `ServiceCard` is now a floating garment card (coloured droplet corner tab; gradient initial band for services without a photo) showing **"From ₹X" from the live catalogue** (lowest rate per service; omitted if a service has no priced items). How-it-works: mist band, floating step cards, mist connector line. Care process: floating cards. Pricing teaser: mist band + floating table card. Testimonials: floating white cards (logic untouched — still approved reviews only, hidden while empty). Blog: mist band + floating cards. FAQ teaser: questions inside one floating white card. CTA band: navy→brand gradient. |
+| Services index | Pastel hero panel for the heading; restyled `ServiceCard` grid (no price line — the index doesn't load the catalogue, as before). |
+| Service detail | Hero band: pastel panel containing the photo (rounded-[2rem], soft shadow), title and description; "Good to know" is now a floating white card. Copy/data unchanged. |
+| Pricing | Pastel heading panel; the approved-list banner and each price group are floating white cards; term cards likewise. All prices still DB-first via `loadStorefrontCatalogue`; page remains `force-dynamic`. |
+| Dashboard | The three action cards and both `DashboardPanels` sections/items use the floating-card recipe. |
+| Dashboard orders | `OrdersSection` cards rebuilt in the reference's garment-card shape: photo header (the site's folded-laundry photo — decorative; the list API carries counts, not per-item photos) with a glass status chip, order reference, real item quantities ("N items in M lines"), pickup line, order date and total. Data flow and APIs unchanged. |
+| Order detail | Chrome only: all eight card containers (incl. timeline + review form containers and the loading skeletons) use the floating-card recipe; demo banner radius aligned. Timeline, QR/OTP codes, payments, retry and review behaviour are byte-identical. |
+| Footer | Mist background/borders, soft-shadow area chips, new "Get the app" link. Structure and data unchanged. |
+
+## Deliberately NOT adopted from the references
+
+1. **Star-rating rows, avatar clusters, "5k+" / "2.7k+" counts** —
+   fabricated social proof. The hero trust row carries service facts
+   only; the only stars anywhere remain inside real approved
+   customer reviews in Testimonials.
+2. **"Guaranteed stain removal"** annotation copy — the chip says
+   "We treat it with care" because that's what's true.
+3. **Reference prices, order refs and the NYC map** — ours are ₹
+   catalogue prices and our own order references; live map tracking
+   is a separate later phase, not part of this redesign.
+4. **Admin panel** — untouched (Gentelella stays separate), and
+   `mobile/` was not touched in this phase.

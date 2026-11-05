@@ -63,7 +63,7 @@ export default async function DashboardPage() {
       {!live && (
         <div
           role="status"
-          className="mt-6 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm font-semibold text-amber-900"
+          className="mt-6 rounded-[1.5rem] border border-amber-300 bg-amber-50 p-4 text-sm font-semibold text-amber-900"
         >
           DEMO MODE — {supabase
             ? "you are not signed in, so this dashboard shows demo data stored in this browser only."
@@ -75,7 +75,7 @@ export default async function DashboardPage() {
       )}
 
       <div className="mt-8 grid gap-6 sm:grid-cols-3">
-        <div className="rounded-2xl border border-brand-100 p-6">
+        <div className="rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-mist-200/70">
           <h2 className="font-bold text-ink-900">Schedule a pickup</h2>
           <p className="mt-2 text-sm leading-relaxed text-ink-500">
             Book a doorstep pickup in a couple of minutes.
@@ -87,7 +87,7 @@ export default async function DashboardPage() {
             Schedule pickup
           </Link>
         </div>
-        <div className="rounded-2xl border border-brand-100 p-6">
+        <div className="rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-mist-200/70">
           <h2 className="font-bold text-ink-900">Pricing</h2>
           <p className="mt-2 text-sm leading-relaxed text-ink-500">
             Draft demo rates for Bokaro Steel City, confirmed at pickup.
@@ -99,7 +99,7 @@ export default async function DashboardPage() {
             See price list
           </Link>
         </div>
-        <div className="rounded-2xl border border-brand-100 p-6">
+        <div className="rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-mist-200/70">
           <h2 className="font-bold text-ink-900">Place an order</h2>
           <p className="mt-2 text-sm leading-relaxed text-ink-500">
             Choose items, see the exact total, and pay online or on delivery.

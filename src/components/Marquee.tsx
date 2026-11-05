@@ -10,7 +10,7 @@ export default function Marquee() {
   const names = services.map((s) => s.name);
   return (
     <div
-      className="marquee overflow-hidden border-y border-brand-100 bg-white py-4"
+      className="marquee overflow-hidden border-y border-mist-200 bg-white/70 py-4"
       aria-hidden="true"
     >
       <div className="marquee-track flex w-max items-center">
@@ -19,10 +19,10 @@ export default function Marquee() {
             {names.map((name) => (
               <span
                 key={`${copy}-${name}`}
-                className="flex items-center whitespace-nowrap text-sm font-bold uppercase tracking-widest text-brand-700"
+                className="flex items-center whitespace-nowrap text-sm font-bold uppercase tracking-widest text-ink-700"
               >
                 <span className="px-5">{name}</span>
-                <span className="text-brand-300">✦</span>
+                <span className="text-brand-400">✦</span>
               </span>
             ))}
           </div>

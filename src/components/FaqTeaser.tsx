@@ -25,7 +25,7 @@ export default function FaqTeaser({ count = 4 }: { count?: number }) {
         </h2>
       </Reveal>
       <Reveal>
-        <div className="mt-8 divide-y divide-brand-100">
+        <div className="mt-8 divide-y divide-mist-200 rounded-[2rem] bg-white px-6 shadow-soft ring-1 ring-mist-200/70 sm:px-8">
           {shown.map((faq) => (
             <details key={faq.q} className="group py-5">
               <summary className="cursor-pointer list-none font-bold text-ink-900 marker:hidden">

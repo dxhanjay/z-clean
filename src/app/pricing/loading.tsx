@@ -11,7 +11,7 @@ export default function PricingLoading() {
       <Skeleton className="h-10 w-72 max-w-full" />
       <SkeletonText lines={2} className="mt-4 max-w-2xl" />
 
-      <div className="mt-8 rounded-2xl border border-brand-100 p-6">
+      <div className="mt-8 rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-mist-200/70">
         <Skeleton className="h-5 w-64 max-w-full" />
         <SkeletonText lines={2} className="mt-3 max-w-2xl" />
       </div>

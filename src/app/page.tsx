@@ -1,14 +1,14 @@
 import Link from "next/link";
-import ServiceCard from "@/components/ServiceCard";
 import CtaBand from "@/components/CtaBand";
-import HeroSlider from "@/components/HeroSlider";
+import HeroVisual from "@/components/HeroVisual";
+import HomeServices from "@/components/HomeServices";
 import Marquee from "@/components/Marquee";
 import Reveal from "@/components/Reveal";
 import PricingTeaser from "@/components/PricingTeaser";
 import Testimonials from "@/components/Testimonials";
 import BlogSection from "@/components/BlogSection";
 import FaqTeaser from "@/components/FaqTeaser";
-import { careStages, howItWorksSteps, services } from "@/lib/services";
+import { careStages, howItWorksSteps } from "@/lib/services";
 import { aboutImages, stepImages, whyImage } from "@/lib/media";
 import { businessSettings } from "@/lib/config";
 import { DEMO_CITY, formatInr, pricingTerms, serviceAreas } from "@/lib/pricing";
@@ -18,14 +18,15 @@ import { DEMO_CITY, formatInr, pricingTerms, serviceAreas } from "@/lib/pricing"
 export const dynamic = "force-dynamic";
 
 /**
- * Homepage (Delta 3 fidelity pass — see FIDELITY_NOTES.md).
+ * Homepage (Phase A premium redesign — see FIDELITY_NOTES.md).
  *
- * Rhythm follows the Laundra reference's section order: hero with a
- * trust strip, about, why-choose-us, services, how it works, pricing,
- * testimonials, blog, FAQ, CTA. Every claim on the page is a fact
- * already true of this business (service areas, approved prices,
- * express option, payment options); the testimonials section renders
- * ONLY approved real reviews and hides itself while there are none.
+ * The visual language now follows the owner's CleanPro references:
+ * a pastel sky gradient hero with a floating garment composition,
+ * oversized rounded floating cards, soft shadows and deep-navy
+ * headings, with the brand teal kept as the action accent. Section
+ * order and every fact are unchanged from the Delta 3 pass: trust
+ * elements are service facts only (no ratings, counts or invented
+ * volumes), and testimonials render ONLY approved real reviews.
  */
 
 const trustPoints = [
@@ -75,49 +76,64 @@ const h2Cls =
   "mt-3 text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl";
 const eyebrowCls =
   "text-sm font-bold uppercase tracking-widest text-brand-600";
+const cardCls =
+  "rounded-[2rem] bg-white shadow-soft ring-1 ring-mist-200/70";
 
 export default function HomePage() {
   return (
     <>
       {/* Hero */}
-      <section className="bg-gradient-to-b from-brand-50 to-white">
-        <div className="mx-auto max-w-6xl px-4 pt-16 sm:px-6 sm:pt-24">
-          <div className="grid items-center gap-10 lg:grid-cols-2">
+      <section className="bg-pastel-hero relative overflow-hidden">
+        <div
+          aria-hidden="true"
+          className="absolute -left-24 top-16 h-72 w-72 rounded-full bg-white/50 blur-3xl"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute -right-16 bottom-24 h-80 w-80 rounded-full bg-mist-300/40 blur-3xl"
+        />
+        <div className="relative mx-auto max-w-6xl px-4 pb-20 pt-16 sm:px-6 sm:pt-24">
+          <div className="grid items-center gap-14 lg:grid-cols-2">
             <div>
               <p className={eyebrowCls}>
                 Laundry &amp; dry cleaning, door to door
               </p>
               <h1 className="mt-4 max-w-2xl text-5xl font-extrabold leading-[1.05] tracking-tight text-ink-900 sm:text-6xl">
-                Fresh clothes, zero laundry-day effort
+                The New Level of{" "}
+                <span className="text-brand-600">Care</span> for Your
+                Wardrobe
               </h1>
               <p className="mt-5 max-w-xl text-base leading-relaxed text-ink-500 sm:text-lg">
-                {businessSettings.name} picks up your laundry and dry cleaning,
-                cares for every piece through a staged process, and delivers it
-                back ready to wear. Book online, pay online or at your door, and
-                track it all the way.
+                Premium laundry and dry-cleaning, picked up from your door
+                and returned fresh — across {DEMO_CITY}. Book online, pay
+                online or at your door, and track every stage in your
+                account.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link
                   href="/schedule-pickup"
-                  className="btn-press rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:bg-brand-700"
+                  className="btn-press rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white shadow-soft transition-colors hover:bg-brand-700"
                 >
                   Schedule a Pickup
                 </Link>
                 <Link
-                  href="/process"
-                  className="rounded-full border border-brand-200 bg-white px-6 py-3 text-sm font-bold text-brand-800 transition-colors hover:bg-brand-50"
+                  href="/dashboard"
+                  className="glass-panel rounded-full px-6 py-3 text-sm font-bold text-ink-900 shadow-soft-sm ring-1 ring-white/70 transition-colors hover:bg-white"
                 >
-                  See How It Works
+                  Track Your Order
                 </Link>
               </div>
             </div>
-            <HeroSlider />
+            <HeroVisual />
           </div>
 
           {/* Trust strip — service facts only, no invented volumes. */}
-          <dl className="mt-14 grid grid-cols-2 gap-x-6 gap-y-6 border-t border-brand-100 pb-12 pt-8 lg:grid-cols-4">
+          <dl className="mt-16 grid grid-cols-2 gap-4 lg:grid-cols-4">
             {heroFacts.map((fact) => (
-              <div key={fact.title}>
+              <div
+                key={fact.title}
+                className="glass-panel rounded-[1.5rem] px-5 py-4 shadow-soft-sm ring-1 ring-white/60"
+              >
                 <dt className="flex items-center gap-2 text-sm font-extrabold text-ink-900">
                   <span aria-hidden="true" className="text-brand-600">✓</span>
                   {fact.title}
@@ -143,20 +159,20 @@ export default function HomePage() {
                 src={aboutImages[0].src}
                 alt={aboutImages[0].alt}
                 loading="lazy"
-                className="h-full min-h-64 w-full rounded-2xl object-cover"
+                className="h-full min-h-64 w-full rounded-[2rem] object-cover shadow-soft"
               />
               <div className="grid gap-4">
                 <img
                   src={aboutImages[1].src}
                   alt={aboutImages[1].alt}
                   loading="lazy"
-                  className="h-full min-h-32 w-full rounded-2xl object-cover"
+                  className="h-full min-h-32 w-full rounded-[2rem] object-cover shadow-soft"
                 />
                 <img
                   src={aboutImages[2].src}
                   alt={aboutImages[2].alt}
                   loading="lazy"
-                  className="h-full min-h-32 w-full rounded-2xl object-cover"
+                  className="h-full min-h-32 w-full rounded-[2rem] object-cover shadow-soft"
                 />
               </div>
             </div>
@@ -193,68 +209,47 @@ export default function HomePage() {
       </section>
 
       {/* Why choose us */}
-      <section aria-labelledby="why-heading" className={`mx-auto max-w-6xl px-4 sm:px-6 pb-16 sm:pb-20`}>
-        <Reveal>
-          <p className={eyebrowCls}>Why choose us</p>
-          <h2 id="why-heading" className={h2Cls}>
-            Why people hand their laundry to Z-clean
-          </h2>
-        </Reveal>
-        <div className="mt-10 grid items-stretch gap-6 lg:grid-cols-5">
-          <Reveal className="group overflow-hidden rounded-2xl lg:col-span-2">
-            <img
-              src={whyImage.src}
-              alt={whyImage.alt}
-              loading="lazy"
-              className="h-64 w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 lg:h-full"
-            />
+      <section aria-labelledby="why-heading" className="bg-pastel-band">
+        <div className={`mx-auto max-w-6xl px-4 sm:px-6 ${sectionPad}`}>
+          <Reveal>
+            <p className={eyebrowCls}>Why choose us</p>
+            <h2 id="why-heading" className={h2Cls}>
+              Why people hand their laundry to Z-clean
+            </h2>
           </Reveal>
-          <div className="grid gap-6 sm:grid-cols-2 lg:col-span-3">
-            {trustPoints.map((point, i) => (
-              <Reveal key={point.title} delay={i * 90}>
-                <div className="h-full rounded-2xl bg-brand-50 p-6">
-                  <span className="text-2xl font-extrabold text-brand-300" aria-hidden="true">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <h3 className="mt-2 font-bold text-ink-900">{point.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-ink-500">
-                    {point.description}
-                  </p>
-                </div>
-              </Reveal>
-            ))}
+          <div className="mt-10 grid items-stretch gap-6 lg:grid-cols-5">
+            <Reveal className="group overflow-hidden rounded-[2rem] shadow-soft lg:col-span-2">
+              <img
+                src={whyImage.src}
+                alt={whyImage.alt}
+                loading="lazy"
+                className="h-64 w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 lg:h-full"
+              />
+            </Reveal>
+            <div className="grid gap-6 sm:grid-cols-2 lg:col-span-3">
+              {trustPoints.map((point, i) => (
+                <Reveal key={point.title} delay={i * 90}>
+                  <div className={`h-full p-6 ${cardCls}`}>
+                    <span className="text-2xl font-extrabold text-brand-300" aria-hidden="true">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <h3 className="mt-2 font-bold text-ink-900">{point.title}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-ink-500">
+                      {point.description}
+                    </p>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
       {/* Services preview */}
-      <section aria-labelledby="services-heading" className="bg-white">
-        <div className={`mx-auto max-w-6xl px-4 sm:px-6 ${sectionPad}`}>
-          <Reveal>
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <p className={eyebrowCls}>Our services</p>
-                <h2 id="services-heading" className={h2Cls}>
-                  One place for every cleaning need
-                </h2>
-              </div>
-              <Link href="/services" className="text-sm font-semibold text-brand-700 hover:text-brand-800">
-                View all services →
-              </Link>
-            </div>
-          </Reveal>
-          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {services.map((service, i) => (
-              <Reveal key={service.slug} delay={(i % 4) * 90} className="h-full">
-                <ServiceCard service={service} />
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
+      <HomeServices />
 
       {/* How it works */}
-      <section aria-labelledby="how-heading" className="bg-brand-50">
+      <section aria-labelledby="how-heading" className="bg-mist-100">
         <div className={`mx-auto max-w-6xl px-4 sm:px-6 ${sectionPad}`}>
           <Reveal>
             <p className={eyebrowCls}>How it works</p>
@@ -265,11 +260,11 @@ export default function HomePage() {
           <Reveal className="relative">
             <div
               aria-hidden="true"
-              className="steps-line absolute left-0 right-0 top-24 hidden h-0.5 bg-brand-200 lg:block"
+              className="steps-line absolute left-0 right-0 top-24 hidden h-0.5 bg-mist-300 lg:block"
             />
             <ol className="relative mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {howItWorksSteps.map((step, i) => (
-                <li key={step.title} className="group overflow-hidden rounded-2xl bg-white shadow-sm">
+                <li key={step.title} className="group overflow-hidden rounded-[2rem] bg-white shadow-soft transition-shadow hover:shadow-soft-lg">
                   <div className="overflow-hidden">
                     <img
                       src={stepImages[i].src}
@@ -309,7 +304,7 @@ export default function HomePage() {
         <Reveal>
           <ol className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {careStages.map((stage, i) => (
-              <li key={stage.title} className="rounded-2xl border border-brand-100 p-6">
+              <li key={stage.title} className={`p-6 ${cardCls}`}>
                 <span className="text-sm font-bold text-brand-600">
                   Stage {i + 1}
                 </span>

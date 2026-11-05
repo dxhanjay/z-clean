@@ -9,7 +9,7 @@ export default async function Footer() {
   // (Phase 7b), falling back to the config constants.
   const contact = await getBusinessSettings();
   return (
-    <footer className="border-t border-brand-100 bg-brand-50">
+    <footer className="border-t border-mist-200 bg-mist-100">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
         <div>
           <p className="text-lg font-extrabold tracking-tight text-ink-900">
@@ -45,6 +45,7 @@ export default async function Footer() {
             <li><Link href="/process" className="hover:text-brand-700">How it works</Link></li>
             <li><Link href="/pricing" className="hover:text-brand-700">Pricing</Link></li>
             <li><Link href="/blog" className="hover:text-brand-700">Blog</Link></li>
+            <li><Link href="/app" className="hover:text-brand-700">Get the app</Link></li>
             <li><Link href="/faq" className="hover:text-brand-700">FAQ</Link></li>
             <li><Link href="/dashboard" className="hover:text-brand-700">My orders</Link></li>
             <li><Link href="/privacy" className="hover:text-brand-700">Privacy policy</Link></li>
@@ -79,7 +80,7 @@ export default async function Footer() {
 
       {/* Areas served — the same 13 areas the booking flow gates on
           (src/lib/pricing.ts mirrors the service_areas table). */}
-      <div className="border-t border-brand-100">
+      <div className="border-t border-mist-200">
         <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
           <p className="text-sm font-bold uppercase tracking-wide text-ink-900">
             Areas we serve in {DEMO_CITY}
@@ -88,7 +89,7 @@ export default async function Footer() {
             {serviceAreas.map((a) => (
               <li
                 key={`${a.area}-${a.pincode}`}
-                className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-ink-700"
+                className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-ink-700 shadow-soft-sm"
               >
                 {a.area} · {a.pincode}
               </li>
@@ -97,7 +98,7 @@ export default async function Footer() {
         </div>
       </div>
 
-      <div className="border-t border-brand-100">
+      <div className="border-t border-mist-200">
         <p className="mx-auto max-w-6xl px-4 py-4 text-xs text-ink-500 sm:px-6">
           © {new Date().getFullYear()} Z-clean. All rights reserved.
         </p>

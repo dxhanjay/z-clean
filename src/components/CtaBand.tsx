@@ -8,13 +8,13 @@ export default function CtaBand({
   text?: string;
 }) {
   return (
-    <section className="bg-brand-700">
+    <section className="bg-[linear-gradient(120deg,var(--color-navy-900),var(--color-brand-800))]">
       <div className="mx-auto flex max-w-6xl flex-col items-start gap-6 px-4 py-14 sm:px-6 md:flex-row md:items-center md:justify-between">
         <div className="max-w-xl">
           <h2 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
             {title}
           </h2>
-          <p className="mt-3 text-sm leading-relaxed text-brand-100 sm:text-base">
+          <p className="mt-3 text-sm leading-relaxed text-mist-200 sm:text-base">
             {text}
           </p>
         </div>

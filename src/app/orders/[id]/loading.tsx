@@ -17,7 +17,7 @@ export default function OrderDetailLoading() {
         </div>
       </div>
 
-      <div className="mt-8 rounded-2xl border border-brand-100 p-6">
+      <div className="mt-8 rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-mist-200/70">
         <Skeleton className="h-5 w-32" />
         <div className="mt-5 grid gap-4">
           {[0, 1, 2].map((step) => (
@@ -30,7 +30,7 @@ export default function OrderDetailLoading() {
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px]">
-        <div className="rounded-2xl border border-brand-100 p-6">
+        <div className="rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-mist-200/70">
           <Skeleton className="h-5 w-20" />
           <div className="mt-4 grid gap-1">
             {[0, 1, 2].map((row) => (
@@ -50,7 +50,7 @@ export default function OrderDetailLoading() {
 
         <div className="grid content-start gap-6">
           {[0, 1].map((card) => (
-            <div key={card} className="rounded-2xl border border-brand-100 p-6">
+            <div key={card} className="rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-mist-200/70">
               <Skeleton className="h-5 w-24" />
               <SkeletonText lines={3} className="mt-3" />
             </div>

@@ -292,7 +292,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             <Skeleton className="h-6 w-28 rounded-full" />
           </div>
         </div>
-        <div className="mt-8 rounded-2xl border border-brand-100 p-6">
+        <div className="mt-8 rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-mist-200/70">
           <Skeleton className="h-5 w-32" />
           <div className="mt-5 grid gap-4">
             {[0, 1, 2].map((step) => (
@@ -304,13 +304,13 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
         <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px]">
-          <div className="rounded-2xl border border-brand-100 p-6">
+          <div className="rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-mist-200/70">
             <Skeleton className="h-5 w-20" />
             <SkeletonText lines={3} className="mt-4" />
           </div>
           <div className="grid content-start gap-6">
             {[0, 1].map((card) => (
-              <div key={card} className="rounded-2xl border border-brand-100 p-6">
+              <div key={card} className="rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-mist-200/70">
                 <Skeleton className="h-5 w-24" />
                 <SkeletonText lines={3} className="mt-3" />
               </div>
@@ -441,7 +441,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       </div>
 
       {isDemo && (
-        <div role="status" className="mt-5 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm font-semibold text-amber-900">
+        <div role="status" className="mt-5 rounded-[1.5rem] border border-amber-300 bg-amber-50 p-4 text-sm font-semibold text-amber-900">
           DEMO MODE — this is a demo order stored in this browser only. No
           real order, pickup or payment exists.
         </div>
@@ -456,7 +456,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       </div>
 
       {showCodes && orderQrPayload && (
-        <div className="mt-6 rounded-2xl border border-brand-100 p-6">
+        <div className="mt-6 rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-mist-200/70">
           <h2 className="font-bold text-ink-900">Your pickup &amp; delivery codes</h2>
           <p className="mt-1.5 text-sm leading-relaxed text-ink-500">
             Every handover of your laundry is verified. At pickup and at
@@ -502,7 +502,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       )}
 
       {milestones.length > 0 && (
-        <div className="mt-6 rounded-2xl border border-brand-100 p-6">
+        <div className="mt-6 rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-mist-200/70">
           <h2 className="font-bold text-ink-900">Handover record</h2>
           <p className="mt-1.5 text-sm leading-relaxed text-ink-500">
             Each verified transfer of your items, in order.
@@ -557,7 +557,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       )}
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px]">
-        <div className="rounded-2xl border border-brand-100 p-6">
+        <div className="rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-mist-200/70">
           <h2 className="font-bold text-ink-900">Items</h2>
           <ul className="mt-4 divide-y divide-brand-50">
             {items.map((item, idx) => (
@@ -587,7 +587,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         </div>
 
         <div className="grid content-start gap-6">
-          <div className="rounded-2xl border border-brand-100 p-6">
+          <div className="rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-mist-200/70">
             <h2 className="font-bold text-ink-900">Pickup</h2>
             <dl className="mt-3 grid gap-2 text-sm">
               <div><dt className="text-ink-500">When</dt><dd className="font-semibold text-ink-900">{pickupLine}</dd></div>
@@ -599,7 +599,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             </dl>
           </div>
 
-          <div className="rounded-2xl border border-brand-100 p-6">
+          <div className="rounded-[2rem] bg-white p-6 shadow-soft ring-1 ring-mist-200/70">
             <h2 className="font-bold text-ink-900">Payment</h2>
             <dl className="mt-3 grid gap-2 text-sm">
               <div><dt className="text-ink-500">Method</dt><dd className="font-semibold text-ink-900">{paymentMethod === "cod" ? "Pay on Delivery" : "Online (Razorpay)"}</dd></div>

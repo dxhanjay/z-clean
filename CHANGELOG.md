@@ -3,6 +3,49 @@
 All notable changes to Z-clean. (This file was started at Delta 1;
 earlier history lives in the README's phase sections and the git log.)
 
+## Phase A — Premium website redesign (CleanPro language) (2026-11-05)
+
+Design comparison: `FIDELITY_NOTES.md` (Phase A section). Web only —
+no schema, API, data or behaviour changes; admin and mobile untouched.
+
+### Added
+- **Design system** — pastel `mist` scale + navy aliases, soft
+  shadow scale (`shadow-soft*`), `.bg-pastel-hero` / `.bg-pastel-band`
+  gradients, `.glass-panel`, and reduced-motion-safe `.zc-float`
+  levitation animations in `globals.css`. Brand teal remains the
+  action accent.
+- **`/app` page** — Android card links to the project's Expo builds
+  page; iOS card honestly states the App Store release is in
+  preparation and routes to the web app.
+- **`HeroVisual`** — floating garment composition (levitating main
+  photo, overlapping handover card, two honest annotation chips).
+- **`HomeServices`** — homepage services grid fed by the live
+  catalogue, showing "From ₹X" per service.
+
+### Changed
+- **Header** — glassy sticky bar; Services dropdown with all 8
+  services; Pricing / Blog / Track / Help nav; "Get the App" pill.
+- **Homepage** — owner's headline "The New Level of Care for Your
+  Wardrobe", dual CTA (Schedule a Pickup / Track Your Order), glass
+  trust-fact cards; every section restyled to floating
+  `rounded-[2rem]` cards on pastel bands. `HeroSlider` removed.
+- **ServiceCard / BlogCard** — floating garment cards with a coloured
+  corner tab and hover lift; services without a photo get a gradient
+  initial band.
+- **Dashboard + orders list** — floating action/panel cards; order
+  cards rebuilt in the garment-card shape with real quantities,
+  dates, references and totals (existing APIs only).
+- **Order detail, pricing, services index/detail** — chrome-only
+  restyles (floating cards, pastel hero panels); timeline, QR/OTP,
+  payments, review form and all data flows byte-identical.
+- **Footer** — mist palette, soft-shadow area chips, "Get the app"
+  link.
+
+### Integrity
+- No ratings, avatar clusters, customer/review counts or guarantees
+  were added — the references' social proof is fabricated by design
+  and stays out. Trust elements remain computed service facts.
+
 ## Delta 3 — Laundra fidelity pass, real reviews & blog (2026-11-05)
 
 Requires `supabase/schema_v9.sql` (apply before deploying). Design

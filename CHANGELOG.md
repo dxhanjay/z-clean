@@ -3,6 +3,48 @@
 All notable changes to Z-clean. (This file was started at Delta 1;
 earlier history lives in the README's phase sections and the git log.)
 
+## Staff app — fix pass on the Web3D UI + login ?next= (2026-11-06)
+
+Fixes from the live visual check of the Web3D staff UI, plus the
+staff sign-in round-trip. **UI layer only — no `/api` route, auth
+rule, assignment / OTP / ping contract or data changed.**
+
+### Fixed
+- **Staff header no longer lets content slide under it**: the bar
+  was `glass-strong` at all times, so while a rider scrolled the
+  task detail, headings passed beneath the translucent bar and
+  collided with the logo badge. The header is now a small client
+  component (`StaffHeader`) with the marketing header's
+  owner-approved rule — glass at the very top, SOLID white with a
+  soft shadow once scrolled (one passive scroll listener).
+  Measured cost: none — `/staff` First Load is 118 kB before and
+  after (React/Link were already in the bundle).
+- **Task detail bottom bar clearance**: a spacer equal to the
+  fixed action bar's height (py-3 around a min-h-12 row = 4.5rem)
+  plus `env(safe-area-inset-bottom)` now renders with the bar, so
+  the last panel — e.g. the handover form's "Something is
+  missing…" rows — can always scroll fully clear of it. States
+  without the bar (support view, done) gain no dead space.
+- **Task detail panels upgraded to glass-strong**: the
+  Collect from / Deliver to address card and the Share Location
+  panel used the weaker `glass` (60% white) and read as plain
+  sections on the gradient; both are now `glass-strong`, matching
+  the highlighted task-list card. No inner behaviour changed —
+  the location-sharing logic is untouched.
+- **Login honours `?next=`**: signing in always landed on
+  `/dashboard`, so a rider bounced from `/staff` to the login
+  page landed on the customer dashboard and had to navigate
+  back. The login page now redirects to the `next` target when
+  it is a safe local path — the new pure rule `safeNextPath`
+  (`src/lib/redirects.ts`) accepts only values starting with a
+  single `/` (never `//`, never a backslash), so a crafted link
+  cannot bounce a signed-in user off-site. With no (or an
+  unsafe) `next`, the destination is `/dashboard`, exactly as
+  before.
+- **16 unit tests** for the redirect rule (new
+  `scripts/test-redirects.mjs`, wired into `npm test`).
+  Suite: 925 → 941 passing; tsc clean; `next build` green.
+
 ## Staff app — Web3D glass UI + operability pass (2026-11-06)
 
 The staff app (`/staff`) gets the marketing site's glass +

@@ -43,11 +43,12 @@
     "test:push": "node scripts/test-push.mjs",
     "test:reviews": "node scripts/test-reviews.mjs",
     "test:blog": "node scripts/test-blog.mjs",
-    "test": "npm run test:totals && npm run test:flow && npm run test:retry && npm run test:org && npm run test:vouchers && npm run test:handovers && npm run test:finance && npm run test:ratelimit && npm run test:roles && npm run test:analytics && npm run test:notifications && npm run test:push && npm run test:reviews && npm run test:blog && npm run test:tracking && npm run test:link-session && npm run test:tracking-view && npm run test:motion",
+    "test": "npm run test:totals && npm run test:flow && npm run test:retry && npm run test:org && npm run test:vouchers && npm run test:handovers && npm run test:finance && npm run test:ratelimit && npm run test:roles && npm run test:analytics && npm run test:notifications && npm run test:push && npm run test:reviews && npm run test:blog && npm run test:tracking && npm run test:link-session && npm run test:tracking-view && npm run test:motion && npm run test:redirects",
     "test:motion": "node scripts/test-motion.mjs",
     "test:tracking": "node scripts/test-tracking.mjs",
     "test:tracking-view": "node scripts/test-tracking-view.mjs",
-    "test:link-session": "node scripts/test-link-session.mjs"
+    "test:link-session": "node scripts/test-link-session.mjs",
+    "test:redirects": "node scripts/test-redirects.mjs"
   },
   "version": "0.1.0"
 }

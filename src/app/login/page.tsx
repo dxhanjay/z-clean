@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { loginSchema } from "@/lib/validation";
+import { safeNextPath } from "@/lib/redirects";
 
 const inputClass =
   "w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm text-ink-900 placeholder:text-ink-500/60 focus:border-brand-500 focus:outline-none";
@@ -43,7 +44,13 @@ export default function LoginPage() {
         setFormError(error.message);
         return;
       }
-      router.push("/dashboard");
+      // Honour ?next= for safe local paths only (safeNextPath):
+      // the staff shell sends unauthenticated riders here as
+      // /login?next=/staff, and they should land back on /staff,
+      // not the customer dashboard. No next (or an unsafe one)
+      // keeps the long-standing default below.
+      const next = new URLSearchParams(window.location.search).get("next");
+      router.push(safeNextPath(next, "/dashboard"));
       router.refresh();
     } catch {
       setFormError("Login is not available yet. Please try again later.");

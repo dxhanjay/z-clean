@@ -210,7 +210,7 @@ export default function StaffTaskDetailPage({
 
       {!done && (
         <>
-          <section className="glass rounded-[1.75rem] p-5">
+          <section className="glass-strong rounded-[1.75rem] p-5">
             <h2 className="text-base font-extrabold text-ink-900">
               {task.leg === "pickup" ? "Collect from" : "Deliver to"}
             </h2>
@@ -340,6 +340,19 @@ export default function StaffTaskDetailPage({
                 </Link>
               </div>
             </div>
+          )}
+          {/* Clearance for the fixed bar above: its height is the
+              inner py-3 (0.75rem × 2) around a min-h-12 row = 4.5rem,
+              plus the device safe-area inset. Without this spacer
+              the last panel (e.g. the handover form's final rows)
+              could never scroll fully clear of the bar. Rendered
+              only while the bar is, so states without it (support
+              view, done) gain no dead space. */}
+          {!supportView && (
+            <div
+              aria-hidden="true"
+              className="h-[calc(4.5rem+env(safe-area-inset-bottom))]"
+            />
           )}
         </>
       )}

@@ -3,6 +3,60 @@
 All notable changes to Z-clean. (This file was started at Delta 1;
 earlier history lives in the README's phase sections and the git log.)
 
+## Staff app — Web3D glass UI + operability pass (2026-11-06)
+
+The staff app (`/staff`) gets the marketing site's glass +
+3D-motion language and a field-operability overhaul.
+**Presentation only — no `/api` route, auth rule, assignment /
+OTP / ping contract, role scoping or admin page changed, and no
+new dependency added** (no WebGL; motion stays in
+`src/lib/motion.ts` + CSS keyframes, transforms/opacity only).
+
+### Added
+- **Glass staff shell**: `AmbientBackground` mounted in the staff
+  layout only (`SiteChrome` already excluded `/staff`, so the
+  backdrop cannot leak into customer/admin shells), glass sticky
+  header, glass task cards with 3D reveal + fine-pointer-only
+  Tilt, card-shaped loading skeletons, friendly glass empty and
+  error states with a 48px Retry.
+- **Up-next hero card**: the rounds list now leads with the first
+  round whose handover is unlocked (`nextTaskId`, motion.ts §5);
+  the rest of the queue keeps assignment order.
+- **Leg progress stepper** (`StaffLegProgress`): Travel →
+  Handover with an easing fill between its three honest states —
+  deliberately NOT the plant's 12-stage timeline, which is not
+  the rider's progress.
+- **Animated success check** (`StaffSuccessCheck`): an SVG
+  circle + tick that draw on when a handover completes (and on
+  the invite done state, at a smaller size); static and fully
+  drawn under reduced motion.
+- **Sticky bottom action bar** on the task detail: the primary
+  action for the current state ("Start sharing location" /
+  "Enter code & complete …") is always thumb-reachable and
+  scrolls to its panel.
+- **17 unit tests** for the new pure rules (`test-motion.mjs`
+  §5: leg steps/progress, up-next pick, ping failure streak,
+  OTP box shaping). Suite: 908 → 925 passing.
+
+### Changed
+- **OTP entry is six boxes** with auto-advance, paste
+  distribution and backspace-step-back (`otpApplyInput`); the
+  submit contract is identical — the joined 6-digit `otp` string
+  to the same endpoint — and a completed handover now shows a
+  spinner → success-check sequence.
+- **Location sharing feedback**: the live line shows relative +
+  clock time and ticks while sharing; one missed ping stays
+  silent, a second consecutive failure surfaces a retry note
+  with a manual "Send an update now" action (`pingFailureStreak`).
+  Cadence, throttle and payload unchanged.
+- **Every staff control is ≥48px** (Navigate / Call / submit /
+  sign-out / retry / quantity and COD controls), and
+  `/staff/set-password` panels are glass with the success check
+  on its done state.
+- **Bundle cost**: `/staff` First Load 110 → 118 kB, task
+  detail 118 → 124 kB, `/staff/set-password` 197 kB unchanged;
+  the shared 103 kB bundle did not move.
+
 ## Hero video — owner's animated film replaces the 3D scene (2026-11-05)
 
 Owner's decision: *"Use this animated video instead of that 3d

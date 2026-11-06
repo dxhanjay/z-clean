@@ -1,7 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { formatPaise } from "@/lib/pricing";
+import { otpApplyInput } from "@/lib/motion";
+
+/** Spinner shown inside the submit button while the handover posts. */
+function SubmitSpinner() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="staff-spinner h-4 w-4"
+      fill="none"
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
+        stroke="currentColor"
+        strokeOpacity="0.3"
+        strokeWidth="3"
+      />
+      <path
+        d="M21 12a9 9 0 0 0-9-9"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
 
 /**
  * Doorstep handover panel (Staff Web App phase) — the rider side of
@@ -18,6 +46,14 @@ import { formatPaise } from "@/lib/pricing";
  * QR scanning is intentionally absent: the web app has no existing
  * camera-scan pattern to reuse, and the OTP is the customer's proof
  * either way.
+ *
+ * Web3D UI pass: glass panel over the staff shell's ambient
+ * backdrop; the OTP is six 52px boxes with auto-advance, paste
+ * support and backspace-to-previous (the digit rules are pure —
+ * otpApplyInput in motion.ts §5) that JOIN into the same `otp`
+ * string the submit has always sent; the submit shows
+ * a spinner while recording, then the page's animated success
+ * state takes over. The POST body is byte-for-byte the old one.
  */
 export default function HandoverPanel({
   assignmentId,
@@ -30,7 +66,9 @@ export default function HandoverPanel({
   codDuePaise: number | null;
   onCompleted: (status: string) => void;
 }) {
-  const [otp, setOtp] = useState("");
+  const [boxes, setBoxes] = useState<string[]>(["", "", "", "", "", ""]);
+  const otp = boxes.join("");
+  const boxRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [quantity, setQuantity] = useState("");
   const [missingItem, setMissingItem] = useState(false);
   const [codCollected, setCodCollected] = useState(false);
@@ -39,6 +77,35 @@ export default function HandoverPanel({
 
   const isPickup = leg === "pickup";
   const codDue = codDuePaise !== null && codDuePaise > 0;
+
+  function applyOtpInput(index: number, rawValue: string) {
+    const { boxes: next, focusIndex } = otpApplyInput(boxes, index, rawValue);
+    setBoxes(next);
+    if (focusIndex !== index) boxRefs.current[focusIndex]?.focus();
+  }
+
+  function handleOtpPaste(e: React.ClipboardEvent<HTMLInputElement>) {
+    e.preventDefault();
+    const target = e.target as HTMLInputElement;
+    const index = Number(target.dataset.otpIndex ?? 0);
+    applyOtpInput(index, e.clipboardData.getData("text"));
+  }
+
+  function handleOtpKeyDown(
+    e: React.KeyboardEvent<HTMLInputElement>,
+    index: number,
+  ) {
+    if (e.key === "Backspace" && boxes[index] === "" && index > 0) {
+      e.preventDefault();
+      boxRefs.current[index - 1]?.focus();
+    }
+    if (e.key === "ArrowLeft" && index > 0) {
+      boxRefs.current[index - 1]?.focus();
+    }
+    if (e.key === "ArrowRight" && index < boxes.length - 1) {
+      boxRefs.current[index + 1]?.focus();
+    }
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -78,7 +145,7 @@ export default function HandoverPanel({
   }
 
   return (
-    <section className="rounded-2xl border border-mist-200 bg-white p-5">
+    <section id="staff-handover-panel" className="glass rounded-[1.75rem] p-5">
       <h2 className="text-base font-extrabold text-ink-900">
         {isPickup ? "Complete the pickup" : "Complete the delivery"}
       </h2>
@@ -90,19 +157,42 @@ export default function HandoverPanel({
 
       <form onSubmit={submit} className="mt-4 grid gap-4">
         <div>
-          <label htmlFor="handover-otp" className="block text-sm font-semibold text-ink-900">
+          <span id="handover-otp-label" className="block text-sm font-semibold text-ink-900">
             Customer&apos;s 6-digit code
-          </label>
-          <input
-            id="handover-otp"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            value={otp}
-            onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-            placeholder="••••••"
-            className="mt-1.5 w-full rounded-xl border border-mist-300 bg-white px-4 py-3 text-center text-2xl font-extrabold tracking-[0.4em] text-ink-900 placeholder:text-ink-300 focus:border-brand-500 focus:outline-none"
-          />
+          </span>
+          <div
+            role="group"
+            aria-labelledby="handover-otp-label"
+            className="mt-1.5 flex justify-between gap-2"
+          >
+            {boxes.map((digit, i) => (
+              <input
+                key={i}
+                ref={(el) => {
+                  boxRefs.current[i] = el;
+                }}
+                data-otp-index={i}
+                type="text"
+                inputMode="numeric"
+                autoComplete={i === 0 ? "one-time-code" : "off"}
+                aria-label={`Code digit ${i + 1} of 6`}
+                maxLength={1}
+                value={digit}
+                onChange={(e) => applyOtpInput(i, e.target.value)}
+                onPaste={handleOtpPaste}
+                onKeyDown={(e) => handleOtpKeyDown(e, i)}
+                onFocus={(e) => e.target.select()}
+                className="h-[52px] w-full min-w-0 flex-1 rounded-xl border border-mist-300 bg-white/90 text-center text-2xl font-extrabold text-ink-900 transition-colors focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+              />
+            ))}
+          </div>
+          {/* Screen-reader equivalent of the old single field: the
+              six boxes join into exactly this string on submit. */}
+          <span className="sr-only" aria-live="polite">
+            {otp.length === 6
+              ? "Code complete"
+              : `${otp.length} of 6 digits entered`}
+          </span>
         </div>
 
         <div>
@@ -117,16 +207,16 @@ export default function HandoverPanel({
             value={quantity}
             onChange={(e) => setQuantity(e.target.value.replace(/[^\d]/g, ""))}
             placeholder="e.g. 6"
-            className="mt-1.5 w-full rounded-xl border border-mist-300 bg-white px-4 py-3 text-sm text-ink-900 focus:border-brand-500 focus:outline-none"
+            className="mt-1.5 min-h-12 w-full rounded-xl border border-mist-300 bg-white/90 px-4 py-3 text-sm text-ink-900 focus:border-brand-500 focus:outline-none"
           />
         </div>
 
-        <label className="flex items-start gap-2.5 text-sm text-ink-700">
+        <label className="flex min-h-12 items-start gap-2.5 text-sm text-ink-700">
           <input
             type="checkbox"
             checked={missingItem}
             onChange={(e) => setMissingItem(e.target.checked)}
-            className="mt-0.5 h-4 w-4 rounded border-mist-300"
+            className="mt-0.5 h-5 w-5 rounded border-mist-300"
           />
           <span>
             Something is missing or short — the office will be told to
@@ -135,12 +225,12 @@ export default function HandoverPanel({
         </label>
 
         {leg === "delivery" && codDue && (
-          <label className="flex items-start gap-2.5 rounded-xl bg-amber-50 px-3 py-2.5 text-sm font-semibold text-amber-900">
+          <label className="flex min-h-12 items-start gap-2.5 rounded-xl bg-amber-50/90 px-3 py-2.5 text-sm font-semibold text-amber-900">
             <input
               type="checkbox"
               checked={codCollected}
               onChange={(e) => setCodCollected(e.target.checked)}
-              className="mt-0.5 h-4 w-4 rounded border-amber-300"
+              className="mt-0.5 h-5 w-5 rounded border-amber-300"
             />
             <span>
               I collected {formatPaise(codDuePaise)} in cash from the customer.
@@ -148,13 +238,13 @@ export default function HandoverPanel({
           </label>
         )}
         {leg === "delivery" && !codDue && (
-          <p className="rounded-xl bg-mist-100 px-3 py-2 text-sm text-ink-700">
+          <p className="rounded-xl bg-white/70 px-3 py-2 text-sm text-ink-700">
             Nothing to collect — this order is already paid (or fully covered).
           </p>
         )}
 
         {error && (
-          <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-800">
+          <p role="alert" className="rounded-xl border border-red-200 bg-red-50/95 px-3 py-2 text-sm font-semibold text-red-800">
             {error}
           </p>
         )}
@@ -162,13 +252,18 @@ export default function HandoverPanel({
         <button
           type="submit"
           disabled={submitting}
-          className="btn-press w-full rounded-full bg-brand-600 px-5 py-3.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-60"
+          className="btn-press flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-brand-600 px-5 py-3.5 text-sm font-bold text-white hover:bg-brand-700 disabled:opacity-60"
         >
-          {submitting
-            ? "Recording…"
-            : isPickup
-              ? "Confirm pickup"
-              : "Confirm delivery"}
+          {submitting ? (
+            <>
+              <SubmitSpinner />
+              Recording…
+            </>
+          ) : isPickup ? (
+            "Confirm pickup"
+          ) : (
+            "Confirm delivery"
+          )}
         </button>
       </form>
     </section>

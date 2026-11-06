@@ -13,6 +13,11 @@
  *   4. scroll-driven motion (glass + 3D scroll pass) — reveal
  *      stagger caps and parallax offsets clamp; one reduced-motion
  *      gate rules all of it.
+ *   5. staff app rules (Web3D UI + operability pass) — the leg
+ *      stepper follows awaitingThisLeg exactly, up-next picks the
+ *      first awaiting round, ping failures show the retry note
+ *      only from the second in a row, and OTP digits/paste shape
+ *      into boxes without ever inventing a digit.
  * The DOM tilt, video playback and Leaflet rendering are NOT unit
  * tested — only the decisions behind them are.
  * Run: `npm run test:motion`. Exits non-zero on failure.
@@ -64,6 +69,12 @@ try {
     revealDelayMs,
     parallaxOffset,
     parallaxEnabled,
+    staffLegSteps,
+    staffLegProgress,
+    nextTaskId,
+    pingFailureStreak,
+    otpDigits,
+    otpApplyInput,
   } = motion;
 
   let passed = 0;
@@ -202,6 +213,66 @@ try {
     parallaxEnabled({ prefersReducedMotion: false, targetCount: 3 }) === true &&
     parallaxEnabled({ prefersReducedMotion: true, targetCount: 3 }) === false &&
     parallaxEnabled({ prefersReducedMotion: false, targetCount: 0 }) === false);
+
+  /* 5. Staff app rules (Web3D UI + operability pass) ------------- */
+  const awaitingSteps = staffLegSteps({ arrived: false, awaitingThisLeg: true });
+  check("staff steps: awaiting → Travel current, Handover upcoming",
+    awaitingSteps[0].state === "current" && awaitingSteps[1].state === "upcoming");
+  const atLegSteps = staffLegSteps({ arrived: false, awaitingThisLeg: false });
+  check("staff steps: at the leg → Travel done, Handover current",
+    atLegSteps[0].state === "done" && atLegSteps[1].state === "current");
+  const doneSteps = staffLegSteps({ arrived: true, awaitingThisLeg: false });
+  check("staff steps: arrived → both done",
+    doneSteps.every((s) => s.state === "done"));
+  check("staff steps: ids and labels are Travel/Handover",
+    doneSteps[0].id === "travel" && doneSteps[1].id === "handover" &&
+    doneSteps[0].label === "Travel" && doneSteps[1].label === "Handover");
+  check("staff progress: 0 awaiting, 0.5 at the leg, 1 arrived",
+    staffLegProgress({ arrived: false, awaitingThisLeg: true }) === 0 &&
+    staffLegProgress({ arrived: false, awaitingThisLeg: false }) === 0.5 &&
+    staffLegProgress({ arrived: true, awaitingThisLeg: false }) === 1);
+
+  check("staff up-next: first awaiting round wins",
+    nextTaskId([
+      { assignmentId: "a", awaitingThisLeg: false },
+      { assignmentId: "b", awaitingThisLeg: true },
+      { assignmentId: "c", awaitingThisLeg: true },
+    ]) === "b");
+  check("staff up-next: none awaiting / empty → null",
+    nextTaskId([{ assignmentId: "a", awaitingThisLeg: false }]) === null &&
+    nextTaskId([]) === null);
+
+  check("staff ping streak: first failure stays silent",
+    pingFailureStreak(0, "failed").failures === 1 &&
+    pingFailureStreak(0, "failed").showRetry === false);
+  check("staff ping streak: second failure shows the retry note",
+    pingFailureStreak(1, "failed").failures === 2 &&
+    pingFailureStreak(1, "failed").showRetry === true);
+  check("staff ping streak: success resets the count",
+    pingFailureStreak(4, "sent").failures === 0 &&
+    pingFailureStreak(4, "sent").showRetry === false);
+
+  check("otp digits: strips non-digits and caps at 6",
+    otpDigits("12a3-45 6789") === "123456" && otpDigits("") === "");
+  check("otp digits: custom length respected",
+    otpDigits("98765", 4) === "9876");
+
+  const emptyBoxes = ["", "", "", "", "", ""];
+  const typed = otpApplyInput(emptyBoxes, 0, "1");
+  check("otp input: first digit lands in box 1, focus advances",
+    typed.boxes.join("") === "1" && typed.focusIndex === 1);
+  const pasted = otpApplyInput(emptyBoxes, 0, "123456");
+  check("otp paste: full code fills all boxes, focus on the last",
+    pasted.boxes.join("") === "123456" && pasted.focusIndex === 5);
+  const midPaste = otpApplyInput(["1", "2", "", "", "", ""], 2, "345");
+  check("otp paste: mid-code paste fills forward from the box",
+    midPaste.boxes.join("") === "12345" && midPaste.focusIndex === 5);
+  const overflow = otpApplyInput(emptyBoxes, 4, "9999");
+  check("otp paste: digits past the last box are dropped",
+    overflow.boxes.join("") === "99" && overflow.focusIndex === 5);
+  const junk = otpApplyInput(emptyBoxes, 0, "ab-cd");
+  check("otp input: non-digits write nothing, focus still advances",
+    junk.boxes.join("") === "" && junk.focusIndex === 1);
 
   console.log(`\n${passed} passed, ${failures.length} failed`);
   if (failures.length > 0) process.exit(1);

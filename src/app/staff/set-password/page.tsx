@@ -5,9 +5,10 @@ import Link from "next/link";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { parseLinkHash, resolveLinkSession } from "@/lib/link-session";
 import { newPasswordSchema } from "@/lib/validation";
+import StaffSuccessCheck from "@/components/staff/StaffSuccessCheck";
 
 const inputClass =
-  "w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm text-ink-900 placeholder:text-ink-500/60 focus:border-brand-500 focus:outline-none";
+  "min-h-12 w-full rounded-xl border border-brand-200 bg-white/90 px-4 py-3 text-sm text-ink-900 placeholder:text-ink-500/60 focus:border-brand-500 focus:outline-none";
 const labelClass = "block text-sm font-semibold text-ink-900";
 
 type Phase = "checking" | "ready" | "invalid" | "done";
@@ -36,6 +37,13 @@ type Phase = "checking" | "ready" | "invalid" | "done";
  * (Authentication → URL Configuration), the same place /reset-password
  * was added — without that, the invite link lands on the site root
  * instead and the session never reaches this page.
+ *
+ * Web3D UI pass: this page keeps the storefront chrome (see
+ * SiteChrome), so it gains the marketing ambient backdrop for
+ * free; its status panels become glass, the done state gains the
+ * animated staff success check, and inputs/submit get 48px touch
+ * targets. The session-resolution logic above is untouched —
+ * presentation only.
  */
 export default function StaffSetPasswordPage() {
   const [phase, setPhase] = useState<Phase>("checking");
@@ -169,7 +177,7 @@ export default function StaffSetPasswordPage() {
       </p>
 
       {!configured && (
-        <p role="status" className="mt-6 rounded-xl bg-brand-50 p-4 text-sm text-ink-700">
+        <p role="status" className="glass mt-6 rounded-[1.75rem] p-4 text-sm text-ink-700">
           Accounts are being set up. Staff sign-in will open as soon as
           the service configuration is complete.
         </p>
@@ -182,7 +190,7 @@ export default function StaffSetPasswordPage() {
       )}
 
       {configured && phase === "invalid" && (
-        <div role="alert" className="mt-6 rounded-xl border border-red-200 bg-red-50 p-5">
+        <div role="alert" className="mt-6 rounded-[1.75rem] border border-red-200 bg-red-50/95 p-5">
           <p className="text-sm font-bold text-ink-900">This invite link is not valid</p>
           <p className="mt-2 text-sm leading-relaxed text-ink-700">
             It may have expired or already been used. If you already set
@@ -198,8 +206,9 @@ export default function StaffSetPasswordPage() {
       )}
 
       {configured && phase === "done" && (
-        <div role="status" className="mt-6 rounded-xl border border-brand-200 bg-brand-50 p-5">
-          <p className="text-sm font-bold text-ink-900">Password set — you are ready</p>
+        <div role="status" className="glass-strong mt-6 rounded-[1.75rem] p-5">
+          <StaffSuccessCheck size={44} />
+          <p className="mt-3 text-sm font-bold text-ink-900">Password set — you are ready</p>
           <p className="mt-2 text-sm leading-relaxed text-ink-700">
             Your staff account is active. Open the staff app to see the
             pickups and deliveries assigned to you.
@@ -246,7 +255,7 @@ export default function StaffSetPasswordPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="btn-press rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-brand-700 disabled:opacity-60"
+            className="btn-press min-h-12 rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-brand-700 disabled:opacity-60"
           >
             {submitting ? "Setting…" : "Set password & continue"}
           </button>

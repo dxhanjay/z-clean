@@ -1188,6 +1188,65 @@ through the SAME shared flow as the admin console
 the state machine is not forked). On delivery legs the rider ticks
 "I collected ₹X in cash" when they took the COD balance.
 
+### Web3D UI + operability pass (2026-11-06)
+
+The staff app wears the marketing site's glass + 3D-motion
+language now, tuned for one-handed field use — **presentation
+only: no `/api` route, auth rule, assignment/OTP/ping contract,
+role scoping or admin page changed**, and no new dependency (no
+WebGL; the motion toolkit stays `src/lib/motion.ts` + CSS).
+
+- **Glass shell, scoped to `/staff`**: the staff layout mounts
+  the same pastel `AmbientBackground` as the storefront and a
+  glass sticky header. `SiteChrome` already excluded `/staff`
+  from the marketing chrome, so the backdrop cannot leak into
+  the customer or admin shells. Task cards are glass, with the
+  existing 3D reveal (rotateX rise) and Tilt — Tilt stays
+  fine-pointer-only, so on phones (the riders' actual device)
+  cards are perfectly still. Under `prefers-reduced-motion`
+  everything settles to static, as everywhere else.
+- **Up-next first**: the rounds list leads with the first round
+  whose handover is already unlocked ("Up next" hero card —
+  glass-strong, brand ring); the rest of the queue follows in
+  assignment order. Loading shows card-shaped skeletons; the
+  empty state and the error state (now with a 48px Retry) are
+  friendly glass cards instead of bare text.
+- **Task detail**: a **Travel → Handover** leg-progress stepper
+  with an easing fill (pure rules in `motion.ts` §5 — the plant's
+  12-stage timeline is deliberately NOT reused: those stages are
+  plant work, not the rider's) sits above the address card, and
+  completing the handover lands on an animated success check
+  (SVG draw-on, reduced-motion static) over the recorded state.
+- **Sticky bottom action bar**: the state-appropriate primary
+  action is always thumb-reachable — "Start sharing location"
+  while travelling (or while the handover is still locked),
+  "Enter code & complete …" once it unlocks — each scrolling
+  straight to its panel. Every interactive control in the staff
+  app is now at least 48px tall.
+- **OTP entry is six boxes**: typing auto-advances, pasting a
+  code (from the SMS app or the customer's message) distributes
+  across the boxes, backspace steps back. The boxes are a pure
+  view over the same value — the submit still POSTs the joined
+  6-digit `otp` string to the same endpoint.
+- **Location sharing, clearer**: the live line reads "Sharing
+  live · last update 12 s ago (2:41:07 PM)" and ticks; a single
+  missed ping stays silent (the watch retries on its own), but
+  from the second consecutive failure a retry note with a "Send
+  an update now" action appears. The honest limits are unchanged
+  and still stated in the panel: foreground-only, stops when the
+  rider leaves the page. Ping cadence, throttle and API payload
+  untouched.
+- **`/staff/set-password`** keeps the storefront chrome (so it
+  already had the ambient backdrop): its status panels are glass
+  now, the done state gains the same animated success check, and
+  inputs/submit are 48px targets. The invite-link session logic
+  is byte-for-byte the logic it was.
+- **Cost**: `/staff` First Load 110 → 118 kB, task detail
+  118 → 124 kB, set-password 197 kB unchanged (the delta is the
+  glass/motion components themselves; the shared bundle did not
+  move). The 17 new UI rules are unit-tested in
+  `scripts/test-motion.mjs` §5 (suite: 925 passing).
+
 ### Roles & schema (schema_v10)
 
 - `profiles.role` gains **`'staff'`**. It is deliberately NOT an

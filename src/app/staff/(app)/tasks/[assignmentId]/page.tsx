@@ -4,6 +4,9 @@ import { use, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import ShareLocationPanel from "@/components/staff/ShareLocationPanel";
 import HandoverPanel from "@/components/staff/HandoverPanel";
+import StaffLegProgress from "@/components/staff/StaffLegProgress";
+import StaffSuccessCheck from "@/components/staff/StaffSuccessCheck";
+import { Skeleton, SkeletonText } from "@/components/Skeleton";
 import { formatPaise } from "@/lib/pricing";
 import type { StaffTask } from "../../page";
 
@@ -37,6 +40,15 @@ function mapsDestination(task: StaffTask): string {
  * finds "not on your rounds": the API never returns it to them.
  * Support view (admin tiers) renders everything read-only: no
  * sharing, no handover — those are rider acts.
+ *
+ * Web3D UI pass: glass cards over the shell's ambient backdrop, a
+ * Travel → Handover leg-progress stepper (StaffLegProgress; rules
+ * in motion.ts §5), an animated success check when the handover
+ * completes, and a sticky bottom action bar (thumb reach) whose
+ * primary action follows the leg's state — Share location while
+ * travelling (or while the handover is still locked), Enter code
+ * once it unlocks; the bar steps aside in support view and on the
+ * done state, where the in-card Back button is the way out.
  */
 export default function StaffTaskDetailPage({
   params,
@@ -82,20 +94,32 @@ export default function StaffTaskDetailPage({
   }, [load]);
 
   if (state.kind === "loading") {
-    return <p role="status" className="text-sm text-ink-500">Loading this round…</p>;
+    return (
+      <div role="status" aria-label="Loading this round" className="grid gap-4">
+        <Skeleton className="h-6 w-32" />
+        <div className="glass rounded-[1.75rem] p-5">
+          <Skeleton className="h-5 w-40" />
+          <SkeletonText lines={3} className="mt-4" />
+        </div>
+        <div className="glass rounded-[1.75rem] p-5">
+          <Skeleton className="h-5 w-32" />
+          <SkeletonText lines={2} className="mt-4" />
+        </div>
+      </div>
+    );
   }
 
   if (state.kind === "error") {
     return (
-      <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-5">
+      <div role="alert" className="glass rounded-[1.75rem] p-5">
         <p className="text-sm font-bold text-ink-900">Something went wrong</p>
         <p className="mt-1 text-sm text-ink-700">{state.message}</p>
         <button
           type="button"
           onClick={() => void load()}
-          className="mt-3 rounded-full bg-brand-600 px-4 py-2 text-xs font-bold text-white hover:bg-brand-700"
+          className="btn-press mt-3 min-h-12 rounded-full bg-brand-600 px-5 py-3 text-sm font-bold text-white hover:bg-brand-700"
         >
-          Try again
+          Retry
         </button>
       </div>
     );
@@ -103,7 +127,7 @@ export default function StaffTaskDetailPage({
 
   if (state.kind === "notfound") {
     return (
-      <div className="rounded-2xl border border-mist-200 bg-white p-6 text-center">
+      <div className="glass rounded-[1.75rem] p-6 text-center">
         <p className="text-base font-bold text-ink-900">Not on your rounds</p>
         <p className="mx-auto mt-1 max-w-sm text-sm leading-relaxed text-ink-500">
           This round is not assigned to you, or it has already been
@@ -111,7 +135,7 @@ export default function StaffTaskDetailPage({
         </p>
         <Link
           href="/staff"
-          className="mt-4 inline-block rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700"
+          className="btn-press mt-4 inline-block min-h-12 rounded-full bg-brand-600 px-5 py-3 text-sm font-bold text-white hover:bg-brand-700"
         >
           Back to my rounds
         </Link>
@@ -124,9 +148,18 @@ export default function StaffTaskDetailPage({
   const supportView = state.kind === "ready" ? state.supportView : false;
   const destination = mapsDestination(task);
   const codDue = task.codDuePaise !== null && task.codDuePaise > 0;
+  const scrollToPanel = (id: string) =>
+    document
+      .getElementById(id)
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   return (
     <div className="grid gap-4">
+      <StaffLegProgress
+        leg={task.leg}
+        arrived={done}
+        awaitingThisLeg={!done && !task.awaitingThisLeg}
+      />
       <div>
         <Link href="/staff" className="text-sm font-semibold text-brand-700 hover:text-brand-800">
           ← All rounds
@@ -156,8 +189,9 @@ export default function StaffTaskDetailPage({
       </div>
 
       {done && (
-        <div role="status" className="rounded-2xl border border-brand-200 bg-brand-50 p-6 text-center">
-          <p className="text-lg font-extrabold text-ink-900">
+        <div role="status" className="glass-strong rounded-[1.75rem] p-6 text-center">
+          <StaffSuccessCheck />
+          <p className="mt-3 text-lg font-extrabold text-ink-900">
             {task.leg === "pickup" ? "Pickup complete" : "Delivery complete"}
           </p>
           <p className="mx-auto mt-1 max-w-sm text-sm leading-relaxed text-ink-700">
@@ -167,7 +201,7 @@ export default function StaffTaskDetailPage({
           </p>
           <Link
             href="/staff"
-            className="mt-4 inline-block rounded-full bg-brand-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-700"
+            className="btn-press mt-4 inline-block min-h-12 rounded-full bg-brand-600 px-5 py-3 text-sm font-bold text-white hover:bg-brand-700"
           >
             Back to my rounds
           </Link>
@@ -176,7 +210,7 @@ export default function StaffTaskDetailPage({
 
       {!done && (
         <>
-          <section className="rounded-2xl border border-mist-200 bg-white p-5">
+          <section className="glass rounded-[1.75rem] p-5">
             <h2 className="text-base font-extrabold text-ink-900">
               {task.leg === "pickup" ? "Collect from" : "Deliver to"}
             </h2>
@@ -203,30 +237,30 @@ export default function StaffTaskDetailPage({
                   href={`https://www.google.com/maps/dir/?api=1&destination=${destination}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="rounded-full bg-ink-900 px-4 py-3 text-center text-sm font-bold text-white hover:bg-ink-700"
+                  className="btn-press flex min-h-12 items-center justify-center rounded-full bg-ink-900 px-4 py-3 text-center text-sm font-bold text-white hover:bg-ink-700"
                 >
                   Navigate
                 </a>
               ) : (
-                <span className="rounded-full bg-mist-100 px-4 py-3 text-center text-sm font-bold text-ink-400">
+                <span className="flex min-h-12 items-center justify-center rounded-full bg-white/60 px-4 py-3 text-center text-sm font-bold text-ink-400">
                   Navigate
                 </span>
               )}
               {task.customer.phone ? (
                 <a
                   href={`tel:${task.customer.phone.replace(/\s/g, "")}`}
-                  className="rounded-full border border-brand-600 px-4 py-3 text-center text-sm font-bold text-brand-700 hover:bg-brand-50"
+                  className="btn-press flex min-h-12 items-center justify-center rounded-full border border-brand-600 bg-white/70 px-4 py-3 text-center text-sm font-bold text-brand-700 hover:bg-brand-50"
                 >
                   Call customer
                 </a>
               ) : (
-                <span className="rounded-full bg-mist-100 px-4 py-3 text-center text-sm font-bold text-ink-400">
+                <span className="flex min-h-12 items-center justify-center rounded-full bg-white/60 px-4 py-3 text-center text-sm font-bold text-ink-400">
                   No phone on file
                 </span>
               )}
             </div>
             {task.leg === "delivery" && codDue && (
-              <p className="mt-4 rounded-xl bg-amber-50 px-3 py-2.5 text-sm font-bold text-amber-900">
+              <p className="mt-4 rounded-xl bg-amber-50/90 px-3 py-2.5 text-sm font-bold text-amber-900">
                 Collect {formatPaise(task.codDuePaise as number)} in cash at the door
                 (pay-on-delivery).
               </p>
@@ -241,7 +275,7 @@ export default function StaffTaskDetailPage({
           )}
 
           {supportView ? (
-            <section className="rounded-2xl border border-mist-200 bg-mist-100 p-5">
+            <section className="glass rounded-[1.75rem] p-5">
               <p className="text-sm font-semibold text-ink-700">
                 Support view — the rider completes the handover from their
                 own sign-in. Location sharing and OTP entry are not
@@ -258,7 +292,7 @@ export default function StaffTaskDetailPage({
               }
             />
           ) : (
-            <section className="rounded-2xl border border-mist-200 bg-white p-5">
+            <section className="glass rounded-[1.75rem] p-5">
               <h2 className="text-base font-extrabold text-ink-900">
                 Handover unlocks shortly
               </h2>
@@ -270,6 +304,42 @@ export default function StaffTaskDetailPage({
                 sees you coming.
               </p>
             </section>
+          )}
+
+          {/* Sticky bottom action bar — the primary action for the
+              current state, always thumb-reachable. Rendered last so
+              the fixed bar (inside this same stacking context) sits
+              above the in-flow cards within the page. */}
+          {!supportView && (
+            <div className="glass-strong fixed inset-x-0 bottom-0 z-40">
+              <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3 sm:px-6">
+                {task.awaitingThisLeg ? (
+                  <button
+                    type="button"
+                    onClick={() => scrollToPanel("staff-handover-panel")}
+                    className="btn-press flex min-h-12 flex-1 items-center justify-center rounded-full bg-brand-600 px-5 py-3 text-sm font-bold text-white hover:bg-brand-700"
+                  >
+                    {task.leg === "pickup"
+                      ? "Enter code & complete pickup"
+                      : "Enter code & complete delivery"}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => scrollToPanel("staff-share-panel")}
+                    className="btn-press flex min-h-12 flex-1 items-center justify-center rounded-full bg-brand-600 px-5 py-3 text-sm font-bold text-white hover:bg-brand-700"
+                  >
+                    Start sharing location
+                  </button>
+                )}
+                <Link
+                  href="/staff"
+                  className="btn-press glass-chip flex min-h-12 items-center justify-center rounded-full px-4 py-3 text-sm font-bold text-ink-700"
+                >
+                  All rounds
+                </Link>
+              </div>
+            </div>
           )}
         </>
       )}

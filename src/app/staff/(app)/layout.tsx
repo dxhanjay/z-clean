@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getStaffGate } from "@/lib/tracking-server";
+import AmbientBackground from "@/components/AmbientBackground";
 
 /**
  * Staff web app shell + gate (Staff Web App phase).
@@ -23,6 +24,15 @@ import { getStaffGate } from "@/lib/tracking-server";
  *
  * The shell is a tool, not a storefront: one slim top bar in the
  * storefront's pastel tokens, big touch targets, nothing else.
+ *
+ * Web3D UI pass (staff operability): the shell gains the marketing
+ * site's glass language — the shared AmbientBackground mounted
+ * HERE (the staff layout only; SiteChrome never mounts it on
+ * /staff routes, and admin/customer shells are untouched), a glass
+ * sticky header, and a glass sign-out pill. The gate states
+ * (misconfigured / demo / forbidden) render BEFORE the shell and
+ * stay plain on purpose: an error a rider must act on should
+ * never sit behind frosted glass.
  */
 export default async function StaffAppLayout({
   children,
@@ -91,37 +101,42 @@ export default async function StaffAppLayout({
       : (gate.employee?.fullName ?? "Office — support view");
 
   return (
-    <div className="min-h-dvh bg-mist-50">
-      <header className="sticky top-0 z-10 border-b border-mist-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <Link href="/staff" className="flex items-center gap-2.5">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-600 text-base font-extrabold text-white">
-              Z
-            </span>
-            <span className="leading-tight">
-              <span className="block text-sm font-extrabold text-ink-900">
-                Z-clean Staff
+    <div className="relative min-h-dvh">
+      <AmbientBackground />
+      <div className="relative">
+        <header className="glass-strong sticky top-0 z-40">
+          <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+            <Link href="/staff" className="flex min-h-12 items-center gap-2.5">
+              <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-600 text-base font-extrabold text-white">
+                Z
               </span>
-              <span className="block text-xs text-ink-500">{displayName}</span>
-            </span>
-          </Link>
-          <form action="/auth/signout" method="post">
-            <button
-              type="submit"
-              className="rounded-full border border-mist-300 px-3.5 py-1.5 text-xs font-bold text-ink-700 hover:bg-mist-100"
-            >
-              Sign out
-            </button>
-          </form>
-        </div>
-        {gate.kind === "admin" && (
-          <p className="border-t border-amber-200 bg-amber-50 px-4 py-1.5 text-center text-xs font-semibold text-amber-800">
-            Support view — you are seeing every rider&apos;s active rounds.
-            Location sharing and handovers stay rider-only.
-          </p>
-        )}
-      </header>
-      <main className="mx-auto max-w-3xl px-4 py-5 sm:px-6">{children}</main>
+              <span className="leading-tight">
+                <span className="block text-sm font-extrabold text-ink-900">
+                  Z-clean Staff
+                </span>
+                <span className="block text-xs text-ink-500">{displayName}</span>
+              </span>
+            </Link>
+            <form action="/auth/signout" method="post">
+              <button
+                type="submit"
+                className="btn-press glass-chip min-h-12 rounded-full px-4 py-2 text-xs font-bold text-ink-700"
+              >
+                Sign out
+              </button>
+            </form>
+          </div>
+          {gate.kind === "admin" && (
+            <p className="border-t border-amber-200/70 bg-amber-50/85 px-4 py-1.5 text-center text-xs font-semibold text-amber-800">
+              Support view — you are seeing every rider&apos;s active rounds.
+              Location sharing and handovers stay rider-only.
+            </p>
+          )}
+        </header>
+        <main className="relative mx-auto max-w-3xl px-4 py-5 pb-28 sm:px-6">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

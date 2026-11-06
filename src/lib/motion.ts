@@ -241,3 +241,133 @@ export function parallaxEnabled(input: {
   if (!scrollMotionEnabled(input)) return false;
   return Number.isFinite(input.targetCount) && input.targetCount > 0;
 }
+
+/* ------------------------------------------------------------------ */
+/* 5. Staff app (Web3D UI + operability pass)                         */
+/* ------------------------------------------------------------------ */
+
+/**
+ * One leg of a round, as the rider experiences it. The two steps
+ * are the leg's own: travel first, then the doorstep handover.
+ * The order's full inside-the-plant lifecycle is NOT the rider's
+ * progress — their work is these two steps and nothing else.
+ */
+export type StaffLegStepId = "travel" | "handover";
+
+export interface StaffLegStep {
+  id: StaffLegStepId;
+  label: string;
+  state: "done" | "current" | "upcoming";
+}
+
+/**
+ * The leg-progress rule behind the staff detail page's stepper:
+ *
+ *   - `h arrived` (after handover) → both steps done, fill 100%.
+ *   - awaiting this leg → Travel is current (the rider heads out;
+ *     the handover unlocks when the order reaches their step),
+ *     fill 0%.
+ *   - order AT this leg, no handover yet → Travel is DONE (the
+ *     rider provably got there — the code entry is open only at
+ *     the door) and Handover is current, fill 50%.
+ *
+ * Derived only from `awaitingThisLeg` (the tasks API's own
+ * verdict) — no position or status is invented here.
+ */
+export function staffLegSteps(input: {
+  arrived: boolean;
+  awaitingThisLeg: boolean;
+}): StaffLegStep[] {
+  if (input.arrived) {
+    return [
+      { id: "travel", label: "Travel", state: "done" },
+      { id: "handover", label: "Handover", state: "done" },
+    ];
+  }
+  if (input.awaitingThisLeg) {
+    return [
+      { id: "travel", label: "Travel", state: "current" },
+      { id: "handover", label: "Handover", state: "upcoming" },
+    ];
+  }
+  return [
+    { id: "travel", label: "Travel", state: "done" },
+    { id: "handover", label: "Handover", state: "current" },
+  ];
+}
+
+/** Fill fraction (0–1) for the leg progress bar between the steps. */
+export function staffLegProgress(input: {
+  arrived: boolean;
+  awaitingThisLeg: boolean;
+}): number {
+  if (input.arrived) return 1;
+  if (input.awaitingThisLeg) return 0;
+  return 0.5;
+}
+
+/** The rider's next round: the FIRST task still awaiting its leg. */
+export function nextTaskId(
+  tasks: readonly { assignmentId: string; awaitingThisLeg: boolean }[],
+): string | null {
+  return tasks.find((t) => t.awaitingThisLeg)?.assignmentId ?? null;
+}
+
+/** How many pings of a sharing session have failed in a row. */
+export interface PingFailureStreak {
+  /** Consecutive failed send attempts since the last success. */
+  failures: number;
+  /** True while the streak deserves a *visible* retry message. */
+  showRetry: boolean;
+}
+
+/**
+ * Ping-retry messaging rule (staff Share Location panel): a single
+ * blip stays silent — the note would flicker on healthy rounds.
+ * From the SECOND consecutive failure the panel says it is
+ * retrying; any success resets the count to zero. Pure counter —
+ * the panel owns the fetch and the watch, this owns the rule.
+ */
+export function pingFailureStreak(
+  previous: number,
+  outcome: "sent" | "failed",
+): PingFailureStreak {
+  if (outcome === "sent") return { failures: 0, showRetry: false };
+  const failures =
+    (Number.isFinite(previous) && previous > 0 ? Math.floor(previous) : 0) + 1;
+  return { failures, showRetry: failures >= 2 };
+}
+
+/** Shape raw input into the OTP boxes: digits only, at most `length`. */
+export function otpDigits(value: string, length = 6): string {
+  return (value ?? "").replace(/\D/g, "").slice(0, Math.max(0, length));
+}
+
+/**
+ * Distribute typed/pasted digits across the OTP boxes starting at
+ * `startIndex`. The boxes themselves stay dumb: this pure function
+ * decides the new contents and which box takes focus next (the
+ * first still-empty box after the pasted run, capped at the last
+ * box — so a full paste lands focus on box 6, ready to submit).
+ */
+export function otpApplyInput(
+  boxes: readonly string[],
+  startIndex: number,
+  rawValue: string,
+): { boxes: string[]; focusIndex: number } {
+  const next = boxes.map((b) => otpDigits(b, 1));
+  const digits = otpDigits(rawValue, next.length);
+  const start = Math.min(
+    Math.max(0, Math.floor(startIndex) || 0),
+    Math.max(0, next.length - 1),
+  );
+  let written = 0;
+  for (let i = 0; i < digits.length && start + i < next.length; i++) {
+    next[start + i] = digits[i];
+    written++;
+  }
+  return {
+    boxes: next,
+    focusIndex: Math.min(start + Math.max(written, 1), next.length - 1),
+  };
+}

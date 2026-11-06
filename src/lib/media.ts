@@ -54,13 +54,19 @@ export const whyImage: SiteImage = {
 };
 
 /**
- * Card / detail-page photos for the services that have a matching photo,
- * keyed by service slug. Services without an entry keep the plain card.
+ * Card / detail-page photo for EVERY service, keyed by service slug
+ * (owner request, Nov 6, 2026: no service card without an image).
+ * Three are hotlinked template photos; the other five are Z-clean's own
+ * generated images, self-hosted under /public/services/.
  */
 export const serviceImages: Record<string, SiteImage> = {
   "laundry-wash-and-fold": {
     src: `${CDN_B}/6a7b8a71626a80091510f0df_service-image-01.webp`,
     alt: "Fresh laundry being folded into neat stacks",
+  },
+  "wash-and-iron": {
+    src: "/services/wash-and-iron.webp",
+    alt: "Stack of freshly washed and pressed shirts in white and pastel blue",
   },
   "steam-iron-press": {
     src: `${CDN_B}/6a7b8a71626a80091510f117_service-image-2.webp`,
@@ -69,6 +75,22 @@ export const serviceImages: Record<string, SiteImage> = {
   "dry-cleaning": {
     src: `${CDN_B}/6a7b8a71626a80091510f0fd_service-image-3.webp`,
     alt: "Woollen garments carefully folded after cleaning",
+  },
+  "shoe-cleaning": {
+    src: "/services/shoe-cleaning.webp",
+    alt: "White sneakers being gently brushed clean with foam",
+  },
+  "leather-care": {
+    src: "/services/leather-care.webp",
+    alt: "Leather bag and jacket being conditioned with balm and a soft cloth",
+  },
+  "curtain-cleaning": {
+    src: "/services/curtain-cleaning.webp",
+    alt: "Freshly cleaned curtains hanging at a bright window",
+  },
+  "carpet-cleaning": {
+    src: "/services/carpet-cleaning.webp",
+    alt: "Carpet being deep cleaned with a professional machine",
   },
 };
 

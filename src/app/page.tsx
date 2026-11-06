@@ -162,8 +162,7 @@ export default function HomePage() {
       {/* About band */}
       <section aria-labelledby="about-heading" className={`mx-auto max-w-6xl px-4 sm:px-6 ${sectionPad}`}>
         <div className="grid items-center gap-10 lg:grid-cols-2">
-          <Reveal>
-            <div className="grid h-80 grid-cols-2 gap-4 sm:h-96 lg:h-[30rem]">
+            <div className="grid h-80 grid-cols-2 gap-4 overflow-hidden rounded-[2rem] sm:h-96 lg:h-[30rem]">
               <img
                 src={aboutImages[0].src}
                 alt={aboutImages[0].alt}
@@ -185,8 +184,6 @@ export default function HomePage() {
                 />
               </div>
             </div>
-          </Reveal>
-          <Reveal delay={120}>
             <p className={eyebrowCls}>About us</p>
             <h2 id="about-heading" className={h2Cls}>
               About {businessSettings.name}
@@ -213,7 +210,6 @@ export default function HomePage() {
             >
               More about us →
             </Link>
-          </Reveal>
         </div>
       </section>
 

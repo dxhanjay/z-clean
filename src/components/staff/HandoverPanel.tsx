@@ -145,7 +145,7 @@ export default function HandoverPanel({
   }
 
   return (
-    <section id="staff-handover-panel" className="glass rounded-[1.75rem] p-5">
+    <section id="staff-handover-panel" className="glass-strong rounded-[1.75rem] p-5 shadow-soft-lg ring-1 ring-ink-900/10">
       <h2 className="text-base font-extrabold text-ink-900">
         {isPickup ? "Complete the pickup" : "Complete the delivery"}
       </h2>

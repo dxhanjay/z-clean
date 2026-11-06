@@ -210,7 +210,7 @@ export default function StaffTaskDetailPage({
 
       {!done && (
         <>
-          <section className="glass-strong rounded-[1.75rem] p-5">
+          <section className="glass-strong rounded-[1.75rem] p-5 shadow-soft-lg ring-1 ring-ink-900/10">
             <h2 className="text-base font-extrabold text-ink-900">
               {task.leg === "pickup" ? "Collect from" : "Deliver to"}
             </h2>
@@ -275,7 +275,7 @@ export default function StaffTaskDetailPage({
           )}
 
           {supportView ? (
-            <section className="glass rounded-[1.75rem] p-5">
+            <section className="glass-strong rounded-[1.75rem] p-5 shadow-soft-lg ring-1 ring-ink-900/10">
               <p className="text-sm font-semibold text-ink-700">
                 Support view — the rider completes the handover from their
                 own sign-in. Location sharing and OTP entry are not
@@ -292,7 +292,7 @@ export default function StaffTaskDetailPage({
               }
             />
           ) : (
-            <section className="glass rounded-[1.75rem] p-5">
+            <section className="glass-strong rounded-[1.75rem] p-5 shadow-soft-lg ring-1 ring-ink-900/10">
               <h2 className="text-base font-extrabold text-ink-900">
                 Handover unlocks shortly
               </h2>

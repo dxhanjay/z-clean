@@ -163,25 +163,25 @@ export default function HomePage() {
       <section aria-labelledby="about-heading" className={`mx-auto max-w-6xl px-4 sm:px-6 ${sectionPad}`}>
         <div className="grid items-center gap-10 lg:grid-cols-2">
           <Reveal>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid h-80 grid-cols-2 gap-4 sm:h-96 lg:h-[30rem]">
               <img
                 src={aboutImages[0].src}
                 alt={aboutImages[0].alt}
                 loading="lazy"
-                className="h-full min-h-64 w-full rounded-[2rem] object-cover shadow-soft"
+                className="h-full w-full rounded-[2rem] object-cover shadow-soft"
               />
-              <div className="grid gap-4">
+              <div className="grid h-full grid-rows-2 gap-4">
                 <img
                   src={aboutImages[1].src}
                   alt={aboutImages[1].alt}
                   loading="lazy"
-                  className="h-full min-h-32 w-full rounded-[2rem] object-cover shadow-soft"
+                  className="h-full w-full rounded-[2rem] object-cover shadow-soft"
                 />
                 <img
                   src={aboutImages[2].src}
                   alt={aboutImages[2].alt}
                   loading="lazy"
-                  className="h-full min-h-32 w-full rounded-[2rem] object-cover shadow-soft"
+                  className="h-full w-full rounded-[2rem] object-cover shadow-soft"
                 />
               </div>
             </div>

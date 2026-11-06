@@ -301,7 +301,7 @@ export default function ShareLocationPanel({
       : null;
 
   return (
-    <section id="staff-share-panel" className="glass-strong rounded-[1.75rem] p-5">
+    <section id="staff-share-panel" className="glass-strong rounded-[1.75rem] p-5 shadow-soft-lg ring-1 ring-ink-900/10">
       <h2 className="text-base font-extrabold text-ink-900">Share my location</h2>
       <p className="mt-1 text-sm leading-relaxed text-ink-500">
         While you share, the customer can follow your ride on their order

@@ -61,7 +61,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
         </h1>
         <p className="mt-3 text-sm leading-relaxed text-ink-500">
           You are signed in as {gate.user.email ?? "a customer"}, and this
-          account is not an admin. If you run Z-clean operations, sign in
+          account is not an admin. If you run Sri Clean operations, sign in
           with the admin account (an admin can grant the role from the
           database — see the README, “Setup”, step 3).
         </p>

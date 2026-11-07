@@ -28,7 +28,7 @@ export default function TabsLayout() {
     >
       <Tabs.Screen
         name="index"
-        options={{ title: "Z-clean", tabBarLabel: "Home", tabBarIcon: tabIcon("⌂") }}
+        options={{ title: "Sri Clean", tabBarLabel: "Home", tabBarIcon: tabIcon("⌂") }}
       />
       <Tabs.Screen
         name="place-order"

@@ -40,7 +40,7 @@ export default function QrScanner({
         <Text style={[styles.label, { textAlign: "center" }]}>Camera access is off</Text>
         <Text style={styles.muted}>
           {permission.canAskAgain
-            ? "Z-clean needs the camera to scan the order's QR tag. You can allow it now, or close this and paste / type the code instead — both work."
+            ? "Sri Clean needs the camera to scan the order's QR tag. You can allow it now, or close this and paste / type the code instead — both work."
             : "Camera permission was denied in system settings. Paste or type the order's QR code instead — it works the same."}
         </Text>
         {permission.canAskAgain ? (

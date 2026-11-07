@@ -96,7 +96,7 @@ export default async function PricingTeaser() {
           <div className="glass overflow-hidden rounded-[2rem]">
             <table className="w-full text-left text-sm">
               <caption className="sr-only">
-                Popular Z-clean services and their rates
+                Popular Sri Clean services and their rates
               </caption>
               <thead>
                 <tr className="bg-mist-100 text-xs uppercase tracking-wide text-ink-500">

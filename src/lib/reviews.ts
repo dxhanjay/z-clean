@@ -1,7 +1,7 @@
 /**
  * Customer reviews (Delta 3) — PURE helpers.
  *
- * The integrity contract for Z-clean testimonials lives here and in
+ * The integrity contract for Sri Clean testimonials lives here and in
  * supabase/schema_v9.sql: a review exists only for a DELIVERED order,
  * one per order, written by the order's owner, and reaches the public
  * site only after staff approval. Nothing in this module (or anywhere

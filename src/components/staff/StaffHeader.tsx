@@ -50,7 +50,7 @@ export default function StaffHeader({
           </span>
           <span className="leading-tight">
             <span className="block text-sm font-extrabold text-ink-900">
-              Z-clean Staff
+              Sri Clean Staff
             </span>
             <span className="block text-xs text-ink-500">{displayName}</span>
           </span>

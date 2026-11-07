@@ -15,7 +15,7 @@ import AmbientBackground from "@/components/AmbientBackground";
  * and likewise for the staff web app (/staff), which renders its own
  * minimal top bar in the staff layout. (The invite landing page,
  * /staff/set-password, keeps the storefront chrome so a brand-new
- * rider sees the familiar Z-clean frame.)
+ * rider sees the familiar Sri Clean frame.)
  * URLs, metadata and page content are unchanged either way.
  *
  * Header/Footer are Server Components (the footer reads the business

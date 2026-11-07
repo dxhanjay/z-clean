@@ -1,5 +1,5 @@
 /**
- * Z-clean order totals engine — SINGLE source of truth for order maths.
+ * Sri Clean order totals engine — SINGLE source of truth for order maths.
  *
  * Used by:
  *  - the order builder UI (live price preview in the browser),
@@ -17,9 +17,19 @@
  *  - Coupon FIRST20: 20% off the subtotal, first order only.
  *  - Delivery fee: free when (subtotal − discount) ≥ ₹299, else ₹40.
  *  - Total = subtotal − discount + delivery fee.
+ *
+ * The ₹199 / ₹299 figures are the approved defaults from pricing.ts.
+ * The owner can override both in /admin/settings (settings keys
+ * minimum_order_paise / free_delivery_threshold_paise); the server
+ * resolves them (getPricingTerms, src/lib/business-settings.ts) and
+ * passes them in via `args.terms`. Each override is honoured only when
+ * it is a positive integer number of paise — anything else falls back
+ * to the approved constant, so a settings problem can never break or
+ * distort checkout. The ₹40 delivery FEE has no settings key and
+ * always comes from pricingTerms.
  */
 
-import { allPriceItems, pricingTerms } from "./pricing";
+import { allPriceItems, formatPaise, pricingTerms } from "./pricing";
 
 export interface CatalogueEntry {
   serviceSlug: string;
@@ -124,10 +134,35 @@ export interface ComputeOrderTotalsArgs {
   isFirstOrder: boolean;
   /** Price source. Defaults to the approved local catalogue. */
   catalogue?: CatalogueEntry[];
+  /**
+   * Admin-settings overrides for the commercial terms, in paise
+   * (settings keys minimum_order_paise / free_delivery_threshold_paise,
+   * resolved server-side — see getPricingTerms). Each field is used
+   * only when it is a positive integer; a missing or invalid field
+   * falls back to the approved pricing.ts constant for that term.
+   * Omit entirely for the approved defaults (₹199 / ₹299).
+   */
+  terms?: {
+    minimumOrderPaise?: number;
+    freeDeliveryThresholdPaise?: number;
+  };
+}
+
+/** An override counts only as a positive integer number of paise. */
+function validTermsOverride(value: number | undefined): number | null {
+  return typeof value === "number" && Number.isInteger(value) && value > 0
+    ? value
+    : null;
 }
 
 export function computeOrderTotals(args: ComputeOrderTotalsArgs): TotalsResult {
   const catalogue = args.catalogue ?? localCatalogue;
+  const minimumOrderPaise =
+    validTermsOverride(args.terms?.minimumOrderPaise) ??
+    pricingTerms.minimumOrderInr * 100;
+  const freeDeliveryThresholdPaise =
+    validTermsOverride(args.terms?.freeDeliveryThresholdPaise) ??
+    pricingTerms.freeDeliveryThresholdInr * 100;
 
   if (!args.items || args.items.length === 0) {
     return { ok: false, code: "EMPTY_ORDER", error: "Your order is empty — add at least one item." };
@@ -167,11 +202,11 @@ export function computeOrderTotals(args: ComputeOrderTotalsArgs): TotalsResult {
 
   const subtotalPaise = lines.reduce((sum, l) => sum + l.lineTotalPaise, 0);
 
-  if (subtotalPaise < pricingTerms.minimumOrderInr * 100) {
+  if (subtotalPaise < minimumOrderPaise) {
     return {
       ok: false,
       code: "MIN_ORDER",
-      error: `Minimum order is ₹${pricingTerms.minimumOrderInr}. Your items add up to ₹${(subtotalPaise / 100).toFixed(2)} — please add a little more.`,
+      error: `Minimum order is ${formatPaise(minimumOrderPaise)}. Your items add up to ₹${(subtotalPaise / 100).toFixed(2)} — please add a little more.`,
     };
   }
 
@@ -196,7 +231,7 @@ export function computeOrderTotals(args: ComputeOrderTotalsArgs): TotalsResult {
 
   const netPaise = subtotalPaise - discountPaise;
   const deliveryFeePaise =
-    netPaise >= pricingTerms.freeDeliveryThresholdInr * 100
+    netPaise >= freeDeliveryThresholdPaise
       ? 0
       : pricingTerms.deliveryFeeBelowThresholdInr * 100;
   const totalPaise = netPaise + deliveryFeePaise;

@@ -68,12 +68,14 @@ export default function Header() {
       }`}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-        <Link
-          href="/"
-          className="text-xl font-extrabold tracking-tight text-ink-900"
-          aria-label="Z-clean — home"
-        >
-          Z<span className="text-brand-600">-clean</span>
+        <Link href="/" aria-label="Sri Clean — home" className="shrink-0">
+          <img
+            src="/logo.svg"
+            alt="Sri Clean — Dry Cleaning"
+            width={660}
+            height={200}
+            className="h-10 w-auto sm:h-11"
+          />
         </Link>
 
         <nav aria-label="Primary" className="hidden items-center gap-6 lg:flex">

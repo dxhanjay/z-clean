@@ -19,7 +19,7 @@ export default async function AdminBranchesPage() {
     <>
       <AdminSectionHeader
         title="Branches & plants"
-        subtitle="The physical units Z-clean runs from — the laundry plant, collection centers and branches. Each unit can have a manager from the employee list, and units you no longer use can be deactivated instead of deleted."
+        subtitle="The physical units Sri Clean runs from — the laundry plant, collection centers and branches. Each unit can have a manager from the employee list, and units you no longer use can be deactivated instead of deleted."
       />
       <AdminBranches mode={mode} />
     </>

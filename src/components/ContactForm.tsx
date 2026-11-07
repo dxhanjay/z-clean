@@ -73,7 +73,7 @@ export default function ContactForm({
         <div role="status" className="mt-10 rounded-2xl border border-brand-200 bg-white p-8">
           <h2 className="text-xl font-bold text-ink-900">Message received</h2>
           <p className="mt-2 text-sm leading-relaxed text-ink-500">
-            Thanks for writing to Z-clean. We have your message and will reply
+            Thanks for writing to Sri Clean. We have your message and will reply
             to the email address you provided.
           </p>
         </div>

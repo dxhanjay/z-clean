@@ -30,6 +30,7 @@
     "lint": "next lint",
     "start": "next start",
     "test:totals": "node scripts/test-totals.mjs",
+    "test:pricing-settings": "node scripts/test-pricing-settings.mjs",
     "test:flow": "node scripts/test-flow.mjs",
     "test:retry": "node scripts/test-retry.mjs",
     "test:org": "node scripts/test-org.mjs",
@@ -43,12 +44,13 @@
     "test:push": "node scripts/test-push.mjs",
     "test:reviews": "node scripts/test-reviews.mjs",
     "test:blog": "node scripts/test-blog.mjs",
-    "test": "npm run test:totals && npm run test:flow && npm run test:retry && npm run test:org && npm run test:vouchers && npm run test:handovers && npm run test:finance && npm run test:ratelimit && npm run test:roles && npm run test:analytics && npm run test:notifications && npm run test:push && npm run test:reviews && npm run test:blog && npm run test:tracking && npm run test:link-session && npm run test:tracking-view && npm run test:motion && npm run test:redirects",
+    "test": "npm run test:totals && npm run test:pricing-settings && npm run test:flow && npm run test:retry && npm run test:org && npm run test:vouchers && npm run test:handovers && npm run test:finance && npm run test:ratelimit && npm run test:roles && npm run test:analytics && npm run test:notifications && npm run test:push && npm run test:reviews && npm run test:blog && npm run test:tracking && npm run test:link-session && npm run test:tracking-view && npm run test:motion && npm run test:redirects && npm run test:compliance-data",
     "test:motion": "node scripts/test-motion.mjs",
     "test:tracking": "node scripts/test-tracking.mjs",
     "test:tracking-view": "node scripts/test-tracking-view.mjs",
     "test:link-session": "node scripts/test-link-session.mjs",
-    "test:redirects": "node scripts/test-redirects.mjs"
+    "test:redirects": "node scripts/test-redirects.mjs",
+    "test:compliance-data": "node scripts/test-compliance-data.mjs"
   },
   "version": "0.1.0"
 }

@@ -20,7 +20,7 @@ export default async function AdminCustomersPage() {
     <>
       <AdminSectionHeader
         title="Customers"
-        subtitle="Every Z-clean account — orders, lifetime spend (money actually collected, per the finance ledger) and account status. Open a customer to see addresses, recent orders and vouchers, or to disable an account."
+        subtitle="Every Sri Clean account — orders, lifetime spend (money actually collected, per the finance ledger) and account status. Open a customer to see addresses, recent orders and vouchers, or to disable an account."
       />
       <AdminCustomers mode={mode} />
     </>

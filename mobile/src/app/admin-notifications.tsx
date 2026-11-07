@@ -69,7 +69,7 @@ export default function AdminNotificationsScreen() {
     return (
       <Screen admin>
         <Title>Notifications</Title>
-        <Text style={styles.muted}>This section is for Z-clean admins only.</Text>
+        <Text style={styles.muted}>This section is for Sri Clean admins only.</Text>
       </Screen>
     );
   }

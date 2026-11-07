@@ -28,7 +28,7 @@ import type {
 } from "./types";
 
 /**
- * API client for the Z-clean Next backend (Mobile Phase 1).
+ * API client for the Sri Clean Next backend (Mobile Phase 1).
  *
  * Every call carries the current Supabase session's access token as
  * `Authorization: Bearer <token>` — the contract documented in the
@@ -78,6 +78,38 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     );
   }
   return json;
+}
+
+/* ---------------- Pricing terms ---------------- */
+
+export interface ServerPricingTerms {
+  minimumOrderPaise: number;
+  freeDeliveryThresholdPaise: number;
+  deliveryFeePaise: number;
+}
+
+let pricingTermsCache: ServerPricingTerms | null = null;
+
+/**
+ * Effective money terms from GET /api/pricing-terms, cached for the app
+ * session. Returns null on any failure — callers then fall back to the
+ * approved constants in lib/totals.ts, exactly as the server does.
+ */
+export async function fetchPricingTerms(): Promise<ServerPricingTerms | null> {
+  if (pricingTermsCache) return pricingTermsCache;
+  try {
+    const terms = await apiFetch<ServerPricingTerms>("/api/pricing-terms");
+    if (
+      Number.isInteger(terms.minimumOrderPaise) &&
+      Number.isInteger(terms.freeDeliveryThresholdPaise)
+    ) {
+      pricingTermsCache = terms;
+      return terms;
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 /* ---------------- Auth ---------------- */

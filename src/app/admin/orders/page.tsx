@@ -22,7 +22,7 @@ export default async function AdminOrdersPage() {
     <>
       <AdminSectionHeader
         title="Order queue"
-        subtitle="Every order and pickup request for Z-clean in Bokaro Steel City. Open an order to move it along — pickups, cleaning, delivery and Pay-on-Delivery collection are all managed from the order page."
+        subtitle="Every order and pickup request for Sri Clean in Bokaro Steel City. Open an order to move it along — pickups, cleaning, delivery and Pay-on-Delivery collection are all managed from the order page."
       />
       <AdminQueue mode={mode} />
     </>

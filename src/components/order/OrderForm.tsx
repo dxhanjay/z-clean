@@ -69,10 +69,23 @@ type Outcome =
 export default function OrderForm({
   priceGroups,
   entries,
+  terms,
 }: {
   priceGroups: PriceGroup[];
   entries: CatalogueEntry[];
+  /**
+   * Effective pricing terms in paise, resolved server-side from the
+   * admin settings (getPricingTerms) — the same values POST /api/orders
+   * re-checks with, so the preview cannot desync from checkout when an
+   * admin edits the settings. Omit for the approved defaults.
+   */
+  terms?: { minimumOrderPaise: number; freeDeliveryThresholdPaise: number };
 }) {
+  const minimumOrderPaise =
+    terms?.minimumOrderPaise ?? pricingTerms.minimumOrderInr * 100;
+  const freeDeliveryThresholdPaise =
+    terms?.freeDeliveryThresholdPaise ??
+    pricingTerms.freeDeliveryThresholdInr * 100;
   const [demoMode] = useState(demoModeDefault);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [deliveryType, setDeliveryType] = useState<"regular" | "express">("regular");
@@ -113,8 +126,9 @@ export default function OrderForm({
       couponCode: couponCode.trim() ? couponCode : undefined,
       isFirstOrder: demoMode ? demoOrderCount === 0 : true,
       catalogue: entries,
+      terms,
     });
-  }, [selectedItems, deliveryType, couponCode, demoMode, demoOrderCount, entries]);
+  }, [selectedItems, deliveryType, couponCode, demoMode, demoOrderCount, entries, terms]);
 
   const pincodeValid = /^\d{6}$/.test(pincode);
   const pincodeServiceable = pincodeValid && isPincodeServiceable(pincode);
@@ -286,7 +300,7 @@ export default function OrderForm({
         key: json.payment.keyId,
         amount: json.payment.amountPaise ?? preview.totalPaise,
         currency: "INR",
-        name: "Z-clean",
+        name: "Sri Clean",
         description: "Laundry & dry cleaning order",
         order_id: json.payment.gatewayOrderId,
         prefill: { name: parsed.data.name, contact: parsed.data.phone },
@@ -490,8 +504,8 @@ export default function OrderForm({
       <p className="mt-4 max-w-2xl text-base leading-relaxed text-ink-500">
         Pick your items, tell us where to collect them, and pay online or on
         delivery. Prices are the approved {DEMO_CITY} list — minimum order{" "}
-        {formatInr(pricingTerms.minimumOrderInr)}, free pickup &amp; delivery
-        from {formatInr(pricingTerms.freeDeliveryThresholdInr)} after any
+        {formatPaise(minimumOrderPaise)}, free pickup &amp; delivery
+        from {formatPaise(freeDeliveryThresholdPaise)} after any
         discount.
       </p>
 
@@ -748,7 +762,7 @@ export default function OrderForm({
               className={`${inputClass} mt-1.5 uppercase`}
             />
             <p className="mt-1.5 text-xs leading-relaxed text-ink-500">
-              Have a Z-clean gift card or promo voucher? Enter the code —
+              Have a Sri Clean gift card or promo voucher? Enter the code —
               it is verified on our server when you place the order, so
               the discount or card payment is applied then, not in the
               preview above. A voucher and a coupon cannot be combined.

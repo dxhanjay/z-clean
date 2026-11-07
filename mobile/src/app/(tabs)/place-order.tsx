@@ -13,7 +13,12 @@ import {
   styles,
 } from "../../components/ui";
 import { useAuth } from "../../context/AuthContext";
-import { ApiError, placeOrder } from "../../lib/api";
+import {
+  ApiError,
+  fetchPricingTerms,
+  placeOrder,
+  type ServerPricingTerms,
+} from "../../lib/api";
 import { loadServiceAreas, type ServiceArea } from "../../lib/areas";
 import {
   loadCatalogue,
@@ -67,6 +72,20 @@ export default function PlaceOrderScreen() {
   const [placing, setPlacing] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  const [serverTerms, setServerTerms] = useState<ServerPricingTerms | null>(
+    null,
+  );
+
+  useEffect(() => {
+    let mounted = true;
+    fetchPricingTerms().then((t) => {
+      if (mounted && t) setServerTerms(t);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   useEffect(() => {
     let mounted = true;
     Promise.all([loadCatalogue(), loadServiceAreas()])
@@ -111,8 +130,9 @@ export default function PlaceOrderScreen() {
       deliveryType,
       isFirstOrder: true, // no coupon field in the app — value is unused without one
       catalogue: catalogue.entries,
+      terms: serverTerms ?? undefined,
     });
-  }, [catalogue, items, deliveryType]);
+  }, [catalogue, items, deliveryType, serverTerms]);
 
   function bump(key: string, step: number, delta: number) {
     setQuantities((q) => {
@@ -169,7 +189,7 @@ export default function PlaceOrderScreen() {
       <Screen>
         <Title>Sign in to place an order</Title>
         <Subtitle>
-          Orders are placed from your Z-clean account so you can track them and so our team can
+          Orders are placed from your Sri Clean account so you can track them and so our team can
           reach you about pickup. Browsing prices on the Home tab needs no account.
         </Subtitle>
         <PrimaryButton label="Sign in" onPress={() => router.push("/login")} />

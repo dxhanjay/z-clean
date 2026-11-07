@@ -12,8 +12,8 @@ import type { MetadataRoute } from "next";
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Z-clean — Laundry & Dry Cleaning",
-    short_name: "Z-clean",
+    name: "Sri Clean — Laundry & Dry Cleaning",
+    short_name: "Sri Clean",
     description:
       "Laundry and dry-cleaning with doorstep pickup and delivery in Bokaro Steel City. Book a pickup, track your order, pay on delivery.",
     start_url: "/",

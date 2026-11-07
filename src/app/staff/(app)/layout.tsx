@@ -71,7 +71,7 @@ export default async function StaffAppLayout({
         <p className="mt-3 text-sm leading-relaxed text-ink-500">
           This deployment is running in demo mode without the live
           database, so staff rounds cannot be shown. Riders use the
-          staff app on the live Z-clean site.
+          staff app on the live Sri Clean site.
         </p>
       </section>
     );
@@ -84,7 +84,7 @@ export default async function StaffAppLayout({
           Staff access only
         </h1>
         <p className="mt-3 text-sm leading-relaxed text-ink-500">
-          This area is for Z-clean riders and field staff. Accounts are
+          This area is for Sri Clean riders and field staff. Accounts are
           created by invitation from the office — if you work with us and
           expected access here, ask the office to send your invite, then
           open the link in that email.

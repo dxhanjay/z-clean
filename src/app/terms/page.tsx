@@ -5,7 +5,7 @@ import CtaBand from "@/components/CtaBand";
 export const metadata: Metadata = {
   title: "Terms of service",
   description:
-    "The terms that apply when you book laundry and dry-cleaning services with Z-clean: pricing, pickup and delivery, cancellation and payment.",
+    "The terms that apply when you book laundry and dry-cleaning services with Sri Clean: pricing, pickup and delivery, cancellation and payment.",
 };
 
 /**
@@ -27,7 +27,7 @@ export default function TermsPage() {
         </p>
         <p className="mt-5 text-base leading-relaxed text-ink-700">
           These terms apply when you book laundry or dry-cleaning services
-          with Z-clean, through our website or mobile app. By placing an
+          with Sri Clean, through our website or mobile app. By placing an
           order you agree to them.
         </p>
 

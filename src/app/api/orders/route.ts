@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { orderSchema } from "@/lib/validation";
 import { isPincodeServiceable } from "@/lib/pricing";
 import { computeOrderTotals } from "@/lib/totals";
+import { getPricingTerms } from "@/lib/business-settings";
 import {
   createRazorpayOrder,
   isRazorpayConfigured,
@@ -143,7 +144,7 @@ export async function POST(request: Request) {
         {
           error: "ACCOUNT_DISABLED",
           message:
-            "This account has been disabled and cannot place orders. Please contact Z-clean support if you think this is a mistake.",
+            "This account has been disabled and cannot place orders. Please contact Sri Clean support if you think this is a mistake.",
         },
         { status: 403 },
       );
@@ -177,6 +178,11 @@ export async function POST(request: Request) {
   const resolved = couponCode
     ? await resolveCoupon(supabase, couponCode)
     : { coupon: null, couponId: null };
+  // Admin-editable commercial terms (minimum order / free-delivery
+  // threshold) from the settings table — getPricingTerms falls back to
+  // the approved pricing.ts constants on any read problem, so this can
+  // never break checkout.
+  const pricing = await getPricingTerms();
 
   const totals = computeOrderTotals({
     items: data.items,
@@ -185,6 +191,10 @@ export async function POST(request: Request) {
     coupon: couponCode ? resolved.coupon : undefined,
     isFirstOrder,
     catalogue: catalogue.entries,
+    terms: {
+      minimumOrderPaise: pricing.minimumOrderPaise,
+      freeDeliveryThresholdPaise: pricing.freeDeliveryThresholdPaise,
+    },
   });
   if (!totals.ok) {
     return NextResponse.json(

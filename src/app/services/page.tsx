@@ -8,7 +8,7 @@ import { services } from "@/lib/services";
 export const metadata: Metadata = {
   title: "Services",
   description:
-    "Explore Z-clean services: laundry wash & fold, wash & iron, dry cleaning, steam press, shoe cleaning, leather care, curtain and carpet cleaning.",
+    "Explore Sri Clean services: laundry wash & fold, wash & iron, dry cleaning, steam press, shoe cleaning, leather care, curtain and carpet cleaning.",
 };
 
 export default function ServicesPage() {

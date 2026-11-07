@@ -165,13 +165,13 @@ export default function StaffSetPasswordPage() {
   return (
     <section className="mx-auto max-w-md px-4 py-14 sm:px-6">
       <p className="text-xs font-bold uppercase tracking-widest text-brand-700">
-        Z-clean Staff
+        Sri Clean Staff
       </p>
       <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-ink-900">
         Welcome to the team — set your password
       </h1>
       <p className="mt-3 text-sm leading-relaxed text-ink-700">
-        You have been invited to the Z-clean staff app, where your pickup
+        You have been invited to the Sri Clean staff app, where your pickup
         and delivery rounds will appear. Choose a password to finish
         setting up your account.
       </p>
@@ -194,7 +194,7 @@ export default function StaffSetPasswordPage() {
           <p className="text-sm font-bold text-ink-900">This invite link is not valid</p>
           <p className="mt-2 text-sm leading-relaxed text-ink-700">
             It may have expired or already been used. If you already set
-            a password, just sign in. Otherwise ask the Z-clean office
+            a password, just sign in. Otherwise ask the Sri Clean office
             to send you a fresh invite.
           </p>
           <p className="mt-4 text-sm">

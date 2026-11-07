@@ -100,7 +100,7 @@ export default function LoginPage() {
       </form>
 
       <p className="mt-6 text-sm text-ink-500">
-        New to Z-clean?{" "}
+        New to Sri Clean?{" "}
         <Link href="/register" className="font-semibold text-brand-700 hover:text-brand-800">
           Create an account
         </Link>

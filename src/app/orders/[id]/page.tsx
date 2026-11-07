@@ -252,7 +252,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         key: json.payment.keyId,
         amount: json.payment.amountPaise ?? liveOrder?.total_paise ?? 0,
         currency: "INR",
-        name: "Z-clean",
+        name: "Sri Clean",
         description: "Laundry & dry cleaning order (payment retry)",
         order_id: json.payment.gatewayOrderId,
         handler: () => {

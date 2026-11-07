@@ -218,6 +218,17 @@ const MENU: MenuGroup[] = [
           </I>
         ),
       },
+      {
+        href: "/admin/compliance",
+        label: "Compliance",
+        minLevel: 2,
+        icon: (
+          <I>
+            <path d="M12 3.5 5 6v5.2c0 4.3 2.9 7.4 7 9.3 4.1-1.9 7-5 7-9.3V6z" />
+            <path d="m9.3 11.8 2 2 3.6-3.9" />
+          </I>
+        ),
+      },
     ],
   },
 ];
@@ -242,9 +253,9 @@ function sectionTitle(pathname: string): string {
 }
 
 function initialsOf(email: string | null): string {
-  if (!email) return "Z";
+  if (!email) return "S";
   const first = email.trim().charAt(0).toUpperCase();
-  return first || "Z";
+  return first || "S";
 }
 
 function SidebarContent({
@@ -288,7 +299,7 @@ function SidebarContent({
         </span>
         <span className={labelCls}>
           <span className="block text-[17px] font-extrabold leading-tight tracking-tight">
-            Z-clean
+            Sri Clean
           </span>
           <span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/50">
             Admin Panel

@@ -108,7 +108,7 @@ export default function HeroShowcase() {
 
       <span className="sr-only">
         A freshly pressed white shirt turning slowly on its hanger —
-        every Z-clean order is washed, pressed and inspected by hand.
+        every Sri Clean order is washed, pressed and inspected by hand.
       </span>
 
       <AnnotationChip

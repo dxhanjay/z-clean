@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Pricing",
   description:
-    "Z-clean's approved Bokaro Steel City price list: per-kg laundry, per-piece dry cleaning, shoe and leather care — final total confirmed at pickup.",
+    "Sri Clean's approved Bokaro Steel City price list: per-kg laundry, per-piece dry cleaning, shoe and leather care — final total confirmed at pickup.",
 };
 
 /**
@@ -52,7 +52,7 @@ export default async function PricingPage() {
             Our {DEMO_CITY} price list — approved rates
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-700">
-            These are Z-clean&apos;s confirmed rates for {DEMO_CITY}. The
+            These are Sri Clean&apos;s confirmed rates for {DEMO_CITY}. The
             final total of every order is confirmed with you at pickup, after
             your items are counted or weighed — and nothing is cleaned until
             you have approved it.

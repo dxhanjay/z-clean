@@ -61,7 +61,7 @@ export default function LoginScreen() {
   return (
     <Screen>
       <Title>Welcome back</Title>
-      <Subtitle>Sign in with the same account you use on the Z-clean website.</Subtitle>
+      <Subtitle>Sign in with the same account you use on the Sri Clean website.</Subtitle>
       <TextInput
         style={styles.input}
         placeholder="Email address"
@@ -94,12 +94,12 @@ export default function LoginScreen() {
           {resetSent ? (
             <Text style={styles.subtitle}>
               If an account exists for that email, a reset link is on its way. The link opens
-              the Z-clean website, where you set a new password — then sign in here with it.
+              the Sri Clean website, where you set a new password — then sign in here with it.
             </Text>
           ) : (
             <>
               <Text style={styles.subtitle}>
-                We will email you a password-reset link. The link opens the Z-clean website
+                We will email you a password-reset link. The link opens the Sri Clean website
                 to set a new password (there is no in-app reset screen) — then come back and
                 sign in here.
               </Text>

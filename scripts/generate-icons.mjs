@@ -1,7 +1,14 @@
 /**
+ * NOTE (7 Nov 2026 rebrand): the live icons are now the Sri Clean garment
+ * mark, produced from public/logo-mark.svg / public/icons/icon.svg.
+ * This script still draws the retired "Z" mark — do NOT re-run it
+ * without first porting the droplet geometry, or it will overwrite the
+ * new icons.
+ */
+/**
  * PWA icon generator (Mobile Phase 1) — plain node, zero dependencies.
  *
- * Rasterises the Z-clean app icon (a blocky white "Z" on brand teal
+ * Rasterises the Sri Clean app icon (a blocky white "Z" on brand teal
  * #22786d, matching public/icons/icon.svg) into the PNG sizes the
  * platforms ask for:
  *

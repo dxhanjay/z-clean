@@ -63,7 +63,7 @@ function pinIcon(color: string, glyph: string, pulse = false): L.DivIcon {
 
 const RIDER_ICON = (pulse: boolean) => pinIcon("#22786d", "◉", pulse);
 const DESTINATION_ICON = () => pinIcon("#0f2233", "⌂");
-const FACILITY_ICON = () => pinIcon("#b45309", "Z");
+const FACILITY_ICON = () => pinIcon("#b45309", "S");
 
 function prefersReducedMotion(): boolean {
   return (

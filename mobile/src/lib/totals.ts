@@ -1,5 +1,5 @@
 /**
- * Z-clean order totals engine — MOBILE PORT (Mobile Phase 1).
+ * Sri Clean order totals engine — MOBILE PORT (Mobile Phase 1).
  *
  * This is a deliberate copy of the web app's src/lib/totals.ts (the
  * single source of truth for order maths), kept inside the app
@@ -130,10 +130,30 @@ export interface ComputeOrderTotalsArgs {
   isFirstOrder: boolean;
   /** Price source — the app passes its DB-backed catalogue. */
   catalogue: CatalogueEntry[];
+  /**
+   * Effective money terms from GET /api/pricing-terms (the admin-editable
+   * settings, resolved server-side). Optional: each value is honoured
+   * only when a positive integer number of paise; otherwise the approved
+   * constants in pricingTerms apply — the same fallback discipline as the
+   * web engine, so the app can never desync from checkout by more than a
+   * failed fetch.
+   */
+  terms?: {
+    minimumOrderPaise?: number;
+    freeDeliveryThresholdPaise?: number;
+  };
 }
 
 export function computeOrderTotals(args: ComputeOrderTotalsArgs): TotalsResult {
   const catalogue = args.catalogue;
+  const validPaise = (v: number | undefined): number | null =>
+    typeof v === "number" && Number.isInteger(v) && v > 0 ? v : null;
+  const minimumOrderPaise =
+    validPaise(args.terms?.minimumOrderPaise) ??
+    pricingTerms.minimumOrderInr * 100;
+  const freeDeliveryThresholdPaise =
+    validPaise(args.terms?.freeDeliveryThresholdPaise) ??
+    pricingTerms.freeDeliveryThresholdInr * 100;
 
   if (!args.items || args.items.length === 0) {
     return { ok: false, code: "EMPTY_ORDER", error: "Your order is empty — add at least one item." };
@@ -173,11 +193,11 @@ export function computeOrderTotals(args: ComputeOrderTotalsArgs): TotalsResult {
 
   const subtotalPaise = lines.reduce((sum, l) => sum + l.lineTotalPaise, 0);
 
-  if (subtotalPaise < pricingTerms.minimumOrderInr * 100) {
+  if (subtotalPaise < minimumOrderPaise) {
     return {
       ok: false,
       code: "MIN_ORDER",
-      error: `Minimum order is ₹${pricingTerms.minimumOrderInr}. Your items add up to ₹${(subtotalPaise / 100).toFixed(2)} — please add a little more.`,
+      error: `Minimum order is ₹${minimumOrderPaise / 100}. Your items add up to ₹${(subtotalPaise / 100).toFixed(2)} — please add a little more.`,
     };
   }
 
@@ -202,7 +222,7 @@ export function computeOrderTotals(args: ComputeOrderTotalsArgs): TotalsResult {
 
   const netPaise = subtotalPaise - discountPaise;
   const deliveryFeePaise =
-    netPaise >= pricingTerms.freeDeliveryThresholdInr * 100
+    netPaise >= freeDeliveryThresholdPaise
       ? 0
       : pricingTerms.deliveryFeeBelowThresholdInr * 100;
   const totalPaise = netPaise + deliveryFeePaise;

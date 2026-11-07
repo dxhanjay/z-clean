@@ -56,7 +56,7 @@ export default async function DashboardPage() {
         Namaste, {displayName}
       </h1>
       <p className="mt-3 max-w-2xl text-base leading-relaxed text-ink-500">
-        Your pickup requests and saved addresses for Z-clean in Bokaro Steel
+        Your pickup requests and saved addresses for Sri Clean in Bokaro Steel
         City, in one place.
       </p>
 

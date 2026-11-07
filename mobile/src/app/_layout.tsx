@@ -46,7 +46,7 @@ function RootNavigator() {
         }}
       >
         <ActivityIndicator color={brand.teal} size="large" />
-        <Text style={{ fontSize: 15, fontWeight: "700", color: brand.tealDark }}>Z-clean</Text>
+        <Text style={{ fontSize: 15, fontWeight: "700", color: brand.tealDark }}>Sri Clean</Text>
       </View>
     );
   }

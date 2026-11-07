@@ -2,7 +2,7 @@ import type { SiteImage } from "../lib/media";
 import { heroImages, serviceImages } from "../lib/media";
 
 /**
- * Z-clean blog (Delta 3) — original articles, written for this site.
+ * Sri Clean blog (Delta 3) — original articles, written for this site.
  *
  * Content rules (integrity): garment-care advice is general knowledge;
  * every statement about Z-CLEAN ITSELF uses only facts that are true
@@ -91,7 +91,7 @@ export const blogPosts: BlogPost[] = [
       { type: "heading", text: "Lehengas, sherwanis and suits" },
       {
         type: "paragraph",
-        text: "The same rules scale up. Embellished lehengas and sherwanis should be inspected piece by piece before cleaning — loose stones, sequins and latkans need to be noted so the finish protects them — and heavy suits should be cleaned before storage so moths are not invited to a meal. At Z-clean, dry cleaning is priced per piece: a plain or cotton saree is ₹199, a heavy, silk or embroidered saree is ₹299, a 2-piece suit is ₹299 and a sherwani is ₹449. Every garment is inspected and its care label followed; if a piece needs handling beyond the standard clean, we confirm with you before doing anything — and nothing is stored away 'for later' on our side, it comes straight back to you ready for your cupboard.",
+        text: "The same rules scale up. Embellished lehengas and sherwanis should be inspected piece by piece before cleaning — loose stones, sequins and latkans need to be noted so the finish protects them — and heavy suits should be cleaned before storage so moths are not invited to a meal. At Sri Clean, dry cleaning is priced per piece: a plain or cotton saree is ₹199, a heavy, silk or embroidered saree is ₹299, a 2-piece suit is ₹299 and a sherwani is ₹449. Every garment is inspected and its care label followed; if a piece needs handling beyond the standard clean, we confirm with you before doing anything — and nothing is stored away 'for later' on our side, it comes straight back to you ready for your cupboard.",
       },
     ],
   },
@@ -113,12 +113,12 @@ export const blogPosts: BlogPost[] = [
       { type: "heading", text: "Wash & Fold — the everyday workhorse" },
       {
         type: "paragraph",
-        text: "Your clothes are machine-washed with water and detergent, fully dried, and folded neatly for the drawer. It is priced by weight — at Z-clean, ₹70 per kg — because everyday laundry (tees, home wear, towels, bed linen, kids' clothes) is naturally a by-the-bagful problem. If it is cotton or a sturdy synthetic, carries no 'dry clean only' label, and you want it back clean and folded rather than presentation-ready, this is its service.",
+        text: "Your clothes are machine-washed with water and detergent, fully dried, and folded neatly for the drawer. It is priced by weight — at Sri Clean, ₹70 per kg — because everyday laundry (tees, home wear, towels, bed linen, kids' clothes) is naturally a by-the-bagful problem. If it is cotton or a sturdy synthetic, carries no 'dry clean only' label, and you want it back clean and folded rather than presentation-ready, this is its service.",
       },
       { type: "heading", text: "Wash & Iron — the wardrobe rotation" },
       {
         type: "paragraph",
-        text: "The same wash, plus professional steam pressing, so pieces come back ready to hang and wear — office shirts, trousers, school uniforms, the weekly rotation. Also priced by weight, ₹110 per kg. Choose it when the wash is only half the job and the creases are the other half. If your clothes are already clean and only need pressing, skip the wash entirely: a press-only service (from ₹15 per piece at Z-clean) exists for exactly that.",
+        text: "The same wash, plus professional steam pressing, so pieces come back ready to hang and wear — office shirts, trousers, school uniforms, the weekly rotation. Also priced by weight, ₹110 per kg. Choose it when the wash is only half the job and the creases are the other half. If your clothes are already clean and only need pressing, skip the wash entirely: a press-only service (from ₹15 per piece at Sri Clean) exists for exactly that.",
       },
       { type: "heading", text: "Dry Cleaning — for what water would harm" },
       {
@@ -139,7 +139,7 @@ export const blogPosts: BlogPost[] = [
       { type: "heading", text: "What it means for the bill" },
       {
         type: "paragraph",
-        text: "By-weight services reward full loads; per-piece services reward being selective. A typical weekly family wash routes most of the bag to wash & fold or wash & iron and only the two or three good pieces to dry cleaning — which is both the safest and the cheapest split. Two honest numbers to plan around: Z-clean's minimum order is ₹199, and pickup and delivery are free on orders of ₹299 or more (₹40 below that). Where express turnaround is offered it is priced at 1.5× and always shown before you book, never added afterwards.",
+        text: "By-weight services reward full loads; per-piece services reward being selective. A typical weekly family wash routes most of the bag to wash & fold or wash & iron and only the two or three good pieces to dry cleaning — which is both the safest and the cheapest split. Two honest numbers to plan around: Sri Clean's minimum order is ₹199, and pickup and delivery are free on orders of ₹299 or more (₹40 below that). Where express turnaround is offered it is priced at 1.5× and always shown before you book, never added afterwards.",
       },
     ],
   },
@@ -195,7 +195,7 @@ export const blogPosts: BlogPost[] = [
       { type: "heading", text: "When the weather wins, outsource the drying" },
       {
         type: "paragraph",
-        text: "There is no virtue in fighting a fortnight of rain with a balcony. This is the season Z-clean's wash & fold quietly earns its keep: your laundry is washed, fully dried — completely, not almost — and folded before it is packed, so nothing comes back damp or musty, and the same applies to curtains and carpets, which are dried fully before return. It is charged by weight at ₹70 per kg, collected from and delivered back to your door across our Bokaro Steel City service areas, so the rainy-day trip to a laundromat is also off your list.",
+        text: "There is no virtue in fighting a fortnight of rain with a balcony. This is the season Sri Clean's wash & fold quietly earns its keep: your laundry is washed, fully dried — completely, not almost — and folded before it is packed, so nothing comes back damp or musty, and the same applies to curtains and carpets, which are dried fully before return. It is charged by weight at ₹70 per kg, collected from and delivered back to your door across our Bokaro Steel City service areas, so the rainy-day trip to a laundromat is also off your list.",
       },
     ],
   },

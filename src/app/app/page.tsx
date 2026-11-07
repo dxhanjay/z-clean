@@ -5,7 +5,7 @@ import { businessSettings } from "@/lib/config";
 export const metadata: Metadata = {
   title: "Get the App",
   description:
-    "Get the Z-clean app: book pickups, track your order stage by stage, and keep your QR and OTP handover codes in your pocket.",
+    "Get the Sri Clean app: book pickups, track your order stage by stage, and keep your QR and OTP handover codes in your pocket.",
 };
 
 /**
@@ -41,7 +41,7 @@ export default function GetTheAppPage() {
           {businessSettings.name} app
         </p>
         <h1 className="mt-3 max-w-2xl text-4xl font-extrabold tracking-tight text-ink-900 sm:text-5xl">
-          Z-clean, in your pocket
+          Sri Clean, in your pocket
         </h1>
         <p className="mt-5 max-w-xl text-base leading-relaxed text-ink-500 sm:text-lg">
           The same account, orders and prices as this website — in an app

@@ -5,7 +5,7 @@ import { faqs } from "@/lib/faqs";
 export const metadata: Metadata = {
   title: "FAQ",
   description:
-    "Frequently asked questions about Z-clean: booking a pickup, how pricing is confirmed, payment options, tracking and garment care.",
+    "Frequently asked questions about Sri Clean: booking a pickup, how pricing is confirmed, payment options, tracking and garment care.",
 };
 
 export default function FaqPage() {

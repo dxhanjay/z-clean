@@ -5,7 +5,7 @@ import { businessSettings } from "@/lib/config";
 export const metadata: Metadata = {
   title: "About",
   description:
-    "About Z-clean: a laundry and dry-cleaning service built around careful, staged garment care and honest, trackable service.",
+    "About Sri Clean: a laundry and dry-cleaning service built around careful, staged garment care and honest, trackable service.",
 };
 
 const values = [
@@ -34,13 +34,13 @@ export default function AboutPage() {
           About {businessSettings.name}
         </h1>
         <p className="mt-5 text-base leading-relaxed text-ink-700">
-          Z-clean started with a simple frustration: laundry takes hours out
+          Sri Clean started with a simple frustration: laundry takes hours out
           of every week, yet handing your clothes to someone else often feels
           like a gamble. Will the white shirt come back white? Will the suit
           keep its shape? Will anything come back at all?
         </p>
         <p className="mt-4 text-base leading-relaxed text-ink-700">
-          We built Z-clean to remove the gamble. Every order is booked online,
+          We built Sri Clean to remove the gamble. Every order is booked online,
           collected from your door, tagged so it can never mix with another
           customer&apos;s, and moved through a six-stage care process — sorting and
           inspection, stain treatment, processing, finishing, quality check

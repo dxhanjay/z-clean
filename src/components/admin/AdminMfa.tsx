@@ -77,7 +77,7 @@ export default function AdminMfa({ mode }: { mode: "demo" | "live" }) {
       }
       const { data, error } = await supabase.auth.mfa.enroll({
         factorType: "totp",
-        friendlyName: "Z-clean admin",
+        friendlyName: "Sri Clean admin",
       });
       if (error || !data) {
         setFormError(error?.message ?? "Could not start enrollment.");

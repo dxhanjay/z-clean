@@ -107,7 +107,7 @@ export default function AdminQueueScreen() {
     return (
       <Screen admin>
         <Title>Admin</Title>
-        <Text style={styles.muted}>This section is for Z-clean admins only.</Text>
+        <Text style={styles.muted}>This section is for Sri Clean admins only.</Text>
       </Screen>
     );
   }

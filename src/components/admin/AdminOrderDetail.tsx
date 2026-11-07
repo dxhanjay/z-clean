@@ -639,7 +639,7 @@ export default function AdminOrderDetail({
               <p className="mt-1.5 text-sm leading-relaxed text-ink-500">
                 The customer can pay part or all of the{" "}
                 {formatPaise(Math.max(0, detail.totalPaise - detail.voucherRedeemedPaise))}{" "}
-                outstanding with a prepaid Z-clean gift card. The card pays
+                outstanding with a prepaid Sri Clean gift card. The card pays
                 up to its remaining balance; if that clears the balance, the
                 order is marked paid. Promo vouchers are checkout-only and
                 cannot be redeemed here.

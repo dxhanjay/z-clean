@@ -1,7 +1,100 @@
 # Changelog
 
+## 2026-11-07 — Rebrand: Z-clean → Sri Clean (Dry Cleaning)
+
+- Business display name changed to **Sri Clean** across the website,
+  staff app, admin panel and mobile app (config single source, page
+  titles/metadata, legal pages, blog, notifications copy). Internal
+  identifiers unchanged (repo, URL, bundle ID in.zclean.app, test
+  logins, QR payload prefix).
+- New minimal logo: a T-shirt garment mark with a wash droplet in brand teal (#22786d),
+  two-tone wordmark "Sri Clean" with a "DRY CLEANING" caption
+  (public/logo.svg lockup, public/logo-mark.svg, favicon via
+  src/app/icon.svg, PWA icons and mobile app icons regenerated).
+- scripts/generate-icons.mjs is deprecated for the mark (still draws
+  the retired "Z") — see the note at its top.
+
+
 All notable changes to Z-clean. (This file was started at Delta 1;
 earlier history lives in the README's phase sections and the git log.)
+
+## Admin pricing settings wired into the totals engine (2026-11-06)
+
+The two money settings edited at /admin/settings were saved but never
+read by the pricing path (Phase 1 audit, doc 05 §5.1): the totals
+engine always used the hard-coded pricing.ts constants. Current values
+agreed (₹199 / ₹299), so no customer was mischarged — but the settings
+were cosmetic. They are real now, with no change to default behaviour.
+
+### Fixed
+- **Minimum order + free-delivery threshold now come from the
+  settings table at checkout**: new server reader `getPricingTerms()`
+  (`src/lib/business-settings.ts`, same pattern as
+  `getBusinessSettings()`) reads `minimum_order_paise` /
+  `free_delivery_threshold_paise` and resolves them through the new
+  pure helpers in `src/lib/pricing.ts` (`resolvePricingTerms` /
+  `parsePaiseSetting`). `POST /api/orders` passes the resolved terms
+  into `computeOrderTotals`; the /order page loads the same values so
+  the customer's live preview (OrderForm) is computed with exactly the
+  terms the server re-checks against.
+- **Per-key fallback, always**: each setting falls back independently
+  to the approved constants (₹199 / ₹299) when Supabase is
+  unconfigured, the read fails, or the stored value is missing/NULL/
+  invalid — the base schema seeds the threshold as NULL and does not
+  seed the minimum at all, and neither case can break checkout. The
+  engine itself also ignores any override that is not a positive
+  integer number of paise. The ₹40 delivery fee has no settings key
+  and is unchanged.
+- **MIN_ORDER message names the effective minimum** (via
+  `formatPaise`), identical to before at the default ("Minimum order
+  is ₹199.").
+- **Tests**: new `scripts/test-pricing-settings.mjs` (wired into
+  `npm test` as `test:pricing-settings`) covers default behaviour,
+  settings-driven totals (lowered/raised thresholds, raised minimum,
+  threshold-after-discount, partial rows) and every fallback path.
+
+## Compliance register + admin compliance dashboard (2026-11-06)
+
+The implementation phase of the compliance pack: the document
+register and a read-only readiness board in the admin panel.
+**No behaviour change to ordering, payments, tracking or auth —
+this is an internal reporting surface plus project documentation.**
+
+### Added
+- **Compliance document register**
+  (`~/workspace/z-clean/compliance/REGISTER.md`): the 10 evidence
+  categories from the compliance pack (business registration, PAN,
+  ITR, hosting/server evidence, domain ownership, SSL certificates,
+  security audit reports, analytics reports, office address,
+  government applications). Seeded ONLY with what verifiably
+  exists: the internal security audit of 4 Nov 2026 (category 7)
+  and verified HTTPS operation with the Vercel certificate-evidence
+  export still to file (category 6). Every other category starts
+  **Missing** — no documents, dates or numbers were invented.
+  Sensitive originals (PAN, ITR) are never stored in the repo; the
+  register holds metadata + storage pointers only.
+- **Admin → Compliance** (`/admin/compliance`, Finance menu,
+  admin tier and above): summary counts by status, then a table of
+  all 19 tracked requirements — clauses 10.1–10.9 with the
+  statuses assessed in compliance file 01 (10.1/10.2/10.3/10.9 Not
+  Applicable; 10.4/10.5 Partially Compliant; 10.6/10.7 Pending
+  Verification; 10.8 Non-Compliant) plus the regimes that actually
+  govern the business (DPDP readiness, E-Commerce Rules 2020,
+  Shops & Establishments, trade licence, professional tax, GST,
+  JSPCB consent, CERT-In duties, independent VAPT, domain
+  ownership) from Phase 1 files 08/09. **No row is marked
+  Compliant** — none has the linked evidence the register rule
+  requires. Read-only v1: no editing UI, no database writes; rows
+  render from the new pure module `src/lib/compliance-data.ts`.
+
+### Tests
+- `scripts/test-compliance-data.mjs` (52 assertions, wired into
+  `npm test` as `test:compliance-data`): every row's status is one
+  of the five canonical values, no "Compliant" row may lack an
+  evidence string, ids are unique, and the clause rows keep exactly
+  the statuses assessed in compliance file 01. Full suite green;
+  production build compiles with `/admin/compliance` at 277 B /
+  104 kB First Load.
 
 ## Staff app — fix pass on the Web3D UI + login ?next= (2026-11-06)
 

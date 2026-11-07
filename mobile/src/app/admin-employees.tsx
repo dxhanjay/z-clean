@@ -143,7 +143,7 @@ export default function AdminEmployeesScreen() {
     return (
       <Screen admin>
         <Title>Employees</Title>
-        <Text style={styles.muted}>This section is for Z-clean admins only.</Text>
+        <Text style={styles.muted}>This section is for Sri Clean admins only.</Text>
       </Screen>
     );
   }

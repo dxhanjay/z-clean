@@ -1,10 +1,10 @@
 /**
- * Z-clean pricing — single typed source for the APPROVED price list.
+ * Sri Clean pricing — single typed source for the APPROVED price list.
  *
  * Mirrors ~/workspace/z-clean/PRICE_LIST_DRAFT.md and the Supabase seed in
  * supabase/seed_demo.sql (price_items, integer paise). The rates were
  * drafted from published Indian market ranges and APPROVED by the owner
- * on 2026-11-04 as Z-clean's Bokaro Steel City price list. When Supabase
+ * on 2026-11-04 as Sri Clean's Bokaro Steel City price list. When Supabase
  * is connected, the database (admin-editable) is the source of truth and
  * this module is only the offline/demo fallback.
  */
@@ -123,6 +123,91 @@ export const pricingTerms = {
   deliveryFeeBelowThresholdInr: 40,
   firstOrderCoupon: { code: "FIRST20", pctOff: 20, firstOrderOnly: true },
 } as const;
+
+/* ------------------------------------------------------------------ */
+/* Effective commercial terms — the pricingTerms above are the        */
+/* approved defaults. The owner can override the minimum order and    */
+/* the free-delivery threshold in /admin/settings; those values live  */
+/* in the `settings` table as paise strings                         */
+/* (minimum_order_paise, free_delivery_threshold_paise) and are read  */
+/* server-side by getPricingTerms() (src/lib/business-settings.ts),   */
+/* which resolves them through the pure helpers below. The delivery   */
+/* FEE itself has no settings key and always comes from pricingTerms. */
+/* ------------------------------------------------------------------ */
+
+export interface PricingTermsPaise {
+  /** Minimum order (pre-discount subtotal), integer paise. */
+  minimumOrderPaise: number;
+  /** Net (after discount) at or above which delivery is free, integer paise. */
+  freeDeliveryThresholdPaise: number;
+}
+
+/** The approved defaults expressed in paise. */
+export const defaultPricingTermsPaise: PricingTermsPaise = {
+  minimumOrderPaise: pricingTerms.minimumOrderInr * 100,
+  freeDeliveryThresholdPaise: pricingTerms.freeDeliveryThresholdInr * 100,
+};
+
+/**
+ * Public payload for GET /api/pricing-terms — the money terms any client
+ * (mobile app, future integrations) needs to mirror the server totals
+ * engine. The delivery fee has no settings key today, so it comes from
+ * the approved constants.
+ */
+export interface PublicPricingTerms extends PricingTermsPaise {
+  deliveryFeePaise: number;
+}
+
+export function publicPricingTermsPayload(
+  terms: PricingTermsPaise,
+): PublicPricingTerms {
+  return {
+    minimumOrderPaise: terms.minimumOrderPaise,
+    freeDeliveryThresholdPaise: terms.freeDeliveryThresholdPaise,
+    deliveryFeePaise: pricingTerms.deliveryFeeBelowThresholdInr * 100,
+  };
+}
+
+/**
+ * Parse one stored settings value into paise. Returns null for anything
+ * that is not a sane amount — missing/empty, non-numeric, fractional
+ * paise, zero/negative, or absurdly large — so a corrupt or half-filled
+ * settings row can never break or distort checkout.
+ */
+export function parsePaiseSetting(value: string | null | undefined): number | null {
+  if (value == null) return null;
+  const n = Number(value.trim());
+  if (!Number.isInteger(n) || n <= 0 || n > 100_000_000) return null;
+  return n;
+}
+
+export interface ResolvedPricingTerms extends PricingTermsPaise {
+  /** True when at least one value came from the settings rows. */
+  fromDatabase: boolean;
+}
+
+/**
+ * Resolve the effective terms from raw `settings` rows. Each key falls
+ * back INDEPENDENTLY to the approved constants: the base schema seeds
+ * free_delivery_threshold_paise as NULL and does not seed
+ * minimum_order_paise at all, so a partial table is normal, not an
+ * error. Pure — unit-tested in scripts/test-pricing-settings.mjs.
+ */
+export function resolvePricingTerms(
+  rows: readonly { key: string; value: string | null }[] | null | undefined,
+): ResolvedPricingTerms {
+  const byKey = new Map((rows ?? []).map((r) => [r.key, r.value]));
+  const minimumOrderPaise = parsePaiseSetting(byKey.get("minimum_order_paise"));
+  const freeDeliveryThresholdPaise = parsePaiseSetting(
+    byKey.get("free_delivery_threshold_paise"),
+  );
+  return {
+    minimumOrderPaise: minimumOrderPaise ?? defaultPricingTermsPaise.minimumOrderPaise,
+    freeDeliveryThresholdPaise:
+      freeDeliveryThresholdPaise ?? defaultPricingTermsPaise.freeDeliveryThresholdPaise,
+    fromDatabase: minimumOrderPaise !== null || freeDeliveryThresholdPaise !== null,
+  };
+}
 
 export function formatInr(amountInr: number): string {
   return `₹${amountInr.toLocaleString("en-IN")}`;

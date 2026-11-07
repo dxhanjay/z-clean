@@ -6,7 +6,7 @@ import { getBusinessSettings } from "@/lib/business-settings";
 export const metadata: Metadata = {
   title: "Privacy policy",
   description:
-    "How Z-clean collects, uses and protects your information when you book laundry and dry-cleaning pickups with us.",
+    "How Sri Clean collects, uses and protects your information when you book laundry and dry-cleaning pickups with us.",
 };
 
 /**
@@ -30,7 +30,7 @@ export default async function PrivacyPage() {
           Last updated: 4 November 2026
         </p>
         <p className="mt-5 text-base leading-relaxed text-ink-700">
-          This page explains what information Z-clean collects when you use
+          This page explains what information Sri Clean collects when you use
           our website or mobile app, why we need it, and the choices you
           have. We collect the minimum needed to collect, clean and return
           your laundry — nothing more.
@@ -63,7 +63,7 @@ export default async function PrivacyPage() {
             or store your full card details. You can also pay on delivery.
           </li>
           <li>
-            <strong>Voucher balances</strong> — if you hold a Z-clean gift
+            <strong>Voucher balances</strong> — if you hold a Sri Clean gift
             voucher, its balance and the transactions against it.
           </li>
         </ul>
@@ -123,7 +123,7 @@ export default async function PrivacyPage() {
         <p className="mt-4 text-base leading-relaxed text-ink-700">
           Passwords are stored hashed by our sign-in provider, access to
           order and payment data is restricted by account role, and staff
-          actions in our admin system are recorded in an audit log. Z-clean
+          actions in our admin system are recorded in an audit log. Sri Clean
           is a household service for adults; it is not directed at children.
         </p>
 

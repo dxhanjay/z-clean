@@ -144,7 +144,7 @@ export async function getStaffGate(): Promise<StaffGate> {
 
 const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
 const GEOCODER_USER_AGENT =
-  "Z-clean/1.0 (laundry order tracking; Bokaro Steel City, India)";
+  "Sri Clean/1.0 (laundry order tracking; Bokaro Steel City, India)";
 const GEOCODER_TIMEOUT_MS = 8000;
 
 /** One Nominatim request. Null for ANY failure — never throws. */

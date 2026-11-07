@@ -16,10 +16,10 @@ import { BUSINESS } from "../lib/config";
  * the customer means without them typing anything.
  */
 export default function SupportCard({ orderRef }: { orderRef?: string }) {
-  const subject = orderRef ? `Help with order ${orderRef}` : "Z-clean support";
+  const subject = orderRef ? `Help with order ${orderRef}` : "Sri Clean support";
   const message = orderRef
-    ? `Hi Z-clean, I need help with my order ${orderRef}.`
-    : "Hi Z-clean, I need help with my laundry order.";
+    ? `Hi Sri Clean, I need help with my order ${orderRef}.`
+    : "Hi Sri Clean, I need help with my laundry order.";
 
   return (
     <Card>

@@ -12,9 +12,13 @@ export default async function Footer() {
     <footer className="border-t border-mist-200 bg-mist-100/80">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
         <div>
-          <p className="text-lg font-extrabold tracking-tight text-ink-900">
-            Z<span className="text-brand-600">-clean</span>
-          </p>
+          <img
+            src="/logo.svg"
+            alt="Sri Clean — Dry Cleaning"
+            width={660}
+            height={200}
+            className="h-11 w-auto"
+          />
           <p className="mt-3 text-sm leading-relaxed text-ink-500">
             {businessSettings.tagline} Book a pickup, track your order, and get
             everything back fresh — without the laundry-day effort.
@@ -38,7 +42,7 @@ export default async function Footer() {
 
         <nav aria-label="Company">
           <p className="text-sm font-bold uppercase tracking-wide text-ink-900">
-            Z-clean
+            Sri Clean
           </p>
           <ul className="mt-3 space-y-2 text-sm text-ink-700">
             <li><Link href="/about" className="hover:text-brand-700">About us</Link></li>
@@ -100,7 +104,7 @@ export default async function Footer() {
 
       <div className="border-t border-mist-200">
         <p className="mx-auto max-w-6xl px-4 py-4 text-xs text-ink-500 sm:px-6">
-          © {new Date().getFullYear()} Z-clean. All rights reserved.
+          © {new Date().getFullYear()} Sri Clean. All rights reserved.
         </p>
       </div>
     </footer>

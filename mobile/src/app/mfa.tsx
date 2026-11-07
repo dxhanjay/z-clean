@@ -77,7 +77,7 @@ export default function MfaScreen() {
       <Title>Two-factor check</Title>
       <Subtitle>
         Enter the 6-digit code from your authenticator app to finish signing in. Two-factor
-        codes are set up on the Z-clean website under Admin → Settings — they cannot be
+        codes are set up on the Sri Clean website under Admin → Settings — they cannot be
         enrolled in the app.
       </Subtitle>
       {checking ? (

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Z-clean",
+    "name": "Sri Clean",
     "slug": "z-clean",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -37,7 +37,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Z-clean uses the camera to scan an order's QR tag when staff complete a handover.",
+          "cameraPermission": "Sri Clean uses the camera to scan an order's QR tag when staff complete a handover.",
           "microphonePermission": false,
           "recordAudioAndroid": false
         }

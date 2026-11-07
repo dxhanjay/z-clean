@@ -59,7 +59,7 @@ export default async function BlogArticlePage({
         </h1>
         <p className="mt-4 text-sm font-semibold text-ink-500">
           {formatBlogDate(post.date)} · {post.readingMinutes} min read · By the
-          Z-clean team
+          Sri Clean team
         </p>
         <img
           src={post.cover.src}

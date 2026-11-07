@@ -6,7 +6,7 @@ import { getBusinessSettings } from "@/lib/business-settings";
 export const metadata: Metadata = {
   title: "Contact us",
   description:
-    "Questions about a Z-clean service, a booking, or special-care items? Send us a message or call us.",
+    "Questions about a Sri Clean service, a booking, or special-care items? Send us a message or call us.",
 };
 
 /**

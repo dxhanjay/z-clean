@@ -94,7 +94,7 @@ export async function POST(request: Request) {
         {
           error: "ACCOUNT_DISABLED",
           message:
-            "This account has been disabled and cannot request pickups. Please contact Z-clean support if you think this is a mistake.",
+            "This account has been disabled and cannot request pickups. Please contact Sri Clean support if you think this is a mistake.",
         },
         { status: 403 },
       );

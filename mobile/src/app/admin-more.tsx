@@ -160,7 +160,7 @@ export default function AdminMoreScreen() {
     <Screen admin>
       {/* Slate header block */}
       <View style={dash.headerBlock}>
-        <Text style={dash.headerTitle}>Z-clean Admin</Text>
+        <Text style={dash.headerTitle}>Sri Clean Admin</Text>
         <Text style={dash.headerName}>{displayName}</Text>
         {profileName && user?.email ? <Text style={dash.headerEmail}>{user.email}</Text> : null}
         <Text style={dash.headerRole}>{roleLabel(role)}</Text>

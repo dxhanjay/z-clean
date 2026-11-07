@@ -189,14 +189,14 @@ export default function HomePage() {
               About {businessSettings.name}
             </h2>
             <p className="mt-4 text-base leading-relaxed text-ink-700">
-              Z-clean started with a simple frustration: laundry takes hours
+              Sri Clean started with a simple frustration: laundry takes hours
               out of every week, yet handing your clothes to someone else
               often feels like a gamble. Will the white shirt come back
               white? Will the suit keep its shape? Will anything come back
               at all?
             </p>
             <p className="mt-4 text-base leading-relaxed text-ink-700">
-              We built Z-clean to remove the gamble. Every order is booked
+              We built Sri Clean to remove the gamble. Every order is booked
               online, collected from your door, tagged so it can never mix
               with another customer&apos;s, and moved through a six-stage
               care process — sorting and inspection, stain treatment,
@@ -219,7 +219,7 @@ export default function HomePage() {
           <ScrollReveal3D>
             <p className={eyebrowCls}>Why choose us</p>
             <h2 id="why-heading" className={h2Cls}>
-              Why people hand their laundry to Z-clean
+              Why people hand their laundry to Sri Clean
             </h2>
           </ScrollReveal3D>
           <div className="mt-10 grid items-stretch gap-6 lg:grid-cols-5">

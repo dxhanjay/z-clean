@@ -1,5 +1,5 @@
 /**
- * Z-clean services catalogue (typed source for the public site).
+ * Sri Clean services catalogue (typed source for the public site).
  *
  * This mirrors the `services` table seed in supabase/schema.sql. Prices are
  * deliberately NOT included: the real price list is pending owner input and
@@ -12,9 +12,9 @@ export type PricingUnit = "kg" | "piece" | "pair" | "sqft";
 export interface Service {
   slug: string;
   name: string;
-  /** Short line used on cards. Original Z-clean copy. */
+  /** Short line used on cards. Original Sri Clean copy. */
   shortDescription: string;
-  /** Longer copy for the service detail page. Original Z-clean copy. */
+  /** Longer copy for the service detail page. Original Sri Clean copy. */
   longDescription: string;
   pricingUnit: PricingUnit;
   /** Human-readable label for the unit, e.g. "per kg". */

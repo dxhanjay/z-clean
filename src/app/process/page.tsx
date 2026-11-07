@@ -7,7 +7,7 @@ import { stepImages } from "@/lib/media";
 export const metadata: Metadata = {
   title: "How It Works",
   description:
-    "How Z-clean works: schedule a pickup, we collect from your door, your clothes go through a six-stage care process, and everything is delivered back fresh.",
+    "How Sri Clean works: schedule a pickup, we collect from your door, your clothes go through a six-stage care process, and everything is delivered back fresh.",
 };
 
 export default function ProcessPage() {
@@ -15,7 +15,7 @@ export default function ProcessPage() {
     <>
       <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
         <h1 className="text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">
-          How Z-clean works
+          How Sri Clean works
         </h1>
         <p className="mt-4 max-w-2xl text-base leading-relaxed text-ink-500">
           Four steps for you, six stages of care for your clothes. Here is the

@@ -1,5 +1,5 @@
 /**
- * Z-clean business settings — SINGLE SOURCE OF TRUTH (client-safe subset).
+ * Sri Clean business settings — SINGLE SOURCE OF TRUTH (client-safe subset).
  *
  * Every value here starts EMPTY on purpose. The real business details
  * (phone / WhatsApp, address, opening hours, service areas, prices and any
@@ -26,7 +26,7 @@ const pastedRazorpayPaymentLink = "";
 
 export const businessSettings = {
   /** Business display name. */
-  name: "Z-clean",
+  name: "Sri Clean",
   tagline: "Laundry & dry cleaning, picked up and delivered.",
 
   /** Razorpay Payment Link — env override wins; see note above. */

@@ -7,13 +7,13 @@ import { latestBlogPosts } from "@/content/blog";
 export const metadata: Metadata = {
   title: "Blog",
   description:
-    "Garment-care guides and laundry know-how from Z-clean: silk and festive wear care, choosing between wash & fold and dry cleaning, and beating monsoon damp in Bokaro Steel City.",
+    "Garment-care guides and laundry know-how from Sri Clean: silk and festive wear care, choosing between wash & fold and dry cleaning, and beating monsoon damp in Bokaro Steel City.",
 };
 
 /**
  * Blog index (Delta 3). Articles are original site content in
  * src/content/blog.ts — garment-care guidance plus the handful of
- * Z-clean facts that are true on this site. No borrowed posts.
+ * Sri Clean facts that are true on this site. No borrowed posts.
  */
 export default function BlogPage() {
   const posts = latestBlogPosts(50);

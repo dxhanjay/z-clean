@@ -1,5 +1,5 @@
 /**
- * Z-clean FAQs (moved out of src/app/faq/page.tsx in Delta 3 so the
+ * Sri Clean FAQs (moved out of src/app/faq/page.tsx in Delta 3 so the
  * homepage FAQ teaser and the FAQ page share ONE source — the teaser
  * can never drift from the full answers).
  *

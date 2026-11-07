@@ -1,9 +1,9 @@
 /**
- * Z-clean site imagery.
+ * Sri Clean site imagery.
  *
  * All photos are hotlinked from the Laundra template CDN (Webflow) — the
  * design reference for this site. They are centralised here so every image
- * can be swapped for Z-clean's own photography later by editing this one
+ * can be swapped for Sri Clean's own photography later by editing this one
  * file. No binaries are stored in the repo.
  */
 
@@ -47,7 +47,7 @@ export const aboutImages: SiteImage[] = [
   },
 ];
 
-/** "Why Z-clean" section image. */
+/** "Why Sri Clean" section image. */
 export const whyImage: SiteImage = {
   src: `${CDN_A}/6a7b8a71626a80091510f0f5_why-image.webp`,
   alt: "Garments receiving careful, hands-on cleaning",
@@ -56,7 +56,7 @@ export const whyImage: SiteImage = {
 /**
  * Card / detail-page photo for EVERY service, keyed by service slug
  * (owner request, Nov 6, 2026: no service card without an image).
- * Three are hotlinked template photos; the other five are Z-clean's own
+ * Three are hotlinked template photos; the other five are Sri Clean's own
  * generated images, self-hosted under /public/services/.
  */
 export const serviceImages: Record<string, SiteImage> = {

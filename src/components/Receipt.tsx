@@ -234,7 +234,7 @@ export default function Receipt({ params }: { params: Promise<{ id: string }> })
         <h1 className="text-2xl font-extrabold tracking-tight text-ink-900">Receipt not available</h1>
         <p className="mt-3 text-sm leading-relaxed text-ink-500">
           We could not load this order. Receipts are available to the
-          customer who placed the order and to Z-clean admins.
+          customer who placed the order and to Sri Clean admins.
         </p>
         <Link href="/dashboard" className="mt-5 inline-block rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-white hover:bg-brand-700">
           Go to my dashboard

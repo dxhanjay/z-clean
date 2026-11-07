@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Receipt from "@/components/Receipt";
 
 export const metadata: Metadata = {
-  title: "Receipt — Z-clean",
+  title: "Receipt — Sri Clean",
 };
 
 /**

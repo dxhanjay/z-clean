@@ -60,7 +60,7 @@ export default function AdminCustomersScreen() {
     return (
       <Screen admin>
         <Title>Customers</Title>
-        <Text style={styles.muted}>This section is for Z-clean admins only.</Text>
+        <Text style={styles.muted}>This section is for Sri Clean admins only.</Text>
       </Screen>
     );
   }

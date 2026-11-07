@@ -6,11 +6,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Z-clean — Laundry & Dry Cleaning with Pickup and Delivery",
-    template: "%s | Z-clean",
+    default: "Sri Clean — Laundry & Dry Cleaning with Pickup and Delivery",
+    template: "%s | Sri Clean",
   },
   description:
-    "Z-clean is a laundry and dry-cleaning service with doorstep pickup and delivery. Wash & fold, dry cleaning, ironing, shoe and leather care — book online and track your order.",
+    "Sri Clean is a laundry and dry-cleaning service with doorstep pickup and delivery. Wash & fold, dry cleaning, ironing, shoe and leather care — book online and track your order.",
   // PWA (Mobile Phase 1): the manifest itself comes from
   // src/app/manifest.ts (served at /manifest.webmanifest, linked
   // automatically). Icons: SVG for browsers/install prompts, PNG
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    title: "Z-clean",
+    title: "Sri Clean",
     statusBarStyle: "default",
   },
 };

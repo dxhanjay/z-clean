@@ -70,10 +70,10 @@ export default function Header() {
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <Link href="/" aria-label="Sri Clean — home" className="shrink-0">
           <img
-            src="/logo.svg"
+            src="/logo.png"
             alt="Sri Clean — Dry Cleaning"
-            width={660}
-            height={200}
+            width={1822}
+            height={512}
             className="h-10 w-auto sm:h-11"
           />
         </Link>

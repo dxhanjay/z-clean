@@ -11,6 +11,13 @@
   two-tone wordmark "Sri Clean" with a "DRY CLEANING" caption
   (public/logo.svg lockup, public/logo-mark.svg, favicon via
   src/app/icon.svg, PWA icons and mobile app icons regenerated).
+- Logo updated again 9 Nov 2026: the owner supplied his own Sri Clean
+  logo (shirt-on-hanger emblem with bubbles, navy/sky palette); it
+  replaces the generated garment mark everywhere (header/footer lockup
+  public/logo.png, emblem public/logo-mark.png, stacked lockup
+  public/logo-stacked.png, favicon/PWA icons — SVG wrappers embed the
+  owner's artwork — and mobile app icons on white; splash/adaptive
+  background changed to white). The generated teal mark is retired.
 - scripts/generate-icons.mjs is deprecated for the mark (still draws
   the retired "Z") — see the note at its top.
 

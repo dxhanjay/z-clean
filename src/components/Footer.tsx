@@ -13,10 +13,10 @@ export default async function Footer() {
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
         <div>
           <img
-            src="/logo.svg"
+            src="/logo.png"
             alt="Sri Clean — Dry Cleaning"
-            width={660}
-            height={200}
+            width={1822}
+            height={512}
             className="h-11 w-auto"
           />
           <p className="mt-3 text-sm leading-relaxed text-ink-500">

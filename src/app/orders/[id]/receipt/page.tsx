@@ -3,6 +3,7 @@ import Receipt from "@/components/Receipt";
 
 export const metadata: Metadata = {
   title: "Receipt — Sri Clean",
+  description: "Itemised receipt for your Sri Clean laundry order.",
 };
 
 /**

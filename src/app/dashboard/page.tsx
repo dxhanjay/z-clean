@@ -7,6 +7,7 @@ import OrdersSection from "@/components/dashboard/OrdersSection";
 
 export const metadata: Metadata = {
   title: "My Dashboard",
+  description: "Your Sri Clean orders, saved addresses and account details in one place.",
 };
 
 /**

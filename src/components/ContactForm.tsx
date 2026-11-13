@@ -43,10 +43,21 @@ export default function ContactForm({
       return;
     }
     setErrors({});
-    // Delivery channel (business inbox / CRM) is connected at launch, once
-    // the owner confirms the business email. The form validates fully today;
-    // submissions are acknowledged on screen, not silently dropped to a
-    // fake backend.
+    // HONESTY (site-quality pass, Nov 2026): the delivery channel (business
+    // inbox) connects at launch, once the domain + business email exist —
+    // there is no backend receiving these messages today, so the form must
+    // not claim otherwise. The enquiry is validated, kept on the visitor's
+    // own device (same pattern as the demo pickup store), and the success
+    // panel says plainly that nothing was sent. Launch wiring (contact
+    // inbox + admin view) is an owner-approved migration away.
+    try {
+      const key = "sriclean:contact-enquiries";
+      const prior = JSON.parse(localStorage.getItem(key) ?? "[]") as unknown[];
+      prior.push({ ...parsed.data, at: new Date().toISOString() });
+      localStorage.setItem(key, JSON.stringify(prior.slice(-20)));
+    } catch {
+      // Private mode / storage off: the panel copy still holds.
+    }
     setSubmitted(true);
   }
 
@@ -71,10 +82,13 @@ export default function ContactForm({
 
       {submitted ? (
         <div role="status" className="mt-10 rounded-2xl border border-brand-200 bg-white p-8">
-          <h2 className="text-xl font-bold text-ink-900">Message received</h2>
+          <h2 className="text-xl font-bold text-ink-900">Thanks for writing to Sri Clean</h2>
           <p className="mt-2 text-sm leading-relaxed text-ink-500">
-            Thanks for writing to Sri Clean. We have your message and will reply
-            to the email address you provided.
+            We&rsquo;re putting the finishing touches on our Bokaro launch, and our enquiry
+            inbox opens with it — so this form can&rsquo;t deliver your message just yet, and
+            nothing you typed was sent. Your note is saved on this device only. Once
+            we&rsquo;re live, the contact details on this page will be the fastest way to
+            reach us.
           </p>
         </div>
       ) : (

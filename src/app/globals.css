@@ -52,10 +52,15 @@
 html {
   scroll-behavior: smooth;
   -webkit-tap-highlight-color: transparent;
+  /* Site-quality guard: no page may scroll sideways. `clip` (unlike
+     `hidden`) does not create a scroll container, so sticky headers
+     keep working. */
+  overflow-x: clip;
 }
 
 body {
   @apply bg-white font-sans text-ink-900 antialiased;
+  overflow-x: clip;
 }
 
 :focus-visible {

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -37,6 +38,12 @@ import StaffHeader from "@/components/staff/StaffHeader";
  * stay plain on purpose: an error a rider must act on should
  * never sit behind frosted glass.
  */
+export const metadata: Metadata = {
+  title: "Staff app",
+  description:
+    "Sri Clean staff workspace: assigned pickup and delivery tasks, QR and OTP handovers, and live tracking.",
+};
+
 export default async function StaffAppLayout({
   children,
 }: {

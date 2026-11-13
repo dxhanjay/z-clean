@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-11-11 — Site-quality pass (owner checklist)
+
+- Custom branded 404 page (logo, home/services/track-order next steps).
+- Page titles + meta descriptions completed: sibling metadata layouts
+  for the client pages (log in, register, forgot/reset password,
+  schedule a pickup, order details), plus descriptions for the dashboard,
+  receipt and staff app.
+- No-horizontal-scroll guard: overflow-x: clip on html/body (mobile
+  overflow measured 0px across 13 routes at 360/390px before the guard;
+  the guard keeps it that way).
+- Business phone/email on the receipt are now tel:/mailto: links.
+- Contact form honesty: the success panel no longer claims a message
+  was received or will be answered — the enquiry inbox opens at launch;
+  the validated note is kept on the visitor's device until then.
+- Brand images compressed: logo lockup 435 KB → 41 KB, stacked logo
+  146 KB → 29 KB, emblem 97 KB → 19 KB, PWA icons ~90 KB → ~15 KB.
+- Link crawl of the live site: 29 routes, zero broken internal links.
+
 ## 2026-11-07 — Rebrand: Z-clean → Sri Clean (Dry Cleaning)
 
 - Business display name changed to **Sri Clean** across the website,

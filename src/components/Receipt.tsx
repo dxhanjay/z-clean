@@ -274,9 +274,20 @@ export default function Receipt({ params }: { params: Promise<{ id: string }> })
             {business.address && <p className="mt-1 text-sm text-ink-500">{business.address}</p>}
             {(business.phone || business.email) && (
               <p className="text-sm text-ink-500">
-                {business.phone}
+                {business.phone && (
+                  <a
+                    className="hover:text-brand-700"
+                    href={`tel:${business.phone.replace(/\s/g, "")}`}
+                  >
+                    {business.phone}
+                  </a>
+                )}
                 {business.phone && business.email ? " · " : ""}
-                {business.email}
+                {business.email && (
+                  <a className="hover:text-brand-700" href={`mailto:${business.email}`}>
+                    {business.email}
+                  </a>
+                )}
               </p>
             )}
           </div>
